@@ -197,7 +197,14 @@ public:
    virtual string toString() const = 0;
    
 
-// LOG-COVARIATION MATRICES AND DRIFT LINEARIZATION MATRICES
+// LOG-LIBOR COVARIATION MATRICES AND DRIFT LINEARIZATION MATRICES
+
+
+  /** The upper triangular half of the correlation matrix 
+   *  \f$\rho_{ij}=u_i\cdot u_j,\quad 1\leq i,j<n.\f$. See book, 6.4.
+   *  Index base 1, natural indexation.
+   */ 
+   UTRMatrix<Real>& getRho() const;
 
    
   /** The upper triangular half of the covariation matrix 
@@ -395,7 +402,7 @@ class CS_FactorLoading : public LiborFactorLoading {
 	/** Upper triangular matrix of instantaneous Libor correlations 
 	 *  corr(i,j)=rho_{ij}.
 	 */
-	UTRMatrix<Real>& corr;
+	UTRMatrix<Real> corr;
     
 
 public:
@@ -493,12 +500,12 @@ private:
     
     
     /** The convex function f(x) from which the log-Libor correlations
-     *  are derived. See i>LiborProcess.ps</i>.
+     *  are derived. See book, 6.11.1.
      */
     Real f(Real x) const 
     {
         Real a=alpha/2, b=(beta-alpha)/6,
-               c=std::log(rho00)-(a+b);
+               c=log(rho00)-(a+b);
               
         return x*(c+x*(a+b*x));  //cx+ax^2+bx^3
     }
@@ -525,7 +532,7 @@ private:
 
 
 
-               
+              
 /*******************************************************************************
  *
  *                     JR_FactorLoading
@@ -547,7 +554,6 @@ class JR_FactorLoading : public LiborFactorLoading {
     
     
     /** Parameters describing the volatility and correlation structure.
-     *
      */
     Real a,b,c,d, Beta;
  
@@ -561,7 +567,7 @@ class JR_FactorLoading : public LiborFactorLoading {
 	/** Upper triangular matrix of instantaneous Libor correlations 
 	 *  corr(i,j)=rho_{ij}.
 	 */
-	UTRMatrix<Real>& corr;
+	UTRMatrix<Real> corr;
 
     
 public:
@@ -654,6 +660,7 @@ public:
 private:
 	 
 // AUXILLIARY FUNCTIONS
+
     
     /** Indefinite integral \f$\int\sigma_i(t)\sigma_j(t)\rho_{ij}(t)dt\f$.
      */
@@ -661,6 +668,159 @@ private:
        
 
 }; // end JR_FactorLoading
+
+
+
+              
+/*******************************************************************************
+ *
+ *          Constant Volatility FactorLoading
+ *
+ *******************************************************************************/        
+
+
+
+
+/** Libor factor loading with constant volatility functions. Implements both
+ *  the Cofee-Shoenmakers and Jaeckel-Rebonato log-Libor correlation structures.
+ *
+ * @author Michael J. Meyer
+ */
+class ConstVolLiborFactorLoading : public LiborFactorLoading {
+    
+    
+	/** Flags for the CS and JR correlation structures. */
+	static const int CS=0, JR=1;
+	
+    /** Parameters describing the CS and JR correlations.
+     */
+    Real alpha,beta,r_oo;           
+	              
+    /** Array of constant log-Libor volatilities \f$sg[j]=\sigma_j\f$.
+     */
+    Real* sg;
+    
+	/** Upper triangular matrix of instantaneous Libor correlations 
+	 *  corr(i,j)=rho_{ij}.
+	 */
+	UTRMatrix<Real> corr;
+
+    
+public:
+    
+
+// CONSTRUCTOR
+
+    
+    /** Constant volatility factor loading with JR correlations
+	 *  \f$\rho_{ij}=exp(\beta*(T_i-T_j)),\ i\leq j\f$.
+     *
+     * @param dim number n of forward Libors including \f$L_0\f$.
+     * @param L0 array of initial Libors \f$L0[j]=L_j(0)\f$.
+     * @param deltas array of accrual periods \f$\delta_j\f$.
+     * @param sg log-Libor volatilities.
+     */
+    ConstVolLiborFactorLoading
+    (int dim, Real* L0, Real* deltas, Real _beta, Real* sg);
+	
+	
+	/** Constant volatility factor loading with CS correlations
+	 *  described by the parameters alpha, beta, r_oo. See book, 6.11.1.
+     *
+     * @param dim number n of forward Libors including \f$L_0\f$.
+     * @param L0 array of initial Libors \f$L0[j]=L_j(0)\f$.
+     * @param deltas array of accrual periods \f$\delta_j\f$.
+     * @param sg log-Libor volatilities.
+     */
+    ConstVolLiborFactorLoading
+    (int dim, Real* L0, Real* deltas, Real _alpha, Real _beta, Real _r_oo, Real* sg);
+	
+
+	
+// VOLATILITIES, CORRELATIONS, COVARIATION INTEGRALS
+
+	
+   /** Instantaneous log-Libor correlations \f$\rho_{ij}\f$
+    *
+    *@param i,j Libor indices, \f$i,j\geq 1\f$.
+    */
+   Real rho(int i, int j) const { if(i<=j) return corr(i,j); return corr(j,i); }
+ 
+
+  
+   /** Volatility \f$\sigma_i(t)\f$ of \f$L_i(t)\f$,
+    *  \f[\sigma_i(t)=k_i[d+(a+bs e^{-cs})],\ s=T_i-t,\ t\in[0,T_i].\f]
+    *
+    *@param i Libor index.
+    *@param t continuous time.
+    */
+   Real sigma(int i, Real t) const { return sg[i]; }
+
+  
+   /** The integral
+    *  \f[\int_t^T\sigma_i(s)\sigma_j(s)rho_ijds=\langle log(L_i),log(L_j)\rangle_t^T\f]
+    *  neeeded for the distribution of time step increments. See book 6.5.1.
+    *
+    * @param i,j Libor indices.
+    * @param t,T continous times $t\leq T$.
+    */
+   Real integral_sgi_sgj_rhoij(int i, int j, Real t, Real T) const
+   {
+      return (T-t)*sg[i]*sg[j]*rho(i,j);
+   }
+   
+   
+   
+
+// STRING MESSAGE
+
+    /** A message what type of factor loading it is, all the parameter values.
+     */
+    string toString() const;
+   
+   
+   	/** Diagnostic function, prints the values of most fields to
+	 *  check proper setup.
+	 */
+    void printFields();
+	
+
+   
+// SAMPLE FACTOR LOADING
+
+    
+    /** Provides a sample <code>CS_FactorLoading</code> object of dimension n
+     *  with volatilities \f$\sigma_j=0.4\f$. Initial Libors are set to \f$L_j(0)=0.04\f$.
+     * 
+     * @param n dimension of the Libor process.
+	 * @param delta constant accrual interval length.
+	 * @param corrs correlation type, must be CS of JR.
+     */
+    static ConstVolLiborFactorLoading* 
+	sample(int n, Real delta=0.25, int corrs=CS);
+	
+
+
+private:
+	 
+// AUXILLIARY FUNCTIONS
+
+    /** The convex function f(x) from which the log-Libor correlations
+     *  are derived. See book, 6.11.1.
+     */
+    Real f(Real x) const 
+    {
+        Real a=alpha/2, b=(beta-alpha)/6,
+               c=log(r_oo)-(a+b);
+              
+        return x*(c+x*(a+b*x));  //cx+ax^2+bx^3
+    }
+    
+
+       
+
+}; // end ConstVolLiborFactorLoading
+
 
 
 

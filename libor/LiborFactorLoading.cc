@@ -85,6 +85,17 @@ using namespace std;
    
 
    UTRMatrix<Real>& LiborFactorLoading::
+   getRho() const
+   {
+	   UTRMatrix<Real>& _rho=*(new UTRMatrix<Real>(n-1,1));
+	   for(int i=1;i<n;i++)
+	   for(int j=i;j<n;j++) _rho(i,j)=rho(i,j);
+		   
+	   return _rho;
+   }
+	
+	
+   UTRMatrix<Real>& LiborFactorLoading::
    logLiborCovariationMatrix(int p,int q, Real t, Real T) const
    {
        int size=q-p;       // matrix size
@@ -295,7 +306,7 @@ void LiborFactorLoading::factorizationTest(int r)
     (int dim, Real a, Real d, Real Alpha, Real Beta, Real Rho00, Real* C, Real* l, Real* deltas) :
 	LiborFactorLoading(dim,l,deltas),
 	A(a), D(d), alpha(Alpha), beta(Beta), rho00(Rho00), c(C),
-	corr(*(new UTRMatrix<Real>(dim-1,1)))
+	corr(dim-1,1)
 	{
        // allocate and initialize the correlation base b[]=(b_1,...,b_{n-1})
 	   int n=getDimension(); 
@@ -446,7 +457,8 @@ void LiborFactorLoading::factorizationTest(int r)
     JR_FactorLoading::JR_FactorLoading
     (int dim, Real* L0, Real* deltas, Real a0, Real b0, Real c0, Real d0, Real Beta0, Real* k0) : 
     LiborFactorLoading(dim,L0,deltas),
-    a(a0), b(b0), c(c0), d(d0), Beta(Beta0), k(k0), corr(*(new UTRMatrix<Real>(dim-1,1)))
+    a(a0), b(b0), c(c0), d(d0), Beta(Beta0), k(k0), 
+    corr(dim-1,1)
     {
        // initialize correlations rho_ij=exp(beta*(T_i-T_j)), i<=j.
 	   Real* Tc=getTenorStructure();
@@ -535,4 +547,111 @@ void LiborFactorLoading::factorizationTest(int r)
        
        return f*(A-B+C);
    } // end Fij
+   
+   
+   
+               
+/*******************************************************************************
+ *
+ *               Constant Volatility FactorLoading
+ *
+ *******************************************************************************/        
+
+
+// CONSTRUCTOR
+   
+   
+    // CS - correlations
+    ConstVolLiborFactorLoading::
+    ConstVolLiborFactorLoading
+    (int dim, Real* L0, Real* deltas, Real _alpha, Real _beta, Real _r_oo, Real* _sg) : 
+	LiborFactorLoading(dim,L0,deltas),
+	alpha(_alpha), beta(_beta), r_oo(_r_oo), sg(_sg),
+	corr(dim-1,1)
+	{
+       // allocate and initialize the correlation base b[]=(b_1,...,b_{n-1})
+	   int n=getDimension(); 
+       Real b[n-1]; 
+       for(int i=0;i<n-1;i++)
+       { Real x=((Real)i)/(n-2); b[i]=exp(-f(x)); }
+           
+       // initialize the correlation matrix corr[i][j]=rho_{ij}
+       for(int i=1;i<n;i++)
+       for(int j=i;j<n;j++) corr(i,j)=b[i-1]/b[j-1]; 
+  
+    } // end constructor
+
+	
+	// JR - correlations
+    ConstVolLiborFactorLoading::
+    ConstVolLiborFactorLoading
+    (int dim, Real* L0, Real* deltas, Real _beta, Real* _sg) : 
+    LiborFactorLoading(dim,L0,deltas),
+    alpha(0.0), beta(_beta), r_oo(1.0), sg(_sg), 
+	corr(dim-1,1)
+    {
+       // initialize correlations rho_ij=exp(beta*(T_i-T_j)), i<=j.
+	   Real* Tc=getTenorStructure();
+       for(int i=1;i<dim;i++)
+       for(int j=i;j<dim;j++) corr(i,j)=exp(beta*(Tc[i]-Tc[j]));   
        
+    } // end constructor
+	
+
+  
+// STRING MESSAGE
+
+    string ConstVolLiborFactorLoading::
+	toString() const
+    {
+        int n=getDimension();
+		Real* l=getInitialTermStructure();
+		vector<Real> lvec(n,l);
+		vector<Real> vols(n,sg);      // volatilities
+		ostringstream os;
+		os << endl << endl
+           << "\nConstVolLiborFactorLoading:" 
+           << "\nVolatilities: " << endl << vols
+		   << "\nInitial Libors: " << endl << lvec;
+        return os.str();
+    }
+	
+	
+	void ConstVolLiborFactorLoading::
+	printFields()
+    {
+		int n=getDimension();
+		Real* deltas=getDeltas();
+		Real* Tc=getTenorStructure();
+		Real* x=getInitialXLibors();
+		vector<Real> delta_vec(n,deltas);
+		vector<Real> Tc_vec(n+1,Tc);
+		vector<Real> x_vec(n,x);
+		vector<Real> vols(n,sg);
+		cout << "\ndeltas:" << endl << delta_vec
+		     << "\nReset times T_j:" << endl << Tc_vec
+		     << "\nInitial X-Libors:" << endl << x_vec
+		     << "\nVolatilities:" << endl << vols
+		     << "\nCorrelation matrix: " << endl << corr;
+	}
+
+	
+// SAMPLE FACTOR LOADING
+
+    ConstVolLiborFactorLoading* ConstVolLiborFactorLoading::
+	sample(int n, Real delta=0.25, int corrs=CS)
+    {
+	    Real* _L=new Real[n];
+        Real* _sg=new Real[n];
+        Real* _deltas=new Real[n];       
+        for(int i=0;i<n;i++){ _sg[i]=0.4; _L[i]=0.04; _deltas[i]=delta; }		
+		
+		Real _alpha=1.8, _beta=0.1, _r_oo=0.4;
+			
+		if(corrs==CS)
+		return new ConstVolLiborFactorLoading(n,_L,_deltas,_alpha,_beta,_r_oo,_sg);
+        // else corrs == JR
+        return new ConstVolLiborFactorLoading(n,_L,_deltas,_beta,_sg);
+     
+    } // end sample
+        
