@@ -309,16 +309,51 @@ void testFactorization()
 		LiborTree2F Tree(fl,n-3);
 		Tree.selfTest();
 		watch.stop();
-		watch.report("Time");
+		watch.report("Libor tree construction and self test");
 	}
 		
 		
 
 private:
 	
+	/** The covariation matrix of the vector
+	 *  \f[\tilde V(t)=(V_t,V_{t+1},\dots,V_{n-3},V_{n-2}-V_{n-1},V_{n-1})\f]
+	 * evaluatd at time \f$T_t\f$. The last two coordinates have been decorrelated.
+	 */
+	UTRMatrix<Real>& decorrelatedCovariationMatrix(int t)
+    {
+	    Real* Tc=factorLoading->getTenorStructure();
+		Real T_t=Tc[t];  
+		UTRMatrix<Real>& C=*(new UTRMatrix<Real>(n-t,t));
+		for(int i=t;i<n;i++){
+			
+			// the covariances Ci[j]=E[V_i(T_t)V_j(T_t)],
+			// j=i,...,n-1
+			vector<Real> Ci(n-i,i);
+		    for(int j=i;j<n;j++) Ci[j]=factorLoading->integral_sgi_sgj_rhoij(i,j,0.0,T_t);
+			
+			// set covariances, decorrelated in the last two components
+			for(int j=i;j<n;j++)
+			if(j!=n-2) C(i,j)=Ci[j];
+			else                                    // j=n-2, i!=n-2
+			if(i!=n-2) C(i,j)=Ci[n-2]-Ci[n-1];
+			else{                                   // j=n-2, i=n-2
+				
+				// C_{n-1,n-1}
+				Real Cnn=factorLoading->integral_sgi_sgj_rhoij(n-1,n-1,0.0,T_t);
+				C(i,j)=Ci[n-2]-2*Ci[n-1]+Cnn;
+			} // end for j
+		} // end for i
+		
+		return C;
+	} // end decorrelatedCovariationMatrix
+	
+			
+				
 	/** <p>Computes the vector of matrices R=(R(0),R(1),...,R(m)), where R(t) is 
 	 *  the rank 2 approximate root of the covariation matrix C(t) of the vector
-	 *  \f$V(t)=(V_t(T_t),...,V_{n-1}(T_t))\f$. This matrix is needed to compute
+	 *  \f[\tilde V(t)=(V_t,...,V_{n-3},V_{n-2}-V_{n-1},V_{n-1})\f]
+	 *  at time \f$T_t\f$. This matrix is needed to compute
 	 *  the vector V(t) from the variables V1, V2 at the nodes at time t.
 	 *
 	 *  <p>Also computes the sequence of matrices RQ[t] (the 2 by 2 inverse of the last 
@@ -333,7 +368,7 @@ private:
 			Real T_t=Tc[t];       // T_t
 			
 			// this is indexed as i,j=t,...,n-1
-			UTRMatrix<Real>& Ct=factorLoading->logLiborCovariationMatrix(t,n,0.0,T_t);
+			UTRMatrix<Real>& Ct=decorrelatedCovariationMatrix(t);
 			Matrix<Real>& Rt=Ct.rankReducedRoot(2); // row index i=t,...,n-1
 			// save
 			R[t]=&Rt;
@@ -354,7 +389,7 @@ private:
 			RQt(1,0)=-C/det; RQt(1,1)=A/det;
 			// save
 			RQ[t]=RQt_ptr;
-cout << "\n\n\nMatrix inverse RQ[" << t << "]:" << *(RQ[t]);
+
 			
 		}
 	} // end setRank2CovariationMatrixRoots
@@ -606,7 +641,7 @@ struct Node {
          vector<Real> V(n-t,t);   // the volatility parts V_j of log(U_j)
 			                          // j=t,...,n-1
 		 V[n-1]=V1;
-		 V[n-2]=V1+V2;
+		 V[n-2]=V2;
 			 
 		 // matrices needed to derive V_j, j<n-2, from V_{n-2}, V_{n-1}
 		 Matrix<Real>& Rt=theTree->getR(t);
@@ -618,8 +653,12 @@ struct Node {
 		 
 		 // use these to compute the remaining V_j
 		 // Rt=*R[t] has row index base t.
-		 for(int j=t;j<n-2;j++) V[t]=Rt(j,0)*Z[0]+Rt(j,1)*Z[1];
-				 
+		 for(int j=t;j<n;j++) V[j]=Rt(j,0)*Z[0]+Rt(j,1)*Z[1]; 
+		 checkState(t,V,Z,RQt); 
+		 
+		 // eliminate the differencing V_{n-2}-V_{n-1} in coordinate n-2
+		 V[n-2]+=V[n-1];
+
 		 // add the initial value log(U_j(0) and drift mu_j(t)=mu_j(0,T_t) 
 		 // to obtain the log(U_j(T_t))
 		 vector<Real>& U0=theTree->getU0();
@@ -638,6 +677,38 @@ struct Node {
 		}
 			 
 	} // setStateVariables
+
+	
+	
+	/** Diagnostic. Checking the vector V computed at a node at time t.
+	 */
+	void checkState(int t, vector<Real>& V, vector<Real>& Z, Matrix<Real>& RQt)
+    {
+        bool we_have_a_problem=false;
+		
+		if(fabs(V[n-1]-V1)+fabs(V[n-2]-V2)>0.000001){
+			
+			we_have_a_problem=true;
+			cout << "\n\n\nInversion failure"
+			     << "\nMatrix RQt: " << RQt
+			     << "\n V[n-1] = " << V[n-1] << ", V1 = " << V1
+			     << "\n V[n-2] = " << V[n-2] << ", V2 = " << V2;
+		}
+		
+		for(int j=t;j<n;j++)
+        if(V[j]>10.0){ 
+			
+			we_have_a_problem=true;
+			cout << "\n\n\nLarge V_j, t = " << t 
+	               << "\nj = " << j << ", V_j = " << V[j]
+	               << "\n V1 = " << V1 << ", V2 = " << V2
+			       << "\n\nMatrix RQt: " << RQt
+	               << "Vector Zt: " << Z;
+			break;
+		}
+	            
+	    if(we_have_a_problem) exit(0);
+	} // checkState()
 	
 	
 // LIBORS, SWAPRATES, ANNUITY (PBV)
