@@ -314,6 +314,9 @@ class LmmNode : public LmmNodeBase {
 	
 public :
 	
+	/** The base type {@link LmmNode_LiteBase} or {@link LmmNode_HeavyBase} */
+	typedef LmmNodeBase BaseType;
+	
 /** The parameter signature is that of the base class constructors 
  *  LmmNodeBase(...).
  *  
@@ -332,7 +335,8 @@ LmmNodeBase(s,k,latticeData)
 Real H_pq(int p, int q)
 {
 	const RealArray1D& H=Hvect(p);
-	return LiborFunctional::H_pq(p,q,H);
+	Real delta = lattice->delta;
+	return LiborFunctional::H_pq(p,q,H,delta);
 }
 	
 	
@@ -341,7 +345,8 @@ Real H_pq(int p, int q)
 Real swapRate(int p, int q)
 {
 	const RealArray1D& H=Hvect(p);
-	return LiborFunctional::swapRate(p,q,H);
+	Real delta = lattice->delta;
+	return LiborFunctional::swapRate(p,q,H,delta);
 }
 	
 	
@@ -351,7 +356,8 @@ Real swapRate(int p, int q)
 Real forwardSwaptionPayoff(int p, int q, Real kappa)
 {
 	const RealArray1D& H=Hvect(p);
-	return LiborFunctional::forwardSwaptionPayoff(p,q,kappa,H);
+	Real delta = lattice->delta;
+	return LiborFunctional::forwardSwaptionPayoff(p,q,kappa,H,delta);
 }
 
 /** Forward accrued payoff of a caplet with strike rate kappa at this node. 
@@ -362,11 +368,18 @@ Real forwardCapletPayoff(Real kappa)
 {
 	const RealArray1D& H=Hvect(p);
 	int i=get_t();
-	return LiborFunctional::forwardCapletPayoff(i,kappa,H);
+	Real delta = lattice->delta;
+	return LiborFunctional::forwardCapletPayoff(i,kappa,H,delta);
 }
 
 
 }; // end LmmNode
+
+
+/** Small and slower.*/
+typedef LmmNode<LmmNode_LiteBase> LiteLmmNode;
+/** Large and faster for repeated pricing in the same lattice.*/
+typedef LmmNode<LmmNode_HeavyBase> HeavyLmmNode;
 
 		
 	

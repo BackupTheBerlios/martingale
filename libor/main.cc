@@ -162,7 +162,7 @@ int main()
 	
 
      // testLmmLattice();
-	 testLatticeSwaption();
+	 testLatticeSwaption(true);
 	 
 	
 /*******************************************************************************

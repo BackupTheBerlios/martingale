@@ -269,8 +269,10 @@ void testLmmLattice()
  *  Asks for the type of lattice (light/heavy), number of factors, number of time steps per 
  *  Libor accrual interval and swap period [T_p,T_q]. Then sets up sample swaption 
  *  (constant volatility and JR correlations, book, 6.11.2) and computes the forward price.
+ *
+ * @param verbose details on lattice and factor loading.
  */
-void testLatticeSwaption()
+void testLatticeSwaption(bool verbose=false)
 {
 	int do_again=1;
 	// main loop
@@ -290,10 +292,10 @@ void testLatticeSwaption()
 		int nSteps; std::cin >> nSteps;
 	    switch(r*h){
 		
-		    case 10 : LiteLatticeSwaption2F::test(p,q,nSteps); break;
-	        case 15 : LiteLatticeSwaption3F::test(p,q,nSteps); break;
-		    case 14 : HeavyLatticeSwaption2F::test(p,q,nSteps); break;
-	        case 21 : HeavyLatticeSwaption3F::test(p,q,nSteps); break;
+		    case 10 : LiteLatticeSwaption2F::test(p,q,nSteps,verbose); break;
+	        case 15 : LiteLatticeSwaption3F::test(p,q,nSteps,verbose); break;
+		    case 14 : HeavyLatticeSwaption2F::test(p,q,nSteps,verbose); break;
+	        case 21 : HeavyLatticeSwaption3F::test(p,q,nSteps,verbose); break;
 			default : std::cout << "\n\n\nYou did not enter the parameters right.";
 		}
 		

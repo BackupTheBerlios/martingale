@@ -82,6 +82,9 @@ class Lattice {
 	
 protected:
 	
+	/** The type of nodes used in the lattice. */
+	typedef Node NodeType;
+	
 	/** Number of time steps in the lattice. */
 	int T;   
 				
@@ -220,11 +223,11 @@ namespace LatticeBuilder {
  * @param T number of time steps in the lattice.
  * @param nodeList nodeList[t] is a pointer to the list of nodes at time t.
  * @param latticeData data object handed to nodes from lattice.
+ * @param verbose message during build.
  */
 template<class Node, class LatticeData>
 void buildTwoFactorLattice
-(int T, Array1D< 
-	vector<Node*>* >& nodeList, LatticeData* latticeData)
+(int T, Array1D< vector<Node*>* >& nodeList, LatticeData* latticeData, bool verbose=false)
 {
 	int nodes=0;                                        // counter
 	vector<Node*>* nodes_0 = nodeList[0];               // list of nodes at time t
@@ -291,7 +294,7 @@ void buildTwoFactorLattice
 			   
 	    } // end while(theNode)
 
-				
+		if(verbose)		
 		cout << "\nTime step = " << s+1 << ";  total nodes = " << nodes;
 		
 	} // end for s
@@ -303,10 +306,11 @@ void buildTwoFactorLattice
  * @param T number of time steps in the lattice.
  * @param nodeList nodeList[t] is a pointer to the list of nodes at time t.
  * @param latticeData data object handed to nodes from lattice.
+ * @param verbose message during build.
  */
 template<class Node, class LatticeData>
 void buildThreeFactorLattice
-(int T, Array1D< std::vector<Node*>* >& nodeList, LatticeData* latticeData)
+(int T, Array1D< vector<Node*>* >& nodeList, LatticeData* latticeData, bool verbose=false)
 {
 	int nodes=0;                                        // counter
 	vector<Node*>* nodes_0 = nodeList[0];               // list of nodes at time t
@@ -372,7 +376,8 @@ void buildThreeFactorLattice
 			   ++theNode;
 			   
 	    } // end while(theNode)
-				
+		
+		if(verbose)
 		cout << "\nTime step = " << s+1 << ";  total nodes = " << nodes;
 		
 	} // end for s

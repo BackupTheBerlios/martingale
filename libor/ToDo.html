@@ -155,6 +155,20 @@ Check the proper deallocation of nodes.
 Get the lattice swaption tests to compile and run and see how it works.
 
 
+<h3>8-10-03:</h3>
+
+LmmLattice, BasketLattice, Node: <br>
+Get rid of the heavyeight nodes and standardize on lightweight ones.
+Simplification in the templatization. Hopefully will speed up compiles.
+Preliminary tests show that volatility rescaling in low factor models makes
+the pricing of at the money swaptions significantly less precise.
+Run more tests and point this out in the book.
+<p>
+Pricing of swaptions in a lattice works the first time through the main loop
+in TestLMM.h#testLatticeSwaption() but dies on array index out of bound error
+the second time through the loop. 
+
+
 
 </body>
 </html>

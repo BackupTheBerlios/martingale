@@ -78,13 +78,15 @@ class LatticeEuropeanOption {
 	
 protected:
 	
-	Lattice* theLattice;       // underlying lattice
+	 /** the underlying lattice. */
+	Lattice* theLattice;      
 	
-	// the type of nodes in the lattice
+	/** the type of nodes in the lattice. */
 	typedef typename Lattice::NodeType NodeType;
 	
-	int s;                     // time at which the values of the payoff h are known
-	                           // typically time of option expiration
+	/** time step at which the option payoff is known (typically expiration).*/
+	int expiration;            
+	                           
 	
 public:
 	
@@ -94,10 +96,10 @@ public:
 	
 	
 	/** @param lattice the underlying {@link Lattice}.
-	 *  @param t number of time steps to option exercise.
+	 *  @param t number of time steps to option expiration.
 	 */
 	LatticeEuropeanOption(Lattice* lattice, int t) : 
-    theLattice(lattice), s(t) 
+    theLattice(lattice), expiration(t) 
     {  }
 	
 	~LatticeEuropeanOption(){ delete theLattice; }
@@ -128,8 +130,8 @@ private:
  */
 void computeConditionalExpectations()
 {
-	// run through the list of nodes at time t=s and set the known value pi_s=h
-	vector<NodeType*>* nodes_s=theLattice->getNodeList(s);
+	// run through the list of nodes at time t=expiration and set the known value pi_t=h
+	vector<NodeType*>* nodes_s=theLattice->getNodeList(expiration);
 	// *theNode is pointer to Node
     vector<NodeType*>::const_iterator theNode=nodes_s->begin();
 	while(theNode!=nodes_s->end()) {
@@ -140,7 +142,7 @@ void computeConditionalExpectations()
 	}
 	
 	// backward computation through earlier nodes
-	for(int t=s-1; t>=0;t--){
+	for(int t=expiration-1; t>=0;t--){
 		
 		vector<NodeType*>* nodes_t=theLattice->getNodeList(t);
 	    theNode=nodes_t->begin();
@@ -198,6 +200,9 @@ class LatticeSwaption : public LatticeEuropeanOption<Lmm_Lattice> {
 	
 public:
 	
+	/** The strike rate.*/
+	Real getStrike(){ return kappa; }
+	
 	/** @param lattice the underlying LmmLattice.
 	 *  @param s swaption is exercisable at time T_s, s=s0.
 	 *  @param p_ swap begins at time T_p, p=p0.
@@ -205,7 +210,7 @@ public:
 	 */
 	LatticeSwaption
 	(Lmm_Lattice* lattice, int s, int p_, int q_, Real strike) :
-	// m=s*nSteps time steps needed until time T_s 
+	// m=s*nSteps time steps needed until T_s = LatticeEuropeanOption::expiration
 	LatticeEuropeanOption<Lmm_Lattice>(lattice,s*(lattice->getData()->nSteps)),          
 	p(p_), q(q_),
 	kappa(strike)
@@ -221,13 +226,13 @@ public:
 	
 /** Sample at the money swaption in dimension q on accrual interval [T_p,T_q]
  *  with nSteps time steps in each accrual period. 
- *  @param rescaleVols <a href="LmmLattice.h#rescale">rescale</a> the correlation 
- *  matrix root.
+ *  @apram verbose details on lattice and Libor factorloading.
  */	
-static LatticeSwaption* sample(int p, int q, int nSteps, bool rescaleVols)
+static LatticeSwaption* 
+sample(int p, int q, int nSteps, bool verbose)
 {
-    Lmm_Lattice* lattice = Lmm_Lattice::sample(q,p,nSteps,rescaleVols);
-	NodeType* root=lattice.getRoot();
+    Lmm_Lattice* lattice = Lmm_Lattice::sample(q,p,nSteps,verbose);
+	NodeType* root=lattice->getRoot();
 	Real strike=root->swapRate(p,q);           // swap rate at time zero	
 	
 	return new LatticeSwaption(lattice,p,p,q,strike);
@@ -238,34 +243,33 @@ static LatticeSwaption* sample(int p, int q, int nSteps, bool rescaleVols)
  *  exercisable at time \f$T_p\f$ and computes the forward price both in
  *  the lattice and in a driftless Libor market model with the same number of 
  *  factors.
+ * @param nSteps time steps in each Libor compounding period.
+ * @apram verbose details on lattice and Libor factorloading.
  */
-static void test(int p, int q, int nSteps)
+static void test(int p, int q, int nSteps, bool verbose=false)
 {	
 	cout << "\n\nComputing swaption price:";
 	
 	Timer watch; watch.start();
-	bool rescaleVols=true;
-    LatticeSwaption* latticeSwaption = sample(p,q,nSteps,rescaleVols);
-	Real latticePrice=swpn.forwardPrice();
-	cout << "\n\nLattice price with volatility rescaling: " << latticePrice;
-	watch.stop();
-	watch.report("Time");
-	
-	delete latticeSwaption;
-	
-	watch.start();
-	rescaleVols=false;
-    latticeSwaption = sample(p,q,nSteps,rescaleVols);
-	latticePrice=swpn.forwardPrice();
+    LatticeSwaption* latticeSwaption = sample(p,q,nSteps,verbose);
+	Real latticePrice=latticeSwaption->forwardPrice();
 	cout << "\n\nLattice price without volatility rescaling: " << latticePrice;
 	watch.stop();
 	watch.report("Time");
-	
-	delete latticeSwaption;
+
+	// lattice price with volatility rescaled
+	latticeSwaption->getLattice()->rescaleVols();
+	latticePrice=latticeSwaption->forwardPrice();
+	cout << "\n\nLattice price with volatility rescaling: " << latticePrice;
+	watch.stop();
+	watch.report("Time");
 		
 	// LMM and Monte carlo
-	int r = getLattice()->nFactors();                         // number of factors
-	LiborFactorLoading* fl = lattice->getFactorLoading();
+	int r = latticeSwaption->getLattice()->nFactors();    // number of factors
+	LiborFactorLoading* fl = latticeSwaption->getLattice()->getFactorLoading();
+	Real strike = latticeSwaption->getStrike();
+		
+	delete latticeSwaption;
 	
 	watch.start();
 	LiborMarketModel* lmm=new LowFactorDriftlessLMM(fl,r);

@@ -242,8 +242,15 @@ Lightweight 3 factor lattices allow only about 53 time steps.
 
 Switched from std::list to std::vector in all Lattices. Speedup and less memory used.
 Memory leak largely eliminated.
-2 Factor lightweight lattices can now be built to 230 time steps (1GB main memory).
+2 Factor lightweight lattices can now be built to 250 time steps (1GB main memory).
 Implemented very general Lattice swaption tests. This code does not compile yet.
+
+
+<h3>8-10-03:</h3>
+
+Lattice swaption test shows that it's not worth working with heavy weight nodes.
+Get rid of these and standardize on lightweight nodes. Simplifies everything.
+Affects: LmmLattice, BasketLattice.
 
 
 </body>
