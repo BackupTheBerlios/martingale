@@ -292,11 +292,11 @@ testFactorization()
 		nodes_0.push_back(nextNode); 
 		nodes++;
 		
-		// loop over times s=0,...,t-1
+		// for t=0,...,m-1 build nodes at time t+1 from nodes at time t
 		for(int t=0;t<m;t++) {
 	
-			Real A1=k1[t]*a, A2=k2[t]*a;                             // tick sizes at time t
-			std::list<LmmNode2F*>& listCurrentNodes=*(nodeList[t]);    // list of nodes at time t+1
+			Real A1=k1[t]*a, A2=k2[t]*a;                               // tick sizes at time t
+			std::list<LmmNode2F*>& listCurrentNodes=*(nodeList[t]);    // list of nodes at time t
 			std::list<LmmNode2F*>& listNewNodes=*(nodeList[t+1]);      // list of nodes at time t+1
 
 			// registry for possible nodes at time t+1, n(t+1,i,j)
@@ -361,5 +361,173 @@ testFactorization()
 	}
 	
 		
+
+/**********************************************************************************
+ *
+ *            CONSTANT VOLATILITY TWO FACTOR LMM LATTICE
+ *
+ *********************************************************************************/
+	
+    ConstVolLmmLattice2F::
+	ConstVolLmmLattice2F(ConstVolLiborFactorLoading* fl, int s) : LmmLattice<LmmNode2F>(fl,s),
+	delta(fl->getDeltas()[0]),
+	a(sqrt(delta)), 
+	sg(n-1,1),
+	R(fl->getRho().rankReducedRoot(2))
+    {  
+		// check if Libor accrual periods are cosntant
+		Real* deltas=fl->getDeltas();
+		for(int j=0;j<n;j++) if(deltas[j]!=delta) {
+			
+		   cout << "\n\nConstVolLmmLattice2F(): Libor accrual periods not constant."
+		        << "\nTerminating.";
+		   exit(0);
+	    }
+		
+		// set constant vols
+		for(int j=1;j<n;j++) sg[j]=factorLoading->sigma(j,0.0);
+		
+		buildLattice(m);
+		testFactorization();
+		
+	} // end constructor
+	
+				
+	
+// Covariance matrix rank 2 factorization error
+	
+
+void ConstVolLmmLattice2F::
+testFactorization()
+{
+	cout << "\n\nRelative errors of the approximate rank 2 factorization"
+	     << "\nrho=RR' (rank(R)=2) of the correlation matrix rho"
+	     << "\n(trace norm): " << endl << endl;
+  
+	factorLoading->getRho().testFactorization(2);
+
+}   // end factorAnalysis
+
+
+
+void ConstVolLmmLattice2F::
+buildLattice(int m)
+{
+	cout << "\n\n\nBuilding lattice until time t = " << m << endl << endl;
+		  
+	std::list<LmmNode2F*>& nodes_0=*(nodeList[0]);               // list of nodes at time t
+		
+	// the initial node
+	LmmNode2F* nextNode=new LmmNode2F(factorLoading,0,0,0);
+	nextNode->setV1(0.0);
+	nextNode->setV2(0.0);
+	for(int j=0;j<=n;j++) nextNode->getH()[j]=H0[j];
+			
+	// enter into node list at time t=0
+	nodes_0.push_back(nextNode); 
+	nodes++;
+		
+	// for t=0,...,m-1 build nodes at time t+1 from nodes at time t
+	for(int t=0;t<m;t++) {
+	
+		std::list<LmmNode2F*>& listCurrentNodes=*(nodeList[t]);    // list of nodes at time t
+		std::list<LmmNode2F*>& listNewNodes=*(nodeList[t+1]);      // list of nodes at time t+1
+
+		// registry for possible nodes at time t+1, n(t+1,i,j), 
+		// -(t+1) <= i,j <= t+1
+		Matrix<LmmNode2F*> newNodes(2*t+3,2*t+3,-t-1,-t-1);
+			
+		// run through the list of nodes at time t and connect to the new nodes
+		// iterator is pointer to pointer to node
+		std::list<LmmNode2F*>::const_iterator theNode;
+		for(theNode=listCurrentNodes.begin(); theNode!=listCurrentNodes.end(); ++theNode)			
+		{
+			LmmNode2F* currentNode=*theNode;
+			// state of this node
+			Real V1=currentNode->getV1(), V2=currentNode->getV2();
+			int i=currentNode->get_i(), j=currentNode->get_j();
+			// list of edges of this node
+			std::list<Edge>& edgeList=currentNode->getEdges();
+				
+				// loop over transitions k,l=-1,1 (up/down tick)
+				for(int k=-1;k<2;k+=2)
+				for(int l=-1;l<2;l+=2) 
+				{	
+					// connect to node n(s+1,i+k,j+l) in registry
+					nextNode=newNodes(i+k,j+l);
+					// if it does not exist yet
+					if(!nextNode){ 
+						
+						  nextNode=new LmmNode2F(factorLoading,t+1,i+k,j+l); 
+						  newNodes(i+k,j+l)=nextNode;                         // register the node
+						  listNewNodes.push_back(nextNode);                   // append to list
+						  nextNode->setV1(V1+k*a);
+						  nextNode->setV2(V2+l*a);
+						  setStateVariables(nextNode);
+						  nodes++; 
+					}
+					
+					// make an edge to the new node
+					Edge* edge=new Edge();
+					edge->node=nextNode;
+					edge->probability=0.25;
+					edgeList.push_back(*edge);
+					
+			   } // end for k,l
+			} // end for theNode
+
+				
+			cout << "\nTotal nodes = " << nodes;
+		
+		} // end for t
+		
+	} // end buildLattice
+	
+	
+	
+		
+	 void ConstVolLmmLattice2F::
+	 setStateVariables(LmmNode2F* node)
+	 {
+         int t=node->getTime();
+		 vector<Real> V(n-t,t);   // the volatility parts V_j of log(U_j)
+			                          // j=t,...,n-1
+         Real V1=node->getV1(), 
+		      V2=node->getV2();
+		 for(int j=t;j<n;j++) V[j]=sg[j]*(R(j,0)*V1+R(j,1)*V2); 
+		 
+		 // add the initial value log(U_j(0) and drift mu_j(t)=mu_j(0,T_t) 
+		 // to obtain the log(U_j(T_t))
+		 for(int j=t;j<n;j++) V[j]+=log(U0[j])+mu(j,t);
+				 
+		 // move from log(U_j) to U_j
+		 for(int j=t;j<n;j++) V[j]=exp(V[j]);    // now V=U
+				 
+		 // write the  H_n=1, H_j=U_j+H_{j+1}, j=t,...,n-1, 
+		 vector<Real>& H=node->getH();
+		 H[n]=1.0; 
+	     for(int j=n-1;j>=t;j--){ 
+			 
+			 H[j]=V[j]+H[j+1]; 
+			 //if(H[j]>3.0) { printState(); exit(0); }
+		}
+			 
+	} // setStateVariables
+
+	
+	
+	
+// TEST
+	
+	void ConstVolLmmLattice2F::
+    test(int n)
+    {
+		Timer watch; watch.start();
+		ConstVolLiborFactorLoading* fl=ConstVolLiborFactorLoading::sample(n);
+		ConstVolLmmLattice2F lattice(fl,n-3);
+		lattice.selfTest();
+		watch.stop();
+		watch.report("Libor tree construction and self test");
+	}
 
 

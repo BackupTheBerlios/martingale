@@ -273,7 +273,97 @@ private:
 
 
 }; // end LmmLattice2F
+
+
+
+/**********************************************************************************
+ *
+ *            CONSTANT VOLATILITY TWO FACTOR LMM LATTICE
+ *
+ *********************************************************************************/
 		
+
+/** <p>Two factor lattice for driftless Libor market model with constant 
+ *  volatility functions \f$\sigma_j(t)=\sigma_j\f$. In this case the variables
+ *  \f$V_j\f$ are given as
+ *  \f[V_j(t)=\sigma_jv_j\cdot Z(t),\f]
+ *  where the vectors $v_j$ are the rows $v_j=row_j(R)$ of the approximate root R of
+ *  rank 2
+ *  \f[\rho\simeq RR'\f]
+ *  of the correlation matrix \f$\rho\f$ of the LiborFactorLoading of the underlying
+ *  DriftlessLMM and \f$Z(t)=(Z_1(t),Z_2(t))\f$ is a standard two dimensional Brownian motion.
+ *  The lattice evolves the variables \f$Z_1(t),Z_2(t)\f$ (called V1,V2 in the nodes).
+ *  See FastLibor.pdf  8.1, 8.2, 8.3 for the details and notation.
+ *
+ * <p>This class is the basic proof of concept for our attempts to evolve only
+ * two state variables and to recover the remaining ones according to the joint
+ * distribution. If we can't make it happen in this case it won't happen at all.
+ */
+class ConstVolLmmLattice2F : public LmmLattice<LmmNode2F> {
+	
+
+	Real  delta,        // constant Libor accrual periods
+	      a;            // tick size of standard Brownian motion
+	
+	vector<Real> sg;    // constant Y_j - volatilities
+	
+	
+	// approximate rank two root of the correlation matrix rho
+	// row index base 1, column indices 0,1, natural indexation.
+	Matrix<Real>& R;
+	
+public:
+
+// ACCESSORS
+	
+
+	
+// CONSTRUCTOR
+	
+	/** The lattice can only be built up to time \f$t=n-2\f$ at most.
+	 *  The last step must be handled differently since only one state variable
+	 *  remains to make this step. Will fix this later.
+	 *
+	 *  @param fl factor loading of the underlying LMM.
+	 *  @param s lattice is built up to discrete time \f$t=s\leq n-2\f$ inclusively.
+	 */
+	ConstVolLmmLattice2F(ConstVolLiborFactorLoading* fl, int s);	
+	
+
+
+// ERROR IN THE RANK 2 FATCORIZATION OF THE COVARIANCE MATRICES
+	
+    /** Computes the relative errors in the trae norm of the approximate rank two 
+     *  factorization rho=RR' of the correlation matrix rho. See FastLibor.pdf 8.3.
+     */
+    void testFactorization();
+
+	
+	
+	
+// TEST
+
+/** Sets up a ConstVolLmmLattice2F in dimension n and runs the {@link #selfTest}.
+ */
+static void test(int n);
+		
+		
+
+private:
+	
+	
+	/** Computes the vector H of accrual factors on the node node.
+	 */
+	void setStateVariables(LmmNode2F* node);
+	
+	// build lattice up to discrete time t=m (inclusive)
+	void buildLattice(int m);
+	
+
+
+
+}; // end LmmLattice2F
+
 
 	
 
