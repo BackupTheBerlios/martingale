@@ -43,7 +43,7 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  *
  * Created on March 9, 2003, 6:00 AM
  */
-
+ 
 
 /*******************************************************************************
  *
@@ -53,23 +53,22 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 /** <p>{@link FactorLoading} for the log-Libors \f$Y_i(t)=log(L_i(t))\f$
- *  of a Libor Market Model. Differs from a FactorLoading since the 
- *  volatilities \f$\sigma_i(t)\f$ are defined only for \f$t\leq T_i\f$.
- *  The correlation matrix drops the first row and column
- *  (L_0 is constant).Provides additional functionality to compute the 
- *  lognormal approximation.
+ *  of a Libor Market Model. Volatilities \f$\sigma_j(t)=k_j\sigma(t,T_j)\f$
+ *  provided by the {@link VolSurface} member \f$\sigma(t,T)\f$. The factor loading
+ *  contains the vector k of volatility scaling factors. Log-Libor correlations
+ *  \f$\rho_{ij}\f$ provided by the {@link Correlations} member.
  * 
  *  <p><a name="CVpqtT"></a>With \f$t\leq T\f$ continuous times, set
- *  \f$cv_{ij}(s)=\sigma_i(s)\sigma_j(s)\rho_{ij}=\nu_i(s)\cdot\nu_j(s)\f$
+ *  \f$cv_{ij}(u)=\sigma_i(u)\sigma_j(u)\rho_{ij}=\nu_i(u)\cdot\nu_j(u)\f$
  *  and 
- *  \f[CV_{ij}(t,T)=\int_t^T cv_{ij}(s)ds=\left\langle Y_i,Y_j\right\rangle_t^T\f]
- *  and let \f$CV(p,q,t,T)\f$ be the matrix
- *  \f[CV(p,q,t,T)=( CV_{ij}(t,T) )_{p\leq i,j<q}.\f]
+ *  \f[CV_{ij}(s,t)=\int_s^t cv_{ij}(u)ds=\left\langle Y_i,Y_j\right\rangle_s^t\f]
+ *  and let \f$CV(p,q,s,t)\f$ be the matrix
+ *  \f[CV(p,q,s,t)=( CV_{ij}(s,t) )_{p\leq i,j<q}.\f]
  *
  *  <p>Here angular brackets denote the covariation process as usual and
- *  \f$CV(p,q,t,T)\f$ is the <i>covariation matrix</i> of the \f$Y_i,\ p\leq i<q\f$ 
- *  on the interval \f$[t,T]\f$. This matrix and its upper triangular root  
- *  are used in the simulation of the time step t->T  for the process
+ *  \f$CV(p,q,s,t)\f$ is the <i>covariation matrix</i> of the \f$Y_i,\ p\leq i<q\f$ 
+ *  on the interval \f$[s,t]\f$. This matrix and its upper triangular root  
+ *  are used in the simulation of the time step s->t  for the process
  *  Y and related processes.
  *
  * <p><a name="CVt"></a>
@@ -92,31 +91,22 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  */
 class LiborFactorLoading {	
 
-
+protected:
 	
-    int n;         // dimension of Y
+    int n;                     // dimension of Y
     
-    Real* delta;   // delta[j]=Tc[j+1]-Tc[j]
-    Real* Tc;      // tenor structure Tc[t]=T_t
-	Real* l;       // l[j]=L_j(0)
-	Real* x;       // x[j]=X_j(0)=delta_jL_j(0)
+    RealArray1D delta;         // delta[j]=T[j+1]-T[j]
+    RealArray1D T;             // tenor structure T[t]=T_t
+	RealArray1D l;             // l[j]=L_j(0)
+	RealArray1D x;             // x[j]=X_j(0)=delta_jL_j(0)
+	RealArray1D k;             // volatility scaling factors
 	
-	// drift linearization constants alpha_k, beta_k
-	Real* alpha;
-	Real* beta;
-    
-	
+    VolSurface* vol;           // volatility surface
+	Correlations* corr;        // log-Libor correlations
+	Correlation&  rho;         // correlations *corrs
+		
 public:
 	
-		
-	/** type id */
-	static const int 
-	/** Coffee-Shoenmakers */
-	CS=0, 
-	/** Jaeckel-Rebonato */
-	JR=1,
-	/** Constant Volatility (Jaeckel-Rebonato correlations) */
-	CV=2;   
     
 // ACCESSORS
     
@@ -126,67 +116,53 @@ public:
 	
     /** Array of accrual intervals \f$\delta_j\f$.
      */
-    Real* getDeltas() const { return delta; }
+    RealArray1D& getDeltas() const { return delta; }
     
     /** Array of continuous Libor reset times \f$T_j\f$.
      */
-    Real* getTenorStructure() const { return Tc; }
+    RealArray1D& getTenorStructure() const { return T; }
 	
 	/** The array of initial Libors \f$L_j(0)\f$. 
      */
-    Real* getInitialTermStructure() const { return l; }
+    RealArray1D& getInitialLibors() const { return l; }
 	
     /** The array of initial XLibors \f$X_j(0)=\delta_jL_j(0)\f$. 
      */
-    Real* getInitialXLibors() const { return x; }
+    RealArray1D& getInitialXLibors() const { return x; }
 	
-	/** Type ID of the default type (Coffee-Shoenmakers). 
-	 *  Override as appropriate.
+	/** The instantaneous log-Libor correlations.
 	 */
-	virtual int getTypeID(){ return CS; }
-	
-	/** Drift linearization constants, see book, 6.5.2.
-     */
-    Real* getAlphas() const { return alpha; }
-    
-	/** Drift linearization constants, see book, 6.5.2.
-     */
-    Real* getBetas() const { return beta; }
-	
-
-    
+	UTRMatrix<Real>& getRho() const { return corr->getCorrelationMatrix(); }
+	    
     
 // CONSTRUCTOR
+
 	
-    /** Function \f$f(y)=exp(y)/(1+exp(y))\f$ which is linearized
-     *  for the <code>X1</code>-dynamics and needed to define the linearization
-     *  constants \f$\alpha_k, \beta_k\f$.
-     */
-    Real f(Real y)
-    {
-        Real x=exp(y);
-        return x/(1+x);
-    }
-	
-    /** Constructor.
-     *
-     * @param dim dimension n of Libor process
+    /** 
 	 * @param L0 initial libors \f$L0[j]=L_j(0)\f$.
      * @param deltas array of accrual interval lengths \f$\delta_j\f$.
+     * @param _k scaling factors for Libor vols.
+	 * @param vols volatility surface.
+	 * @param corrs correlations.	
      */
-    LiborFactorLoading(int dim, Real* L0, Real* deltas);
+    LiborFactorLoading
+	(const RealArray1D& L0, const RealArray1D& deltas, const RealArray1D& _k, 
+	 VolSurface* vols, Correlations* corrs);
+	
+	
+// SET THE PARAMETERS (CALIBRATION)
+	
+   /** Set the parameters of the factorloading from the vector x.
+    *  The first coordinates of x populate the scaling factors k,
+	*  the rest goes to VolSurface and Correlations.
+	*/
+   void setParameters(const RealArray1D& x) = 0;
+	
+   
 	
 	
 // CORRELATIONS, VOLATILITIES, LOG-COVARIATION INTEGRALS
 
-   /** Instantaneous correlation <code>rho_ij</code> of log-Libor increments for
-    *  <code>0&lt;=i,j&lt;n</code>. This includes <code>L_0</code> and so takes
-    *  the view that all Libors live to the horizon.
-    *  See document <i>LiborProcess.ps.</i></p>
-    *
-    * @param Libor indices \f$i,j\geq 1\f$.
-    */
-   virtual Real rho(int i, int j) const = 0;
    
    /** Volatility \f$\sigma_i(t)\f$ of forward Libor \f$L_i(t)\f$.
 	*  See book, 6.4.
@@ -194,43 +170,39 @@ public:
     *@param i Libor index.
     *@param t continuous time.
     */
-   virtual Real sigma(int i, Real t) const = 0;
+   Real sigma(int i, Real t) const { return k[i]*(vol->sigma(t,T[i])); }
+	   
    
    /** The integral
-    *  \f[\int_t^T\sigma_i(s)\sigma_j(s)\rho_{ij}ds=\langle log(L_i),log(L_j)\rangle_t^T\f]
-    *  neeeded for the distribution of time step increments. See book, 6.5.1.
+    *  \f[\int_s^t\sigma_i(u)\sigma_j(u)\rho_{ij}du=\langle log(L_i),log(L_j)\rangle_s^t\f]
+    *  neeeded for the distribution of time step increments s->t. See book, 6.5.1.
     *
-    *@param i,j forward Libor indices
-    *@param t,T continuous integration bounds
+    *@param i,j forward Libor indices.
+    *@param s,t continuous integration bounds (times).
     */
-   virtual Real 
-   integral_sgi_sgj_rhoij(int i, int j, Real t, Real T) const = 0;
+   Real integral_sgi_sgj_rhoij(int i, int j, Real s, Real t) const;
+	   
+   
+   /** Annualized volatility of Libor \f$L_i\f$. */
+   Real annualVol(int i);
    
    
-   /** String containing a message indicating what type of factor loading
-    *  it is, all the parameter values.
-    */
-   virtual string toString() const = 0;
+   /** Message and fields.*/
+   std::ostream& printSelf(std::ostream& os);
+   
    
 
-// LOG-LIBOR COVARIATION MATRICES AND DRIFT LINEARIZATION MATRICES
-
-
-  /** The upper triangular half of the correlation matrix 
-   *  \f$\rho_{ij}=u_i\cdot u_j,\quad 1\leq i,j<n.\f$. See book, 6.4.
-   *  Index base 1, natural indexation.
-   */ 
-   UTRMatrix<Real>& getRho() const;
+// LOG-LIBOR COVARIATION MATRICES 
 
    
   /** The upper triangular half of the covariation matrix 
-   *  <a href="CVpqtT">CV(p,q,t,T)</a>.
+   *  <a href="CVpqtT">CV(p,q,s,t)</a>.
    *
    * @param p,q Libors \f$L_j, j=p,...,q-1\f$.
-   * @param t,T time interval \f$[t,T]\f$, continuous time.
+   * @param s,t continuous times \f$0\leq s<t\f$. 
    */ 
    UTRMatrix<Real>&
-   logLiborCovariationMatrix(int p,int q, Real t, Real T) const;
+   logLiborCovariationMatrix(int p,int q, Real s, Real t) const;
   
   
   /** The upper triangular half of the covariation matrix 
@@ -273,11 +245,11 @@ public:
 //  EIGEN ANALYSIS OF THE COVARIATION MATRICES
 
     /** Prints how much variability is captured by the 5 largest
-	 *  eigenvalues of the covariation matrix <a href="CVpqtT">CV(p,q,t,T)</a>.
+	 *  eigenvalues of the covariation matrix <a href="CVpqtT">CV(p,q,s,t)</a>.
 	 */
-	void factorAnalysis(int p, int q, Real t, Real T)
+	void factorAnalysis(int p, int q, Real s, Real t)
     {
-		TnT::factorAnalysis(logLiborCovariationMatrix(p,q,t,T));
+		TnT::factorAnalysis(logLiborCovariationMatrix(p,q,s,t));
 	}
     
     
@@ -289,78 +261,14 @@ public:
 		TnT::factorAnalysis(logLiborCovariationMatrix(t));
 	}
 
-   
-//  FUNCTIONS NEEDED FOR THE LOGNORMAL lIBOR APPROXIMATION
-   
-  /** <p>The upper triangular matrix <code>A(t)</code>, see
-   *  LMM.ps, section 4, eqn.(11). Indices i,j=p,...,n-1
-   *  with subscripting operators using index base p (ie.
-   *  natural indexing).
-   *
-   * @param t time.
-   * @param p indices i,j=p,...,n-1.
-   */ 
-   UTRMatrix<Real>& A(Real t, int p) const;
-
-   
-   
-  /** <p>The upper triangular matrix \f$B=int_0^t A(s,p)ds\f$,
-   *  where <code>A</code> is {@link A}. See book, 6.5.2. 
-   *  Indices i,j=p,...,n-1 with subscripting operators using index base p 
-   *  (ie. natural indexing).</p>
-   *
-   * @param t time.
-   * @param p indices i,j=p,...,n-1.
-   */ 
-   UTRMatrix<Real>& B(Real t, int p) const;
-
-   
-
-   /** The matrix exponential exp(B(t,p)), see book, 6.5.2.
-    */
-   UTRMatrix<Real>& eB(Real t, int p) const;
  
- 
-   /** The matrix inverse exp(B(t,p))^{-1}=exp(-B(t,p)),
-    *  where B is {@link B}. See book, 6.5.2.
-    */
-   UTRMatrix<Real>& eBInverse(Real t, int p) const;
-
-	   
-   /** The vector \f$(u_i(t),u_{i+1}(t),...,u_{n-1}(t))\f$. See book, 6.5.2.  
-    *  Index base b=i, natural indices when using the subscripting operator.
-    */
-   vector<Real>& u(Real t, int i);
-
-   
-
-   /** The matrix \f$C=(\sigma_i(t)\sigma_j(t)\rho_{ij})\f$, where \f$i,j>=p\f$. 
-    *  The index base is p, that is, natural indices when using the subscripting operator.
-    */
-   UTRMatrix<Real>& C(Real t, int p);
-
-   
-   /** The matrix \f$\nu(t)\f$ of factor loadings. Computed as the upper triangular root 
-    *  R of the matrix \f$C=(\sigma_i(t)\sigma_j(t)\rho_{ij})\f$, where \f$i,j>=p\f$.
-    *  Satisfies RR'=C. Index base is p, natural indices when using the subscripting operator.
-    */
-   UTRMatrix<Real>& nu(Real t, int p);
-
    
    
 
 // TEST PROGRAM 
 
-	
-/** Diagnostic function, default implementation does nothing,
- *  handle this from concrete subclasses as desired.
- */
-virtual void printFields(){ }
-
 		 
-/** Test the roots of all {@link logLiborCovariationMatrix(int t)}
- *  the factor loadings {@link nu(t)}, and the matrix exponentials
- *  {@link eB(int t)} and {@link eBInverse(int t)}, t=0,...,n-1.
+/** Test the roots of all {@link logLiborCovariationMatrix(int t)}.
  */
 void selfTest();
 
@@ -372,134 +280,250 @@ void factorizationTest(int r);
 
 
 /** Returns sample factor loading in dimension n.
- *  Default implementation returns null.
+ *  @param volType type of VolSurface (VolSurface::CONST, JR, M)
+ *  @param corrType type of Correlation (Correlation::JR, CS)
  */
-virtual LiborFactorLoading* sample(int n)
-{
-	LiborFactorLoading* null=0;
-	return null;
-}
+static LiborFactorLoading* 
+sample(int n, int volType=VolSurface::JR, int corrType=Correlation::CS)
 
- 
    
 }; // end LiborFactorLoading
+
+
+// GLOBAL INSERTION
+
+std::ostream& operator << 
+(std::ostream& os, LiborFactorLoading* fl){ return fl->printSelf(os); }
+
 
 
 
 
 /*******************************************************************************
  *
- *                       Class: CS_FactorLoading
+ *                    VOLATILITY SURFACE
  *
  ******************************************************************************/
 
 
-
-/** Implements the correlation and volatility structure based on ideas of 
- *  B. Coffey and J. Schoenmakers (CS), see book, 6.7.1.
+/** <p>Deterministic volatility surface \f$\sigma(t,T)\f$ for a LiborFactorLoading.
+ *  The actual volatility function of Libor \f$X_j\f$ is then given as
+ *  \f[\sigma_j(t)=k_j\sigma(t,T_j),\quad j=1,\dots,n-1.\f]
+ *  where \f$K-j\f$ is a scaling factor to calibrate the annualized volatility
+ *  of \f$X_j\f$. In the case of a DriftlessLMM this function is the volatility of 
+ *  forward transported Libor \f$U_j\f$.
  *
- * @author Michael J. Meyer
+ *  <p>To simplify calibration we assume that all volatility surface types
+ *  depend on four Real parameters a,b,c,d. This suffices for all types which 
+ *  are implemented and the maximal parameter set becomes part of the interface.
+ *  In general this is objectionable but here it simplifies the calibration of
+ *  factorloadings. The calibration routines use the maximal (and hence the same)
+ *  set of parameters for all types of surfaces even though any particular type 
+ *  may not depend on all parameters. 
+ *  
+ * <p>The entire Libor volatility structure then depends on the vector k
+ *  of scaling factors and the parameters a,b,c,d, an n+3 dimensional
+ *  vector. The vector k is part of the {@link LiborFactorLoading}.
  */
-class CS_FactorLoading : public LiborFactorLoading {
-    
+class VolSurface {
 	
-	/** Parameters describing the volatility and correlation structure
-     *  as described in <i>LiborProcess.ps</i>.
-     *
-     */
-    Real A,D,alpha,beta,rho00;
-    
-    /** Array of factors <code>c_j</code> defining the volatilities 
-     *  <code>sigma_j</code> as <code>sigma_j=c_jg(1-t/T_j)</code>.
-     *  See <i>LiborProcess.ps</i>.
-     */
-    Real* c;
+protected:
 	
-	/** Upper triangular matrix of instantaneous Libor correlations 
-	 *  corr(i,j)=rho_{ij}.
+	/** Flag for the type of vol surface: M,JR,CT.
 	 */
-	UTRMatrix<Real> corr;
-    
+	int volType;
+	
+	Real a,b,c,d;           // the parameters
 
+	
 public:
-
-// CONSTRUCTOR
-    
-    /** For the meaning of the parameters A,D,alpha,beta,rho00 see 
-     *  book, 6.7.1. 
-     *
-     * @param dim number n of forward Libors including <code>L_0</code>.
-     * @param a,d,Alpha,Beta,Rho00 the parameters A,D,alpha,beta,rho00 
-     * defining the volatility and correlation structure.
-     * @param C \f$c_j\f$ factors calibrating volatilities to caplet prices
-	 * (including the superfluous \f$c_0\f$ to preserve natural indexation).
-     * @param l the initial Libors \f$l[j]=L_j(0)\f$.
-     * @param deltas array of accrual periods \f$\delta_j\f$.
-     */
-    CS_FactorLoading
-    (int dim, Real a, Real d, Real Alpha, Real Beta, Real Rho00, Real* C, Real* l, Real* deltas);	
-	
-                                                                                                        
-       
-// VOLATILITIES, CORRELATIONS, COVARIATION INTEGRALS 
-
-   int getTypeID(){ return CS; }
-  
-   /** <p>Instantaneous log-Libor correlations <code>rho_ij</code>
-    *  for <code>i,j&gt=1</code>.</p>
-    *
-    *@param i,j Libor indices \f$i,j\geq1\f$.
-    */
-   Real rho(int i, int j) const;
-
-  
-   /** Volatility \f$\sigma_i(t)\f$ of \f$L_i(t)\f$ defined on \f$[0,T_i]\f$.
-    *
-    *@param i Libor index
-    *@param t continuous time.
-    */
-   Real sigma(int i, Real t) const;
-
-
-   /** The integral
-    *  \f[\int_t^T\sigma_i(s)\sigma_j(s)rho_ijds=\langle log(L_i),log(L_j)\rangle_t^T\f]
-    *  neeeded for the distribution of time step increments. See book, 6.5.1.
-    *
-    *@param i,j Libor indices.
-    */
-   Real integral_sgi_sgj_rhoij(int i, int j, Real t, Real T) const;
-
-
-
-   
-// SAMPLE FACTOR LOADING
-    
-    /** Provides a sample <code>CS_FactorLoading</code> object of dimension n.
-     *  Parameter values are as follows:
-     *  \f[\delta_j=0.25, c_j=0.25, A=1.3, D=2, alpha=0.9, beta=0.01, rho00=0.9*exp(-0.02*n).\f]
-     * This choice implies annualized Libor volatilities of about 33%
-     * and a humped volatility peaking halfway out to the reset date.
-     * 
-     * @param n dimension of the Libor process.
-     * @param delta constant accrual periods (default: 0.25).
-     */
-    static CS_FactorLoading* sample(int n, Real delta=0.25);   
-
-	
-// STRING REPRESENTATION
-  
-    /** A message what type of factor loading it is, all the parameter values.
-     */
-    string toString()  const;
 	
 		
-	/** Diagnostic function, prints the values of most fields to
-	 *  check proper setup.
+	/** Flags identifying the volatility surface type:<br>
+	 *  M: book, 6.11.1.<br>
+	 *  JR: Jaeckel-Rebonato, Jaeckel book, p164, 12.11.<br>
+	 *  CT: constant.
 	 */
-    void printFields();
+	static const int M=0, JR=1, CONST=2; 
+	
+	
+	/** @param a,b,c,d parameters of the vol surface
+	 *  @param type vol surface type M, JR or CONST.
+	 */
+	VolSurface
+	(Real _a, Real _b, Real _c, Real _d, int type) :
+	a(_a), b(_b), c(_c), d(_d), volType(type)
+    {    }
+	
+	/** Type ID, implemented: M, JR, CONST.
+	 */
+	int getType() const { return volType; }
+	
+	
+	/** A sample surface of the type = M, JR, CONST. 
+	 */
+	static VolSurface* sample(int type);
 	
 
+	
+	/** The volatility surface \f$\sigma(t,T)\f$. 
+	 */
+	virtual Real sigma(Real t, Real T) const = 0;
+
+	
+	/** The indefinite integral 
+	 *  \f[\int\sigma(t,T_1)\sigma(t,T_2)ds.\f]
+	 *  Needed for covariation integrals.
+	 */
+	virtual Real integral_sgsg(Real t, Real T_1, Real T_2) const = 0;
+	
+	
+	/** The definite integral 
+	 *  \f[\int_s^t\sigma(u,T_1)\sigma(u,T_2)du.\f]
+	 *  Needed for covariation integrals.
+	 */
+	Real integral_sgsg(Real s, Real t, Real T_1, Real T_2)
+    {  return integral_sgsg(t,T1,T2)-integral_sgsg(s,T1,T2); }
+	
+	
+					
+	/** Sets the parameters (calibration).
+	 */
+	void setParameters(Real _a, Real _b, Real _c, Real _d)
+	{ a=_a; b=_b; c=_c; d=_d; }
+	
+	/** Message and fields.*/
+	virtual std::ostream& printSelf(std::ostream& os) = 0;
+	
+
+}; // end VolSurface
+
+
+
+// GLOBAL INSERTION
+
+std::ostream& operator << 
+(std::ostream& os, VolSurface* vols){ return vols->printSelf(os); }
+	
+
+
+
+
+
+// JAECKEL-REBONATO VOL SURFACE
+
+/** Jaeckel-Rebonato volatility surface. See Jaeckel book, p164, 12.11.
+ */
+class JR_VolSurface : public VolSurface {
+	
+public:
+	
+	JR_VolSurface
+	(Real _a, Real _b, Real _c, Real _d) :
+	VolatilitySurface(_a,_b,_c,_d,JR)
+    {    }
+
+  
+		
+// VOLATILITIES, CORRELATIONS, COVARIATION INTEGRALS
+	
+	
+   /** Volatility surface 
+    *  \$[\sigma(t,T)=d+(a+b(T-t)\,e^{-c(T-t)})\f$.
+    */
+   Real sigma(Real t, Real T) const 
+   { 
+	   Real s=(T-t);
+       return d+(a+b*s)*exp(-c*s));
+   }
+
+  
+   /** See {@link VolatilitySurface#integral_sgsg}.
+    */
+   Real integral_sgsg(Real t, Real T_1, Real T_2) const
+   {
+      return Fij(i,j,s)-Fij(i,j,t);
+   }
+   
+   
+   	/** Message and fields.*/
+	std::ostream& printSelf(std::ostream& os)
+    {
+   		return
+		os << "\n\nVolSurface, type Jaeckel-Rebonato, " 
+		   << "a=" << a << ", b=" << b << ", c=" << c << ", d=" << d 
+		   << endl;
+    }
+	
+	/** Sample surface.*/
+	static VolSurface* sample()
+	{ 
+		Real _a=-0.05, _b=0.5, _c=1.5, _d=0.15; 
+		return new JR_VolSurface(_a,_b,_c,_d); 
+	}
+
+   
+ 
 private:
+   
+    /** Indefinite integral \f$\int\sigma_i(t)\sigma_j(t)dt\f$.
+     */
+   Real Fij(int i, int j, Real t) const;
+   
+	
+}; // end JR_VolatilitySurface
+
+
+
+
+// OUR OWN VOL SURFACE
+
+/** Our own volatility surface. See book, 6.11.1.
+ *  \f[\sigma(t,T)=g(1-t/T), \quad g(s)=1+ase^{-s/d}.\f]
+ */
+class M_VolSurface : public VolSurface {
+	
+public:
+	
+	M_VolSurface
+	(Real _a, Real _b, Real _c, Real _d) :
+	VolatilitySurface(_a,_b,_c,_d,M)
+    {    }
+
+  
+		
+// VOLATILITIES, CORRELATIONS, COVARIATION INTEGRALS
+	
+	
+   /** Volatility surface (book 6.11.1)
+    *  \f[\sigma(t,T)=g(1-t/T), \quad g(s)=1+ase^{-s/d}.\f]
+    */
+   Real sigma(Real t, Real T) const { return g(1-t/T); }
+
+  
+   /** See {@link VolatilitySurface#integral_sgsg}.
+    */
+   Real integral_sgsg(Real t, Real T_1, Real T_2);
+   
+    
+   /** Message and fields.*/
+	std::ostream& printSelf(std::ostream& os)
+    {
+   		return os << "\n\nVolSurface, type book, 6.11.1, " 
+		          << "a=" << a << ", d=" << d << endl;
+    }
+	
+	/** Sample surface.*/
+	static VolSurface* sample()
+	{ 
+		Real _a=1.5, _d=2.0; 
+		return new M_VolSurface(_a,0.0,0.0,_d); 
+	}
+
+   
+ 
+private:
+   
 	
 
 // AUXILLIARY FUNCTIONS
@@ -507,343 +531,279 @@ private:
 // Exponential Integrals
     
     // int exp(s/D)ds 
-    Real F(Real D, Real s) const { return D*std::exp(s/D); }  
+    Real F(Real D, Real s) const { return D*exp(s/D); }  
     
     // int s*exp(s/D)ds
-    Real G(Real D, Real s) const { return D*std::exp(s/D)*(s-D); }   
+    Real G(Real D, Real s) const { return D*exp(s/D)*(s-D); }   
 
     // int s^2*exp(s/D)ds 
-    Real H(Real D, Real s) const { return D*std::exp(s/D)*((s-D)*(s-D)+D*D); }  
-    
-    
-    
-    /** The convex function f(x) from which the log-Libor correlations
-     *  are derived. See book, 6.11.1.
-     */
-    Real f(Real x) const 
-    {
-        Real a=alpha/2, b=(beta-alpha)/6,
-               c=log(rho00)-(a+b);
-              
-        return x*(c+x*(a+b*x));  //cx+ax^2+bx^3
-    }
-    
-     
+    Real H(Real D, Real s) const { return D*exp(s/D)*((s-D)*(s-D)+D*D); }  
+         
     /** The function g(x) defining the volatilities <code>sigma_j</code> 
-     *  as <code>sigma_j=c_jg(1-t/T_j)</code>. See <i>LiborProcess.ps</i>.
+     *  as \f$\sigma_j(t)=c_jg(1-t/T_j)\f$. See book, 6.11.1
      */
-    Real g(Real x) const { return 1+A*x*std::exp(-x/D); }
+    Real g(Real x) const { return 1+a*x*exp(-x/d); }
     
-    
-    /** The integral int_0^T g(s)^2ds 
-     */
-    Real integral_g_squared(Real T) const;
-    
-    
-    /** int_t^T g(1-s/a)g(1-s/b)ds, TeX document LMM.
-     */
-    Real integral_gg(Real t, Real T, Real a, Real b) const;        
- 
-
-}; // end CS_FactorLoading
+		
+		
+}; // end M_VolatilitySurface
 
 
 
+// CONSTANT VOLATILITY SURFACE
 
-              
+
+/** Constant volatility surface. 
+ */
+class CONST_VolSurface : public VolSurface {
+	
+public:
+	
+	CONST_VolSurface(Real _a, Real _b, Real _c, Real _d) :
+	VolatilitySurface(_a,_b,_c,_d,CONST)
+    {    }
+
+  
+		
+// VOLATILITIES, CORRELATIONS, COVARIATION INTEGRALS
+	
+	
+   /** Volatility surface \f$\sigma(t,T)=1.\f$.
+    */
+   Real sigma(Real t, Real T) const { return 1; }
+
+   
+   /** See {@link VolatilitySurface#integral_sgsg}.
+    */
+   Real integral_sgsg(Real t, Real T_1, Real T_2) const { return t; }
+   
+   
+    /** Message and fields.*/
+	std::ostream& printSelf(std::ostream& os)
+    {
+   		return os << "\n\nVolSurface, type: constant." << endl;
+    }
+	
+	/** Sample (there is only one such surface).
+	 */
+	static VolSurface* sample(){ return new CONST_VolSurface(0.0,0.0,0.0,0.0); }
+
+
+	
+}; // end CONST_VolSurface
+
+
+
+
+
 /*******************************************************************************
  *
- *                     JR_FactorLoading
+ *                    CORRELATION
  *
- *******************************************************************************/        
+ ******************************************************************************/
 
-
-
-
-/** Implements the correlation and volatility structure from Jaeckel's book
- *  <i>Monte Carlo Methods in Finance</i> with constant log-Libor correlations
- *  \f$\rho_{ij}=exp(\beta*(T_i-T_j)),\ i\leq j\f$ 
- *  and deterministic log-Libor volatilities
- *  \f[\sigma_i(t)=k_i[d+(a+bs e^{-cs})],\ s=T_i-t,\ t\in[0,T_i].\f]
+/** <p>Constant instantaneous correlations of asset returns, log-Libors, ...
+ *  To simplify calibration (the same parameters for all types) we assume that
+ *  the correlations depend on three Real paramters 
+ *  \f[\alpha, \beta, r_\infty.\f]
  *
- * @author Michael J. Meyer
+ * If more are needed the calibration routines will have to be rewritten in trivial 
+ * ways. Only Libor correlations are implemented. To cater to this case the
+ * correlations are indexed
+ * \f[\rho_{ij},\quad 1\leq i,j<n\f]
+ * with index base 1. All matrices, vectors respect this convention.
+ * The reason is that Libor \f$L_0\f$ is constant and is not evolved.
  */
-class JR_FactorLoading : public LiborFactorLoading {
-    
-    
-    /** Parameters describing the volatility and correlation structure.
-     */
-    Real a,b,c,d, Beta;
- 
-    
-    /** Array of factors <code>k_j</code> defining the volatilities 
-     *  <code>sigma_j</code> as <code>sigma_j=k_jg(1-t/T_j)</code>.
-     *  See <i>LiborProcess.ps</i>.
-     */
-    Real* k;
-    
-	/** Upper triangular matrix of instantaneous Libor correlations 
-	 *  corr(i,j)=rho_{ij}.
+class Correlations {
+	
+protected:
+	
+	/** Index range [1,n). */
+	int n;
+	
+	/** The type of correlations JR, CS
 	 */
-	UTRMatrix<Real> corr;
-
-    
+	int corrType;
+	
+	Real alpha, beta, r_oo;
+	
+	UTRMatrix<Real> correlationMatrix;
+	
 public:
-
-   
-   int getTypeID(){ return JR; } 
-   
-
-// CONSTRUCTOR
-
-    
-    /** For the meaning of the parameters a,b,c,d,Beta,k see Jaeckel's book
-     *  <i>Monte Carlo Methods in Finance</i>. 
-     *
-     * @param dim number n of forward Libors including \f$L_0\f$.
-     * @param L0 array of initial Libors \f$L0[j]=L_j(0)\f$.
-     * @param deltas array of accrual periods \f$\delta_j\f$.
-     * @param factors \f$k_j\f$ calibrating the Libor volatilities to caplet prices.
-     */
-    JR_FactorLoading
-    (int dim, Real* L0, Real* deltas, Real a0, Real b0, Real c0, Real d0, Real Beta0, Real* k0);
 	
-
+	/** Correlation type JR, CS. */
+	static const int JR=0, CS=1;
 	
-// VOLATILITIES, CORRELATIONS, COVARIATION INTEGRALS
-
+	/** CS or JR. */
+	int getCorrelationType() const { return corrType; }
 	
-   /** Instantaneous log-Libor correlations \f$\rho_{ij}\f$
-    *
-    *@param i,j Libor indices, \f$i,j\geq 1\f$.
-    */
-   Real rho(int i, int j) const { if(i<=j) return corr(i,j); return corr(j,i); }
- 
-
-  
-   /** Volatility \f$\sigma_i(t)\f$ of \f$L_i(t)\f$,
-    *  \f[\sigma_i(t)=k_i[d+(a+bs e^{-cs})],\ s=T_i-t,\ t\in[0,T_i].\f]
-    *
-    *@param i Libor index.
-    *@param t continuous time.
-    */
-   Real sigma(int i, Real t) const
-   { 
-       Real* Tc=getTenorStructure();
-	   Real s=(Tc[i]-t);
-       return k[i]*(d+(a+b*s)*std::exp(-c*s));
-   }
-  
-   /** The integral
-    *  \f[\int_t^T\sigma_i(s)\sigma_j(s)rho_ijds=\langle log(L_i),log(L_j)\rangle_t^T\f]
-    *  neeeded for the distribution of time step increments. See book 6.5.1.
-    *
-    * @param i,j Libor indices.
-    * @param t,T continous times $t\leq T$.
-    */
-   Real integral_sgi_sgj_rhoij(int i, int j, Real t, Real T) const
-   {
-      return Fij(i,j,T)-Fij(i,j,t);
-   }
-   
-   
-   
-
-// STRING MESSAGE
-
-    /** A message what type of factor loading it is, all the parameter values.
-     */
-    string toString() const;
-   
-   
-   	/** Diagnostic function, prints the values of most fields to
-	 *  check proper setup.
+	/** n: index range [1,n). */
+	int getDimension() const { return n; }
+	
+	
+	/** Correlation matrix is allocated but not initialized
+	 *  Do this from the concrete subclasses.
+	 *  @param correlationType JR or CS.
 	 */
-    void printFields();
+	Correlations(int _n, Real _alpha, Real _beta, Real _r_oo, int correlationType) : 
+	n(_n), corrType(correlationType),
+	alpha(_alpha), beta(_beta), r_oo(_r_oo), correlationMatrix(n-1,1) 
+	{   }
 	
-
-   
-// SAMPLE FACTOR LOADING
-
-    
-    /** Provides a sample <code>CS_FactorLoading</code> object of dimension n.
-     *  Parameter values are as follows:
-     *  \f[\delta_j=0.25, k_j=0.25, a=1.3, b=2, c=0.5, d=1.0, \beta=0.1\f]
-	 * Initial Libors are set to \f$L_j(0)=0.04\f$.
-     * 
-     * @param n dimension of the Libor process.
-	 * @param delta constant accrual interval length.
-     */
-    static JR_FactorLoading* sample(int n, Real delta=0.25);
 	
+	/** A sample correlation in dimension n of type = JR, CS.
+	 */
+	static Correlations* sample(int n, int type);
+	
+		
+	/** Update correlation matrix using the current parameters.
+	 */
+	virtual void setCorrelations() = 0;
+		
+	/** Correlations \f$\rho_{ij}\f$ for \f$1\leq i,j<n\f$. 
+	 */
+	Real& operator()(int i, int j){ return correlationMatrix(i,j); }
+	
+	
+	/** The upper half of the correlation matrix
+	 */
+	UTRMatrix<Real>& getCorrelationMatrix(){ return correlationMatrix; }
+	
+				
+	/** Sets the parameters (calibration).
+	 */
+	void setParameters(Real _alpha, Real _beta, Real _r_oo)
+	{ alpha=_alpha; beta=_beta; r_oo=_r_oo; }
+	
+	
+	/** Message and fields.
+	 */
+	virtual std::ostream& printSelf(std::ostream& os) = 0;
+	
+	
+}; // end Correlations
 
 
-private:
-	 
-// AUXILLIARY FUNCTIONS
 
-    
-    /** Indefinite integral \f$\int\sigma_i(t)\sigma_j(t)\rho_{ij}(t)dt\f$.
-     */
-   Real Fij(int i, int j, Real t) const;
-       
+// GLOBAL INSERTION
 
-}; // end JR_FactorLoading
-
-
-
-              
-/*******************************************************************************
- *
- *          Constant Volatility FactorLoading
- *
- *******************************************************************************/        
+std::ostream& operator << 
+(std::ostream& os, Correlations* corrs){ return corrs->printSelf(os); }
 
 
 
 
-/** Libor factor loading with constant volatility functions. Implements both
- *  the Cofee-Shoenmakers and Jaeckel-Rebonato log-Libor correlation structures.
- *
- * @author Michael J. Meyer
+// JAECKEL-REBONATO CORRELATIONS
+
+/** Jaeckel-Rebonato correlations of the form 
+ *  \f[\rho_{ij}=exp(-\beta(T_j-T_i)),\quad 1\leq i\leq j<n.\f]
  */
-class ConstVolLiborFactorLoading : public LiborFactorLoading {
-    
-    
-	/** Flags for the CS and JR correlation structures. */
-	static const int CS=0, JR=1;
+class JR_Correlations : public Correlations {
 	
-    /** Parameters describing the CS and JR correlations.
-     */
-    Real alpha,beta,r_oo;           
-	              
-    /** Array of constant log-Libor volatilities \f$sg[j]=\sigma_j\f$.
-     */
-    Real* sg;
-    
-	/** Upper triangular matrix of instantaneous Libor correlations 
-	 *  corr(i,j)=rho_{ij}.
-	 */
-	UTRMatrix<Real> corr;
-
-    
+	/** Tenor Structure of Liborprocess. */
+	RealArray1D T;
+	
 public:
-
- 
-   int getTypeID(){ return CV; }
-   
-
-// CONSTRUCTOR
-
-    
-    /** Constant volatility factor loading with JR correlations
-	 *  \f$\rho_{ij}=exp(\beta*(T_i-T_j)),\ i\leq j\f$.
-     *
-     * @param dim number n of forward Libors including \f$L_0\f$.
-     * @param L0 array of initial Libors \f$L0[j]=L_j(0)\f$.
-     * @param deltas array of accrual periods \f$\delta_j\f$.
-     * @param sg log-Libor volatilities.
-     */
-    ConstVolLiborFactorLoading
-    (int dim, Real* L0, Real* deltas, Real _beta, Real* sg);
 	
-	
-	/** Constant volatility factor loading with CS correlations
-	 *  described by the parameters alpha, beta, r_oo. See book, 6.11.1.
-     *
-     * @param dim number n of forward Libors including \f$L_0\f$.
-     * @param L0 array of initial Libors \f$L0[j]=L_j(0)\f$.
-     * @param deltas array of accrual periods \f$\delta_j\f$.
-     * @param sg log-Libor volatilities.
-     */
-    ConstVolLiborFactorLoading
-    (int dim, Real* L0, Real* deltas, Real _alpha, Real _beta, Real _r_oo, Real* sg);
-	
-
-	
-// VOLATILITIES, CORRELATIONS, COVARIATION INTEGRALS
-
-	
-   /** Instantaneous log-Libor correlations \f$\rho_{ij}\f$
-    *
-    *@param i,j Libor indices, \f$i,j\geq 1\f$.
-    */
-   Real rho(int i, int j) const { if(i<=j) return corr(i,j); return corr(j,i); }
- 
-
-  
-   /** Volatility \f$\sigma_i(t)\f$ of \f$L_i(t)\f$,
-    *  \f[\sigma_i(t)=k_i[d+(a+bs e^{-cs})],\ s=T_i-t,\ t\in[0,T_i].\f]
-    *
-    *@param i Libor index.
-    *@param t continuous time.
-    */
-   Real sigma(int i, Real t) const { return sg[i]; }
-
-  
-   /** The integral
-    *  \f[\int_t^T\sigma_i(s)\sigma_j(s)rho_ijds=\langle log(L_i),log(L_j)\rangle_t^T\f]
-    *  neeeded for the distribution of time step increments. See book 6.5.1.
-    *
-    * @param i,j Libor indices.
-    * @param t,T continous times $t\leq T$.
-    */
-   Real integral_sgi_sgj_rhoij(int i, int j, Real t, Real T) const
-   {
-      return (T-t)*sg[i]*sg[j]*rho(i,j);
-   }
-   
-   
-   
-
-// STRING MESSAGE
-
-    /** A message what type of factor loading it is, all the parameter values.
-     */
-    string toString() const;
-   
-   
-   	/** Diagnostic function, prints the values of most fields to
-	 *  check proper setup.
+	/** @param T tenor structure of Libor process.
+	 *  @param beta see class description.
 	 */
-    void printFields();
+	JR_Correlations(const RealArray1D& T, Real beta) : 
+	Correlations(T.getDimension(),0.0,beta,0.0,JR) 	
+	{ 
+		setCorrelations(); 
+	}
+
+	   
+	/** Updates correlation matrix using the current parameters.
+	 */
+    void setCorrelations()
+	{
+       for(int i=1;i<n;i++)
+       for(int j=i;j<n;j++) rho(i,j)=exp(beta*(T[i]-T[j])); 
+	}
 	
-
-   
-// SAMPLE FACTOR LOADING
-
     
-    /** Provides a sample <code>CS_FactorLoading</code> object of dimension n
-     *  with volatilities \f$\sigma_j=0.4\f$. Initial Libors are set to \f$L_j(0)=0.04\f$.
-     * 
-     * @param n dimension of the Libor process.
-	 * @param delta constant accrual interval length.
-	 * @param corrs correlation type, must be CS of JR.
-     */
-    static ConstVolLiborFactorLoading* 
-	sample(int n, Real delta=0.25, int corrs=CS);
+    /** Message and fields.*/
+	std::ostream& printSelf(std::ostream& os)
+    {
+		return
+		os << "\n\nCorrelations: Jaeckel-Rebonato, " 
+		   << "beta=" << beta << endl;
+	}
 	
+	/** Sample correlations.
+	 *  @param n dimension.
+	 *  @param delta Libor accrual interval length.
+	 */
+	static Correlations* sample(int n, Real delta=0.25)
+	{ 
+		RealArray1D T(n+1); T[0]=0.0;
+		for(int i=0;i<n;i++) T[i+1]=T[i]+delta;
+		
+		Real beta=0.1;
+		return new JR_Corrleations(T,beta); 
+	}
 
 
+}; // end JR_Correlations
+
+
+
+
+
+// COFFEE-SHOENMAKERS CORRELATIONS
+
+/** Coffee-Shoenmakers correlations. See book, 6.11.1.
+ */
+class CS_Correlations : public Correlations {
+
+	
+public:
+	
+	CS_Correlations(int _n, Real _alpha, Real _beta, Real _r_oo) : 
+	Correlations(_n,_alpha,_beta,_r_oo,CS) 	
+	{ 
+		setCorrelations(); 
+	}
+
+	   
+	/** Updates correlation matrix using the current parameters.
+	 */
+    void setCorrelations();
+	
+    
+    /** Message and fields.*/
+	std::ostream& printSelf(std::ostream& os)
+    {
+		return
+		os << "\n\nCorrelations: Coffee-Shoenmakers, " 
+		   << "alpha=" << alpha << "beta=" << beta << "r_oo=" << r_oo 
+		   << endl;
+	}
+	
+	
+	/** Sample correlations.
+	 *  @param n dimension.
+	 */
+	static Correlations* sample(int n)
+	{ 
+		Real _alpha=1.8, _beta=0.1, _r_oo=0.4;
+		return new CS_Correlations(int _n,_alpha,_beta,_r_oo);
+	}
+	
+	
 private:
-	 
-// AUXILLIARY FUNCTIONS
-
-    /** The convex function f(x) from which the log-Libor correlations
+	
+	
+	/** The convex function f(x) from which the log-Libor correlations
      *  are derived. See book, 6.11.1.
      */
-    Real f(Real x) const 
-    {
-        Real a=alpha/2, b=(beta-alpha)/6,
-               c=log(r_oo)-(a+b);
-              
-        return x*(c+x*(a+b*x));  //cx+ax^2+bx^3
-    }
-    
+    Real f(Real x) const;
 
-       
 
-}; // end ConstVolLiborFactorLoading
+}; // end CS_Correlations
+
 
 
 
