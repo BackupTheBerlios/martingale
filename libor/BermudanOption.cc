@@ -56,12 +56,10 @@ BermudanSwaption::
 BermudanSwaption
 (int a, int b, int paths, Real strike, LiborMarketModel* lmm, bool verbose) :
 // Libors L_j, j>=a needed until time b-1.
-LiborDerivative
-(lmm, new LiborPathsToTriggerTime(lmm,b-1,a),b-1,false,true,true,false),                                           
-p(a), q(b), nPath(paths), kappa(strike)
-{   
-	LPG->setTrigger(new PjTrigger(lmm,this,verbose));
-}
+LiborDerivative(lmm,b-1,false,true,true,false),                                           
+p(a), q(b), nPath(paths), kappa(strike),
+trigger(lmm,this,verbose)
+{  }
 
 
 BermudanSwaption* 
@@ -73,7 +71,8 @@ sample(int p, int q, int paths, bool verbose, int lmmType, int volType, int corr
 	return new BermudanSwaption(p,q,paths,kappa,lmm,verbose);
 } 
 
-	 
+
+// fragile: equality of floats
 bool
 BermudanSwaption::
 isExercisable(Real t)
@@ -88,20 +87,20 @@ Real
 BermudanSwaption::
 currentForwardPayoff(int s)
 {
-	if(s==q) return 0.0;                          // never exercised
+	if(s==q) return 0.0;                  // never exercised
 	Real S_sqT,H_sqT,h;
-	S_sqT=LMM->swapRate(s,q,s);                   // swaprate S_{s,q}(T_s)
+	S_sqT=LMM->swapRate(s,q,s);           // swaprate S_{s,q}(T_s)
 	if(S_sqT<kappa) return 0.0;
     H_sqT=LMM->H_pq(s,q,s);
-    return H_sqT*(S_sqT-kappa);                   // payoff at time T_s	
+    return H_sqT*(S_sqT-kappa);           // payoff at time T_s	
 }
 
 
 Real 
 BermudanSwaption::
-forwardPayoffAlongCurrentPath()
+nextForwardPayoff()
 {
-	int s=LPG->getTime();                         // exercise time	
+	int s=trigger.nextTriggered(0);            // exercise time	
     return currentForwardPayoff(s);
 }
 

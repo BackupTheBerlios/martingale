@@ -62,11 +62,15 @@ class Trigger {
 	
 public:
 	
-/** Returns true if \f$s>t\f$ and the trigger event occurs at time s.
- *  In practice s is usually the first time after time t at which
- *  the trigger event occurs.
- */
+/** Returns true if \f$s>t\f$ and the trigger event occurs at time s.*/
 virtual bool isTriggered(int t, int s) = 0;
+	
+/** The first discrete time \f$s>t\f$ at which the trigger event occurs.
+ *  No default implementation since typically a path will have to be 
+ *  computed forward to determine when that happens and the details are only 
+ *  known in the specific context. 
+ */
+virtual int nextTriggered(int t) = 0;
 	
 
 }; // end Trigger
@@ -143,6 +147,11 @@ PjTrigger
  * @param s current time.
  */
 bool isTriggered(int t, int s);
+
+
+/** The first discrete time \f$s>t\f$ at which exercise is triggered.
+ *  This computes the underlying Libor path forward to time s.*/
+int nextTriggered(int t);
 
 
 /** <p>True if the exercise condition is met under coefficients 

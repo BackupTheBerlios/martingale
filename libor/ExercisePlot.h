@@ -16,22 +16,29 @@ struct Square { int e; int n; Square() : e(0), n(0) { } };
  *  and plots the exercise decision for a Bermudan swaption on \f$[T_p,T_n\f$
  *  at all nodes at time \f$T_t\f$ as a function of the 
  *  statistics \f$x=L_t(T_t)\f$ and \f$y=S_{t+1,n}(T_t)\f$ used in the Jaeckel exercise
- *  boundary parametrization. We traverse all these nodes in the lattice
+ *  boundary parametrization (P. Jaeckel, <i>Monte Carlo Methods in Finance</i>, 
+ *  pp. 171-181). We traverse all these nodes in the lattice
  *  and compute the pair (x,y) at each node. With k denoting the strike rate the range
  *  \f[0\leq x,y\leq 5k\f]
  *  is divided into 50^2 squares by dividing each axis into 50 intervals of equal length.
  *  Each square Q keeps count how often we have exercise (e) or no exercise (n) for a pair
  *  (x,y) falling into Q and is colored according to the exercise probability u=e/(e+n) as 
- *  follows:<br>
- *  \f$u\geq 0.8\f$: black<br>
- *  \f$0.6\leq u < 0.8\f$: green<br> 
- *  \f$0.4\leq u < 0.6\f$: red<br> 
- *  \f$0.2\leq u < 0.4\f$: blue<br> 
- *  \f$0.0\leq u < 0.2\f$: <br> 
- * To make this meaningful we must have enough nodes to cover the significant squares
+ *  follows:
+ *  <p>
+ *  \f$u\geq 0.99\f$: black (always exercised).<br>
+ *  \f$0.8\leq u < 0.99\f$: brown.<br> 
+ *  \f$0.6\leq u < 0.8\f$: green.<br> 
+ *  \f$0.4\leq u < 0.6\f$: red (maximum ambiguity).<br> 
+ *  \f$0.2\leq u < 0.4\f$: blue.<br> 
+ *  \f$0.01\leq u < 0.2\f$: cyan.<br> 
+ *  \f$u < 0.01\f$: yellow (never exercised).
+ * </p>
+ * <p>To make this meaningful we must have enough nodes to cover the significant squares
  * with sufficently many pairs (x,y). We use the default lattice which allocates close
- * to the maximum number of nodes that will fit into memory. We should then t be at least
- * 3n/4.
+ * to the maximum number of nodes that will fit into memory. We should then let t be 
+ * 2n/3 or bigger.</p>
+ *
+ * <p>This needs the <strong>Gnu Plotutils</strong> library (&lt;plotter.h&gt;).
  */
 void plotBermudanExercise()
 {	

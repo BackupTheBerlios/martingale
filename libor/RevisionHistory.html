@@ -338,6 +338,14 @@ time in <code>isExercisable(Real t)</code> and bug in
 Monte Carlo and lattice prices for Bermudan swaptions now in excellent agreement.
 
 
+<h3>9-2-03:</h3>
+
+Class <code>Option:</code> removed all explicit reference to path generation in interface.
+Indeed some options may compute payoffs by sampling the underlying directly at the relevant times
+without path generation. Class <code>PathGenerator</code> no longer needed.
+State: tested and working.
+
+
 </body>
 </html>
 

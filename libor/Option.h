@@ -32,7 +32,6 @@ spyqqqdia@yahoo.com
 #define martingale_option_h
 
 #include "TypedefsMacros.h"
-#include "PathGenerator.h"             // base class
 #include "Pricing.h"                   // needed in template function
 #include <cstdlib>                     // exit(int)
 
@@ -48,8 +47,6 @@ class Bond;
 // class RealVector;
 class LmmLattice;
 class LmmNode;
-class PathGenerator;
-class LiborPathGenerator;
 
 
 /*! \file Option.h
@@ -109,43 +106,37 @@ public:
  *  Returns false defaulting to European exercise. Override as appropriate.*/
 virtual bool isExercisable(Real t){ return false; }	
 		    
-/** Returns -1.0. Override meaningfully.*/
-virtual Real forwardPayoffAlongCurrentPath(){ return -1.0; }
+/** The next forward payoff random sample.*/
+virtual Real nextForwardPayoff(){ return -1.0; }
 	 
 /** Returns default 0.0. Override. */
 virtual Real controlVariateMean(){ return 0.0; }
 	 
-/** Returns 0.0. Override.*/
-virtual Real controlVariateAlongCurrentPath(){ return 0.0; }
+/** Vector Z with Z[0] the next forward payoff random sample 
+ *  and Z[1] the corresponding control variate. Default returns 
+ *  (-1.0,0.0). Return by value since it is so small.
+ */
+virtual const RealArray1D nextControlledForwardPayoff();
 
 /** Returns -1.0. Override meaningfully.*/
 virtual Real forwardPayoff(LmmNode* node){ return -1.0; }
 	
 	 
-/** The PathGenerator associated with the option.
- *  Error message that nothing is implemented in this generality.
- *  Aborts.
- */
-virtual PathGenerator* getPathGenerator();
-
 /** Error message that nothing is implemented in this generality. 
  *  Returns -1.
  */
 virtual Real analyticForwardPrice() const;
 	
-/** Forward price computed from nPaths paths of the PathGenerator
- *  associated with the option.
- */
-Real monteCarloForwardPrice(int nPaths);
+/** Forward price computed from N sample payoffs of the option.*/
+Real monteCarloForwardPrice(int N);
 
-/** Forward price computed from nPaths paths of the PathGenerator
- *  associated with the option using the control variate implemented 
- *  with the option.
+/** Forward price computed from from N sample payoffs of the option
+ *  using the control variate implemented with the option.
  */
 Real controlledMonteCarloForwardPrice(int nPaths);
 
 /** The correlation of the forward payoff with its control variate
- *  computed from N paths of thePathGenerator supplied by the option.
+ *  computed from N sample payoff - controlVariate pairs of the option.
  */
 Real correlationWithControlVariate(int N);
 
@@ -195,17 +186,13 @@ class LiborDerivative : public Option {
 protected:
 	
 	LiborMarketModel* LMM;     // the underlying LMM
-	LiborPathGenerator* LPG;   // path generator, maintains reference to underlying LMM
 	int n;                     // number of Libors including L_0
-	int t;                     // Libors needed until time T_m for option payoff
-
+	int t;                     // Libors are needed until time T_t for option payoff
 
 public:
 	
 /** @param lmm underlying {@link LiborMarketModel}.
- *  @param lpg the {@link LiborPathGenerator} for the option.
  *  @param s option expires at \f$T_s\f$. 
- *  @param i Libors needed are L_j, j>=i.
  *  @param an analytic pricing formula is implemented.
  *  @param lt lattice pricing is implemented.
  *  @param mc Monte Carlo pricing is implemented.
@@ -213,10 +200,9 @@ public:
  */
 // T_t is handed to Option as "time to expiration".
 LiborDerivative
-(LiborMarketModel* lmm, LiborPathGenerator* lpg,
- int s, bool an, bool lt, bool mc, bool cv);
+(LiborMarketModel* lmm, int s, bool an, bool lt, bool mc, bool cv);
 
-~LiborDerivative(){ delete LPG; }
+virtual ~LiborDerivative(){ }
 	
 /** Number t of Libor compounding periods to expiry (at T_t).*/
 // Usually this is t but not always, see Caplet where it is t-1.
@@ -231,8 +217,6 @@ int  getDimension() const { return n; }
  */
 int effectiveDimension() const;
 	
-/** The PathGenerator. */
-PathGenerator* getPathGenerator(){ return LPG; }
 	
 /** The default lattice used for pricing: a two factor
  *  LmmLattice based on the underlying LMM. Constructed on the heap
@@ -256,7 +240,7 @@ std::ostream& printSelf(std::ostream& os) const;
  *  Reports error relative to the analytic price if this price is defined. 
  *  Note however that the analytic price itself may be an approximation.
  *
- * @param nPath number of Libor paths in the simulation.
+ * @param N number of payoff samples (usually computed from Libor paths).
  */
 virtual void testPrice(int nPath);
 
@@ -323,14 +307,18 @@ static Caplet* sample
 
 // PAYOFF
 
-/** Forward payoff along the current Libor path.*/
-Real forwardPayoffAlongCurrentPath();
+/** Next random sample of the payoff compounded forward 
+ *  from time \f$T_{i+1}\f$ to time \f$T_n\f$.
+ */
+Real nextForwardPayoff();
 
-/** Mean of the control variate. This is \f$(B_p(0)-B_q(0))/B_n(0)\f$, see book, 6.9.2.*/
+/** Mean of the control variate. 
+ *  This is \f$(B_p(0)-B_q(0))/B_n(0)\f$, see book, 6.9.2.*/
 Real controlVariateMean();
 
-/** Control variate along the current Libor path.*/
-Real controlVariateAlongCurrentPath();
+/** Vector Z with Z[0] the next forward payoff random sample and Z[1] 
+ *  the corresponding control variate. Return by value since it is so small.*/
+const RealArray1D nextControlledForwardPayoff();
 
 
 // Payoffs at nodes not implemented. Delay problem: payoff determined at time T_i
@@ -373,15 +361,12 @@ std::ostream& printSelf(std::ostream& os) const;
  */
 class Swaption : public LiborDerivative {
    
-	int  p,q,                // swap period [T_p,T_q]
-	     t;                  // Swaption exercisable at time T_t
-	                        
+	int  p,q,                // swap period [T_p,T_q]	
+	     t;                  // swaption exercises at T_t
     Real kappa;              // strike rate
 	
-
 	     
 public:
-	
 	
 
 // CONSTRUCTOR
@@ -414,15 +399,19 @@ static Swaption* sample
 	 
     
 // FORWARD TRANSPORTED PAYOFF AND CONTROL VARIATE
-		    
-/** Swaption payoff compounded forward from time \f$T_t\f$ to time \f$T_n\f$.*/
-Real forwardPayoffAlongCurrentPath();
-	 
-/** This is \f$H_p(0)-H_q(0)\f$, see book, 6.9.2.*/
+
+/** Next random sample of the payoff payoff compounded forward 
+ *  from time \f$T_t\f$ to time \f$T_n\f$.
+ */
+Real nextForwardPayoff();
+
+/** Mean of the control variate. 
+ *  This is \f$H_p(0)-H_q(0)\f$, see book, 6.9.2.*/
 Real controlVariateMean();
-	 
-/** Control variate is \f$H_p(T_t)-H_q(T_t)\f$, a \f$P_n\f$-martingale. See book, 6.9.2.*/
-Real controlVariateAlongCurrentPath();
+
+/** Vector Z with Z[0] the next forward payoff random sample and Z[1] 
+ *  the corresponding control variate. Return by value since it is so small.*/
+const RealArray1D nextControlledForwardPayoff();
 
 /** Payoff at LmmNode compounded forward to time \f$T_n\f$.*/
 Real forwardPayoff(LmmNode* node);
@@ -513,15 +502,19 @@ static BondCall* sampleCallOnZeroCouponBond
 
         
 // FORWARD TRANSPORTED PAYOFF AND CONTROL VARIATE
-		    
-/** Swaption payoff compounded forward from time \f$T_t\f$ to time \f$T_n\f$.*/
-Real forwardPayoffAlongCurrentPath();
-	 
-/** This is \f$H_p(0)-H_q(0)\f$, see book, 6.9.2.*/
+
+/** Next random sample of the payoff payoff compounded forward 
+ *  from time \f$T_t\f$ to time \f$T_n\f$.
+ */
+Real nextForwardPayoff();
+
+/** Mean of the control variate. 
+ *  This is the forward price of the bond at time zero.*/
 Real controlVariateMean();
-	 
-/** Control variate is \f$H_p(T_t)-H_q(T_t)\f$, a \f$P_n\f$-martingale. See book, 6.9.2.*/
-Real controlVariateAlongCurrentPath();
+
+/** Vector Z with Z[0] the next forward payoff random sample and Z[1] 
+ *  the corresponding control variate. Return by value since it is so small.*/
+const RealArray1D nextControlledForwardPayoff();
 
 /** Payoff at LmmNode compounded forward to time \f$T_n\f$.*/
 Real forwardPayoff(LmmNode* node);

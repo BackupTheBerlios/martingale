@@ -258,7 +258,8 @@ correctly.</li>
 <h3>8-26-03:</h3>
 
 Fix file descriptions: BasketLattice.h, LiborFactorLoading.h, generally link to the class description
-with {@link classname} in all file descriptions. Check BrownianMotionInBall runs correctly.
+with {@link classname} in all file descriptions. Check if BrownianMotionInBall runs correctly.
+
 
 <h3>9-1-03:</h3>
 
@@ -273,8 +274,22 @@ nextForwardPayoffControlVariatePair()
 <p>Get rid of PathGenerators. Write a note about include paths and linker options needed to 
 compile the project, credits for libraries used.</p>
 
+<p><b>Warning:</b> Since the method <code>Option::isExercisable(Real t)</code>
+uses continuous time t, the lattice pricing code in Pricing.h relies
+on the comparison of floats when instantiated for Bermudan swaptions. 
+This is fragile and works only if the exercise times are exact integral multiples of the
+lattice time step. Reflect upon alternatives.
 
- 
+
+
+<h3>9-2-03:</h3>
+
+<p>Split all the Test*.h files into headers and source files, same with ExercisePlot.h.
+Check if BrownianMotionInBall runs correctly.</p>
+
+<p><b>Documentation</b> Write credits for libraries used, where to get, what to include,
+what to link against (especially for gnu-plotutils). Work on makefile to build library.
+</p>
 
 
 

@@ -90,6 +90,19 @@ isTriggered(int t, int s)
 }
 
 
+int 
+PjTrigger::
+nextTriggered(int t)
+{
+	// Libors needed only up to time T_q
+	LMM->newWienerIncrements(q);
+	int s=t;
+	while(!isTriggered(t,s)){ LMM->timeStep(s,p); s++; }
+	
+	return s;
+}
+
+
 bool 
 PjTrigger::
 exercise(int i, int t, const RealArray1D& x)

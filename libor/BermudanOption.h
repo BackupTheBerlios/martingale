@@ -58,12 +58,13 @@ class LmmNode;
  *  and produces slightly better results. No control variate is implemented.
  */ 
 class BermudanSwaption : public LiborDerivative {
-	
-	friend class PjTrigger;
    
 	int  p,q;                // initial swap period [T_p,T_q]
 	int nPath;               // number of training paths for the exercise trigger
     Real kappa;              // strike rate
+	
+	PjTrigger trigger;       // the exercise trigger
+	friend class PjTrigger;
 		     
 public:
 
@@ -108,8 +109,9 @@ static BermudanSwaption* sample
 // FORWARD TRANSPORTED PAYOFF AND CONTROL VARIATE
 
 		    
-/** Swaption payoff compounded forward from time \f$T_t\f$ to time \f$T_n\f$.*/
-Real forwardPayoffAlongCurrentPath();
+/** Next random sample of the swaption payoff (resulting from the exercise
+ *  strategy implemented by the trigger) compounded forward to time \f$T_n\f$.*/
+Real nextForwardPayoff();
 
 /** Swaption payoff if exercised at time \f$T_s\f$ in the current Libor path
  *  compounded forward to time \f$T_n\f$.

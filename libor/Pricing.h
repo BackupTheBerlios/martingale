@@ -28,7 +28,7 @@ spyqqqdia@yahoo.com
 // thus the need for the includes
 #include "TypedefsMacros.h"
 #include "Edge.h"
-#include "PathGenerator.h"
+#include "Array.h"
 #include <vector>               
 
 
@@ -148,31 +148,25 @@ Real latticeForwardPrice(LatticeType* theLattice, OptionType* theOption)
 
 
 
-/** The forward price of theOption computed from nPaths paths of thePathGenerator.
+/** The forward price of theOption computed from N sample payoffs
+ *  compounded forward to the horizon.
  */
 template<typename OptionType>
-Real monteCarloForwardPrice(OptionType* theOption, int nPaths)
+Real monteCarloForwardPrice(OptionType* theOption, int N)
 {
-	PathGenerator* thePathGenerator=theOption->getPathGenerator();
 	Real sum_payoff=0.0;
-	for(int i=0;i<nPaths;++i){
-		
-		thePathGenerator->newPath();
-		sum_payoff+=theOption->forwardPayoffAlongCurrentPath();
-	}
-	return sum_payoff/nPaths;
-	
+	for(int i=0;i<N;++i) sum_payoff+=theOption->nextForwardPayoff();
+	return sum_payoff/N;	
 } 
 
 
 /** The beta coefficient of option payoff and control variate 
- *  computed along N paths of thePathGenerator (book, 2.8).
+ *  computed from N forwardPayoff - controlVariate pairs (book, 2.8).
  *  See {@link #controlledMonteCarloForwardPrice} for the assumptions.
  */
 template<typename OptionType>
 Real betaCoefficient(OptionType* theOption, int N)
 {
-	PathGenerator* thePathGenerator=theOption->getPathGenerator();
 	// Recall that Cov(X,Y)=E(XY)-E(X)E(Y) and Var(X)=E(X^2)-E(X)^2.
 	// X = Payoff, Y = ControlVariate
 	Real X,Y,
@@ -180,10 +174,11 @@ Real betaCoefficient(OptionType* theOption, int N)
 	     sum_XX=0.0, sum_XY=0.0;
         
     for(int i=0;i<N;i++){
-			
-       thePathGenerator->newPath();
-	   X = theOption->forwardPayoffAlongCurrentPath();
-	   Y = theOption->controlVariateAlongCurrentPath();
+		
+	   // next forwardPayoff - controlVariate pair
+	   const RealArray1D& Z = theOption->nextControlledForwardPayoff();
+	   X = Z[0];       // the payoff
+	   Y = Z[1];       // the control variate
             
        sum_X+=X; sum_Y+=Y;
        sum_XX+=X*X; sum_XY+=X*Y;
@@ -200,7 +195,6 @@ Real betaCoefficient(OptionType* theOption, int N)
 template<typename OptionType>
 Real controlledMonteCarloForwardPrice(OptionType* theOption, int nPaths)
 {
-	PathGenerator* thePathGenerator=theOption->getPathGenerator();
 	Real controlVariateMean=theOption->controlVariateMean();
 	Real beta=betaCoefficient(theOption,nPaths/10);
 	Real sum_payoff=0.0, 
@@ -210,9 +204,10 @@ Real controlledMonteCarloForwardPrice(OptionType* theOption, int nPaths)
 	int N=9*nPaths/10;
 	for(int i=0;i<N;++i){
 		
-		thePathGenerator->newPath();
-		payoff=theOption->forwardPayoffAlongCurrentPath();
-		controlVariate=theOption->controlVariateAlongCurrentPath();
+	    // next forwardPayoff - controlVariate pair
+	    const RealArray1D& Z = theOption->nextControlledForwardPayoff();
+	    payoff = Z[0];       
+	    controlVariate = Z[1];       
 		sum_payoff+=payoff-beta*(controlVariate-controlVariateMean);
 	}
 	return sum_payoff/N;	
@@ -226,16 +221,16 @@ Real controlledMonteCarloForwardPrice(OptionType* theOption, int nPaths)
 template<class OptionType>
 Real correlationWithControlVariate(OptionType* theOption, int N)
 {
-    PathGenerator* thePathGenerator=theOption->getPathGenerator();
 	Real x,         // forward payoff
 	     y,         // corresponding control variate
 	     sum_x=0.0, sum_xx=0.0, 
 	     sum_y=0.0, sum_yy=0.0, sum_xy=0.0;
 	for(int n=0;n<N;n++)
     {
-        thePathGenerator->newPath();
-		x = theOption->forwardPayoffAlongCurrentPath();
-		y = theOption->controlVariateAlongCurrentPath();            
+	    // next forwardPayoff - controlVariate pair
+	    const RealArray1D& Z = theOption->nextControlledForwardPayoff();
+	    x = Z[0];       // the payoff
+	    y = Z[1];       // the control variate    
 		sum_x+=x; sum_y+=y;
         sum_xx+=x*x; sum_yy+=y*y; sum_xy+=x*y;
     }

@@ -56,16 +56,14 @@ using std::endl;
  *                     OPTION
  *
  ******************************************************************************/
-
-
-PathGenerator* 
+ 
+ 
+const RealArray1D
 Option::
-getPathGenerator()
+nextControlledForwardPayoff()
 {
-	cout << "\n\nGeneric Option::getPathGenerator(): "
-	     << "not implemented in this generality."
-	     << "\nAborting.";
-	exit(0);
+    RealArray1D Z(2); Z[0]=-1.0; Z[1]=0.0;
+	return Z;
 }
 
 
@@ -82,25 +80,25 @@ analyticForwardPrice() const
 
 Real
 Option::
-monteCarloForwardPrice(int nPaths)
+monteCarloForwardPrice(int N)
 {
-    return Pricing::monteCarloForwardPrice(this,nPaths);
+    return Pricing::monteCarloForwardPrice(this,N);
 }
 
 
 Real
 Option::
-controlledMonteCarloForwardPrice(int nPaths)
+controlledMonteCarloForwardPrice(int N)
 {
-    return Pricing::controlledMonteCarloForwardPrice(this,nPaths);
+    return Pricing::controlledMonteCarloForwardPrice(this,N);
 }
 
 
 Real
 Option::
-correlationWithControlVariate(int nPaths)
+correlationWithControlVariate(int N)
 {
-    return Pricing::correlationWithControlVariate(this,nPaths);
+    return Pricing::correlationWithControlVariate(this,N);
 }
 
 
@@ -132,13 +130,10 @@ printSelf(ostream& os) const
 
 LiborDerivative::
 LiborDerivative
-(LiborMarketModel* lmm, LiborPathGenerator* lpg,
- int s, bool an, bool lt, bool mc, bool cv) : 
+(LiborMarketModel* lmm, int s, bool an, bool lt, bool mc, bool cv) : 
 // T=lmm->getTenorStructure()[s] is the continuous time to expiry
 Option(lmm->getTenorStructure()[s],an,lt,mc,cv),
-LMM(lmm),
-LPG(lpg), 
-t(s)
+LMM(lmm), t(s)
 {  
 	// lattice pricing assumes constant vols and driftless LMM
 	int volType = lmm->getType()->flType->volType;
@@ -187,7 +182,7 @@ latticeForwardPrice()
 
 void 
 LiborDerivative::
-testPrice(int nPath)
+testPrice(int N)
 { 
 	 // all prices forward prices at time T_n
      Real aPrice,               // analytic price
@@ -201,7 +196,7 @@ testPrice(int nPath)
 	  cout << "\n\n\n\n\n" << *this << *LMM
            << "\nEffective dimension of the simulation = " << effectiveDimension();
 	  if(hasMonteCarlo_)
-	  cout << "\nPaths for Monte Carlo simulation: " << nPath;
+	  cout << "\nNumber of samples (possibly paths): " << N;
 	  cout << "\n\n\n\nFORWARD PRICES: " << endl << endl;  
 		
 	  // PRICES: 
@@ -235,7 +230,7 @@ testPrice(int nPath)
 	  
 	  if(hasMonteCarlo_){
 		  
-          mcPrice=monteCarloForwardPrice(nPath);
+          mcPrice=monteCarloForwardPrice(N);
 	      cout << "Monte Carlo: " << mcPrice;
 		  if(hasAnalytic_)
 		  cout << "\nRelative error: " << relativeError(aPrice,mcPrice,epsilon) << "%"; 
@@ -246,7 +241,7 @@ testPrice(int nPath)
 	  if(hasControlVariate_){
 		  
 		  corr = correlationWithControlVariate(1000);
-	      cvmcPrice=controlledMonteCarloForwardPrice(nPath);
+	      cvmcPrice=controlledMonteCarloForwardPrice(N);
           cout << "Monte Carlo with control variate: " << cvmcPrice
 		       << "\nCorrelation with control variate: " << 100.0*corr << "%";
 		  if(hasAnalytic_)
@@ -260,7 +255,7 @@ testPrice(int nPath)
 	  
 	  if(hasMonteCarlo_){
 		  
-          mcPrice=monteCarloForwardPrice(nPath);
+          mcPrice=monteCarloForwardPrice(N);
           cout << "Quasi Monte Carlo: " << mcPrice;
 		  if(hasAnalytic_)
 		  cout << "\nRelative error: " << relativeError(aPrice,mcPrice,epsilon) << "%"; 
@@ -271,7 +266,7 @@ testPrice(int nPath)
 	  
 	  if(hasControlVariate_){
 		  
-	      cvmcPrice=controlledMonteCarloForwardPrice(nPath);		   
+	      cvmcPrice=controlledMonteCarloForwardPrice(N);		   
 		  cout << "Quasi Monte Carlo with control variate: " << cvmcPrice;
 		  if(hasAnalytic_)
 		  cout << "\nRelative error: " << relativeError(aPrice,cvmcPrice,epsilon) << "%";
@@ -295,9 +290,7 @@ Caplet::
 Caplet(int k, Real strike, LiborMarketModel* lmm) :
  // Libors L_j, j>=k needed until time t=min(k+1,n-1)
 LiborDerivative
-(lmm, new LiborPathsToFixedTime(lmm,min(k+1,lmm->getDimension()-1),k),
- min(k+1,lmm->getDimension()-1),true,false,true,true
-),              
+(lmm,min(k+1,lmm->getDimension()-1),true,false,true,true),              
 i(k), 
 kappa(strike),
 delta_i((lmm->getDeltas())[i])
@@ -318,29 +311,43 @@ sample(int n, int lmmType, int volType, int corrType)
 
 Real 
 Caplet::
-forwardPayoffAlongCurrentPath()
+nextForwardPayoff()
 {                         
+	// Libors X_j, j>=i until time T_t, t=min(i+1,n-1)
+	LMM->newPath(t,i);    
+	
 	Real X_iT_i,h,f;
     X_iT_i=LMM->XL(i,i);                     // Libor X_i(T_i)
     h=max(X_iT_i-delta_i*kappa,0.0);         // payoff at time T_{i+1}
-    f=LMM->H_ii(i+1);                        // H_{i+1}(T_{i+1}) accrual T_{i+1}->T_n at time T_{i+1}
-     // move this from time T_{i+1} to time T_n
+	// H_{i+1}(T_{i+1}) accrual factor T_{i+1}->T_n at time T_{i+1}
+    f=LMM->H_ii(i+1);                        
     return f*h;	
 }
 
 	 
 
-Real 
+Real
 Caplet::
 controlVariateMean(){ return (LMM->X_i0(i))*(LMM->H_i0(i+1)); }
  
 	
-Real
+const RealArray1D
 Caplet::	
-controlVariateAlongCurrentPath() 
+nextControlledForwardPayoff() 
 {
-    Real X_iT_i=LMM->XL(i,i);             // Libor X_i(T_i)
-    return X_iT_i*(LMM->H_it(i+1,i));         
+	// Libors X_j, j>=i until time T_t, t=min(i+1,n-1)
+	LMM->newPath(t,i);     
+	RealArray1D Z(2);
+	
+	Real X_iT_i,h,f;
+    X_iT_i=LMM->XL(i,i);                     // Libor X_i(T_i)
+    h=max(X_iT_i-delta_i*kappa,0.0);         // payoff at time T_{i+1}
+	// H_{i+1}(T_{i+1}) accrual factor T_{i+1}->T_n at time T_{i+1}
+    f=LMM->H_ii(i+1);                        
+    Z[0] = f*h;		                         // forward payoff
+    Z[1] = X_iT_i*(LMM->H_it(i+1,i));        // control variate 
+	
+	return Z;
 } 
     
        
@@ -375,12 +382,8 @@ printSelf(ostream& os) const
 Swaption::
 Swaption(int p_, int q_, int t_, Real strike, LiborMarketModel* lmm) :
 // Libors L_j, j>=t needed until time t  (forward transporting)
-LiborDerivative
-(lmm, new LiborPathsToFixedTime(lmm,t_,t_),
- t_,true,true,true,true
-),                                          
-p(p_), q(q_), t(t_),                                  
-kappa(strike)
+LiborDerivative(lmm,t_,true,true,true,true),                                          
+p(p_), q(q_), t(t_), kappa(strike)
 {   } 
 
 
@@ -398,8 +401,11 @@ sample(int p, int q, int lmmType, int volType, int corrType)
 
 Real 
 Swaption::
-forwardPayoffAlongCurrentPath()
+nextForwardPayoff()
 {
+	// Libors X_j, j>=t until time T_t
+	LMM->newPath(t,t);     	
+	
 	Real S_pqT,H_pqT,h;
 	S_pqT=LMM->swapRate(p,q,t);                   // swaprate S_{p,q}(T_t)
 	if(S_pqT<kappa) return 0.0;
@@ -418,14 +424,29 @@ controlVariateMean()
 } 
  
 	 
-Real
+const RealArray1D
 Swaption::
-controlVariateAlongCurrentPath() 
+nextControlledForwardPayoff() 
 { 
+	// Libors X_j, j>=t until time T_t
+	LMM->newPath(t,t); 
+	RealArray1D Z(2);
+	
+	Real S_pqT,H_pqT,h;
+	S_pqT=LMM->swapRate(p,q,t);         // swaprate S_{p,q}(T_t)
+	if(S_pqT<kappa) Z[0]=0.0;
+	else{
+		
+       H_pqT=LMM->H_pq(p,q,t);
+       Z[0]=H_pqT*(S_pqT-kappa);           // payoff at time T_t
+	}
+	
     Real fp,fq;
-	fp=LMM->H_it(p,t),                            // H_p(T_m)
-	fq=LMM->H_it(q,t);                            // H_q(T_m)
-	return fp-fq;
+	fp=LMM->H_it(p,t),                  // H_p(T_m)
+	fq=LMM->H_it(q,t);                  // H_q(T_m)
+	Z[1]=fp-fq;                         // control variate
+	
+	return Z;
 } 
 
 
@@ -471,10 +492,7 @@ printSelf(ostream& os) const
 BondCall::
 BondCall(Bond* D, Real strike, int s) : 
 // Libors L_j, j>=s needed until time T_s (forward transporting)
-LiborDerivative
-(D->getLMM(), new LiborPathsToFixedTime(D->getLMM(),s,s),	
- s,true,true,true,true
-),     
+LiborDerivative(D->getLMM(),s,true,true,true,true),     
 B(D),
 p(D->get_p()), q(D->get_q()), 
 K(strike), t(s)
@@ -487,12 +505,12 @@ sample(int p, int q, int lmmType, int volType, int corrType)
 {
 	LiborMarketModel* 
 	lmm=LiborMarketModel::sample(q,lmmType,volType,corrType);
-	int t=p;
 	RealArray1D c(q-p,p);
 	for(int j=p;j<q;j++) c[j]=0.5+Random::U01();
 	Bond* bond=new Bond(p,q,c,lmm);
 	Real K=bond->cashPrice();
-		
+	
+	int t=p;     // exercise at T_t
 	return new BondCall(bond,K,t);
 }
 	 
@@ -513,11 +531,12 @@ sampleCallOnZeroCouponBond(int p, int lmmType, int volType, int corrType)
      
 Real 
 BondCall::
-forwardPayoffAlongCurrentPath() 
-{  
+nextForwardPayoff() 
+{ 
+	// Libors X_j, j>=t until time T_t
+	LMM->newPath(t,t); 	
 	Real F=B->forwardPrice(t),
 		 Ht=LMM->H_it(t,t);                // H_t(T_t)=1/B_n(T_t)
-
 	return max(F-K*Ht,0.0);
 }
 
@@ -527,11 +546,20 @@ BondCall::
 controlVariateMean() { return B->forwardPrice(); }
 
 
-Real
+const RealArray1D
 BondCall::
-controlVariateAlongCurrentPath() 
+nextControlledForwardPayoff() 
 {
-    return B->forwardPrice(t); 
+	// Libors X_j, j>=t until time T_t
+	LMM->newPath(t,t); 
+	RealArray1D Z(2);
+	
+	Real F=B->forwardPrice(t),
+		 Ht=LMM->H_it(t,t);                // H_t(T_t)=1/B_n(T_t)
+	Z[0] = max(F-K*Ht,0.0);                // payoff
+	Z[1] = B->forwardPrice(t);             // control variate
+	
+	return Z;
 } 
 
 
