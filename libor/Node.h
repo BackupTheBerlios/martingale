@@ -25,11 +25,13 @@ spyqqqdia@yahoo.com
 #define martingale_node_h
 
 #include "TypedefsMacros.h"
+#include "Utils.h"
+#include "Array.h"
 #include <list>
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
-
+using std::list;
 
 // we are using
 class LiborFactorLoading;             // LiborFactorLoading.h
@@ -115,7 +117,7 @@ protected:
 	Real  pi;               
 	
 	/** List of edges originating at this node. */
-	std::list<Edge> edges;  
+	list<Edge> edges;  
 		                    
 		
 public:
@@ -128,7 +130,7 @@ public:
 	void setPi(Real x){ pi=x; }
 	
 	/** List of edges */
-	std::list<Edge>& getEdges() { return edges; }
+	list<Edge>& getEdges() { return edges; }
 	
 	
 // CONSTRUCTOR
@@ -136,8 +138,8 @@ public:
 	/** @param s_ number of time steps to reach the node from time zero.
 	 */
 	Node(int s_) : s(s_), edges() {  }
-				 		
-    ~Node();
+			 		
+    ~Node(){ getEdges().~list<Edge>(); }
 		
 
 	
@@ -161,8 +163,7 @@ public:
 
 // forward declaration
 class LmmLatticeData;
-class RealArray1D;
-class IntArray1D;
+
 
 /** <p>Lightweight nodes in an {@link LmmLattice}.
  *  Stores only the two state variables from which the accrual factors
@@ -177,17 +178,24 @@ class IntArray1D;
  * are computed from the vector H by global functions which take H as a 
  * parameter. Reason: avoid the repeated computation of H.
  */
-class LiteLmmNode {
+class LiteLmmNode : public Node {
 
-	
+public:	
 /** 
- *  @param s number of the time step at which the node lives.
+ *  @param s number of time steps to reach the node from time zero.
  *  @param k state Z_j=k[j]*a of the driving Brownian motion Z.
  *  @param info object encapsulating information about the lattice the node lives in.
  */
-LiteLmmNode(int s, const IntArray1D& k, int LmmLatticeInfo* info);
+LiteLmmNode(int s, const IntArray1D& k, LmmLatticeData* latticeData);
 
 ~LiteLmmNode(){ delete[] k_; }
+
+
+/** The state Z_j=k[j]*a of the Brownian driver at this node.
+ *  Here a=sqrt(dt) is the ticksize of a standard Brownian motion Z over a time step 
+ *  of size dt.
+ */
+int* getIntegerTicks(){ return k_; }
 	
 /** <p>The vector \f$H=(H_p,\dots,H_n)\f$ of accrual factors at the node.
  *  Natural indices j=p,...,n.
@@ -201,7 +209,7 @@ const RealArray1D& Hvect(int p);
 static std::ostream& printType(std::ostream& os);
 
 /** Diagnostic. Prints the time t, vector H and field pi.*/
-std::ostream& printSelf(std::ostream& os) const;
+std::ostream& printSelf(std::ostream& os);
 
 
 private:
@@ -209,12 +217,11 @@ private:
 	static RealArray1D H_;           // workspace for accrual factors H_j
 	static RealArray1D V_;           // workspace for volatility parts V_j of the log(U_j)
 	                                 // book, 8.1
-	
-	int s_;                          // number of time step at which the node lives.
+
+	LmmLatticeData* lattice;         // information about the LmmLattice the node lives in.
 	int* k_;                         // Z_j=k[j]*a, state of the Brownian driver
 	                                 // a=sqrt(dt) the tick size of a standard Brownian 
 	                                 // motion over an interval of length dt.
-	LmmLatticeInfo* lattice;         // information about the LmmLattice the node lives in.
 	
 /** Returns t such that the node lives in the accrual interval \f$(T_{t-1},T_t]\f$.
  */
@@ -222,8 +229,6 @@ int get_t() const;
 
 
 }; // end LiteLmmNode
-
-
 	
 	
 
@@ -241,21 +246,28 @@ int get_t() const;
  * are computed from the vector H by global functions which take H as a 
  * parameter. Reason: conformity with the case of LiteLmmNodes.
  */
-class HeavyLmmNode {
-	
+class HeavyLmmNode : public Node {
+
+public:
 /** 
- *  @param s number of the time step at which the node lives.
+ *  @param s number of time steps to reach the node from time zero.
  *  @param k state Z_j=k[j]*a, a=sqrt(dt), of the Brownian driver Z.
  *  @param info object encapsulating information about the lattice the node lives in.
  */
-HeavyLmmNode(int s, const IntArray1D& k, LmmLatticeInfo* info);	
+HeavyLmmNode(int s, const IntArray1D& k, LmmLatticeData* latticeData);	
 ~HeavyLmmNode(){ delete[] k_; }
-	
+
+
+/** The state Z_j=k[j]*a of the Brownian driver at this node.
+ *  Here a=sqrt(dt) is the ticksize of a standard Brownian motion Z over a time step 
+ *  of size dt.
+ */
+int* getIntegerTicks(){ return k_; }
 	
 /** The vector \f$H=(H_p,\dots,H_n)\f$ of accrual factors at the node.
  *  Natural indices j=p,...,n.
  */
-const RealArray1D& Hvect(int p){ return H; }
+const RealArray1D& Hvect(int p){ return H_; }
 
 /** Prints what type of node it is.*/
 static std::ostream& printType(std::ostream& os);
@@ -266,10 +278,9 @@ std::ostream& printSelf(std::ostream& os) const;
 
 private:
 
-	int s_;                            // number of time step at which the node lives.
+	LmmLatticeData* lattice;         // information about the LmmLattice the node lives in.
 	int* k_;                           // Z_j=k[j]*a, a=sqrt(dt) the tick size of a standard Brownian 
 	                                   // motion over an interval of length dt.
-    LmmLatticeInfo* lattice;           // information about the LmmLattice the node lives in.
 	RealArray1D H_;                    // the vector H=(H_j,...,H_n) of accrual factors still alive
 	                                   // at the time at which the node lives.
     static RealArray1D V_;             // workspace for the volatility parts V_j of the log(U_j),
@@ -302,15 +313,15 @@ class BasketLatticeData;
  * <p>The only service provided is the computation of the vector S
  * of accrual factors at this node.
  */
-class LiteBasketNode {
+class LiteBasketNode : public Node {
 
-	
+public:	
 /** 
- *  @param s number of the time step at which the node lives.
+ *  @param s number of time steps to reach the node from time zero.
  *  @param k state Z_j=k[j]*a of the driving Brownian motion Z.
  *  @param info object encapsulating information about the lattice the node lives in.
  */
-LiteBasketNode(int s, const IntArray1D& k, int BasketLatticeData* latticeData);
+LiteBasketNode(int s, const IntArray1D& k, BasketLatticeData* latticeData);
 ~LiteBasketNode(){ delete[] k_; }
 	
 /** <p>The vector of assets \f$S=(S_p,\dots,S_n)\f$ at the node.
@@ -321,11 +332,17 @@ LiteBasketNode(int s, const IntArray1D& k, int BasketLatticeData* latticeData);
  */
 const RealArray1D& Svect(int p);
 
+/** The state Z_j=k[j]*a of the Brownian driver at this node.
+ *  Here a=sqrt(dt) is the ticksize of a standard Brownian motion Z over a time step 
+ *  of size dt.
+ */
+int* getIntegerTicks(){ return k_; }
+
 /** Prints what type of node it is.*/
 static std::ostream& printType(std::ostream& os);
 
 /** Diagnostic. Prints the time t, vector H and field pi.*/
-std::ostream& printSelf(std::ostream& os) const;
+std::ostream& printSelf(std::ostream& os);
 
 
 private:
@@ -333,12 +350,10 @@ private:
 	static RealArray1D S_;           // workspace for the assets H_j
 	static RealArray1D V_;           // workspace for volatility parts V_j of the log(S_j)
 	                                 // book, 3.11 and 8.1.
-	
-	int s_;                          // number of time step at which the node lives.
+	BasketLatticeData* lattice;      // information about the Lattice the node lives in.
 	int* k_;                         // Z_j=k[j]*a, state of the Brownian driver
 	                                 // a=sqrt(dt) the tick size of a standard Brownian 
 	                                 // motion over an interval of length dt.
-	BasketLatticeData* lattice;      // information about the Lattice the node lives in.
 
 
 }; // end LiteBasketNode
@@ -351,10 +366,11 @@ private:
  *  Stores the entire asset vector \f$S=(S_1,\dots,S_n)\f$ at the node. 
  *  The values are computed in the constructor of the node.
  */
-class HeavyBasketNode {
-	
+class HeavyBasketNode : public Node {
+
+public:
 /** 
- *  @param s number of the time step at which the node lives.
+ *  @param s number of time steps to reach the node from time zero.
  *  @param k state Z_j=k[j]*a, a=sqrt(dt), of the Brownian driver Z.
  *  @param info object encapsulating information about the lattice the node lives in.
  */
@@ -367,6 +383,12 @@ HeavyBasketNode(int s, const IntArray1D& k, BasketLatticeData* latticeData);
  */
 const RealArray1D& Svect(int p){ return S_; }
 
+/** The state Z_j=k[j]*a of the Brownian driver at this node.
+ *  Here a=sqrt(dt) is the ticksize of a standard Brownian motion Z over a time step 
+ *  of size dt.
+ */
+int* getIntegerTicks(){ return k_; }
+
 /** Prints what type of node it is.*/
 static std::ostream& printType(std::ostream& os);
 
@@ -376,19 +398,19 @@ std::ostream& printSelf(std::ostream& os) const;
 
 private:
 
-	int s_;                            // number of time step at which the node lives.
+    static RealArray1D V_;             // workspace for the volatility parts V_j of the log(S_j),
+                                       // book 3.11
+	BasketLatticeData* lattice;        // information about the Lattice the node lives in.
 	int* k_;                           // Z_j=k[j]*a, a=sqrt(dt) the tick size of a standard Brownian 
 	                                   // motion over an interval of length dt.
-	RealArray1D H;                     // the vector H=(H_j,...,H_n) of accrual factors still alive
-	                                   // at the time at which the node lives.
-    BasketLatticeData* lattice;        // information about the Lattice the node lives in.
+	RealArray1D S_;                    // the vector S=(S_0,...,S_{n-1}) of assets the node.
 
 /** Returns t such that the node lives in the accrual interval \f$(T_{t-1},T_t]\f$.
  */
 int get_t() const;
 
 
-}; // end HeavyLmmNode
+}; // end HeavyBasketNode
 		
 	
 

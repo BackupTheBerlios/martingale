@@ -25,7 +25,6 @@ spyqqqdia@yahoo.com
 #include <string>
 
 
-
 #define MTGL_BEGIN_NAMESPACE(name) namespace name {
 #define MTGL_END_NAMESPACE(name) }
 

@@ -26,7 +26,7 @@ spyqqqdia@yahoo.com
 // template class LmmLattice must be implemented in header
 #include "TypedefsMacros.h"
 #include "Lattice.h"
-//#include "Matrices.h"
+#include "Utils.h"
 #include "Matrix.h"
 #include "LiborFactorLoading.h" 
 #include <iostream>
@@ -36,8 +36,7 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 
 // we are using
 class LmmNode;                  // Node.h
-class LmmNode2F;                
-class LmmNode3F;
+
 
 
 /*! \file LmmLattice.h
@@ -131,10 +130,10 @@ struct LmmLatticeData {
 	Real ticksize;
 	/** the volatility scaling factors c_j, book, 6.11.1.*/
 	const RealArray1D& sg;
-	/** the initial values \f$U_j(0)\f$, book 6.8.*/
-	const RealArray1D& U0;
+	/** the initial values \f$log(U_j(0))\f$, book 6.8.*/
+	const RealArray1D& log_U0;
     /** drift -sigma_j^2*dt/2 of Y_j=log(U_j) over a single time step.*/
-	const RealArray1D& driftUnit;  
+	RealArray1D driftUnit;  
 	/** rank r approximate pseudo square root of the log(U_j) covariance matrix.*/
 	const RealMatrix& R;     
 	
@@ -142,20 +141,20 @@ struct LmmLatticeData {
 	/** @param steps number of time steps in each Libor accrual interval.
 	 *  @param dt size of time step.
 	 *  @param vols the constant volatilities \f$\sigma_j\f$, book, 6.11.1.
-	 *  @param U_0 the initial values \f$U_j(0)\f$, book 6.8.
+	 *  @param Y_0 the initial values \f$Y_j(0)=log(U_j(0))\f$, book 6.8.
 	 *  @param drifts drifts of the log(U_j) over a single time step.
 	 *  @param Q low factor pseudo square root of the log(U_j) covariation matrix.
 	 */
-	LmmLatticeInfo
+	LmmLatticeData
 	(int steps,
      Real dt,
-	 const RealArrray1D& vols,
-	 const RealArrray1D& U_0, 
+	 const RealArray1D& vols,
+	 const RealArray1D& Y_0, 
 	 const RealMatrix& Q
 	) :
 	n(1+Q.rows()), nSteps(steps), r(Q.cols()), 
 	timestep(dt), ticksize(sqrt(dt)),
-	sg(vols), U0(U_0), driftUnit(Q.rows(),1), R(Q)
+	sg(vols), log_U0(Y_0), driftUnit(Q.rows(),1), R(Q)
     {  
 		for(int i=1;i<n;i++) driftUnit[i]=-sg[i]*sg[i]*dt/2; 
 	}
@@ -177,21 +176,23 @@ class LmmLattice : public Lattice<LmmNode> {
 	
 protected:
 	
-	int n,              // dimension (number of accrual intervals)
-	    nSteps;         // number of time steps in each accrual interval
+	int n,                  // dimension (number of accrual intervals)
+	    r,                  // number of factors
+	    nSteps;             // number of time steps in each accrual interval
 	
-	Real delta;         // constant accrual period
-	Real dt;            // size of time step
-	Real a;             // a=sqrt(dt) ticksize of Brownian motion over one time step
+	Real delta;             // constant accrual period
+	Real dt;                // size of time step
+	Real a;                 // a=sqrt(dt) ticksize of Brownian motion over one time step
 	
-	RealArray1D U0;     // U0[j]=U_j(0)
-	RealArray1D H0;     // H0[j]=H_j(0)
+	RealArray1D Y0;         // Y0[j]=Y_j(0)=log(U_j(0))
 
 	// factor loading of the underlying driftless LMM
 	LiborFactorLoading* factorLoading; 
 	
 	RealArray1D sg;         // the constant volatilities sigma_j, book, 6.11.1.
-	const RealMatrix& R;    // rank r approximate pseudosquare root of the log(U_j) covariance matrix
+	RealMatrix& R;          // rank r approximate pseudosquare root of the log(U_j) covariance matrix
+	
+	LmmLatticeData* latticeData;    // data object passed to nodes
 
 	
 public:
@@ -210,25 +211,34 @@ public:
 // CONSTRUCTOR
 	
 /** 
- *  @param r number of factors.
+ *  @param q number of factors: must be 2 or 3.
  *  @param fl factor loading of the underlying LMM, must have {@link CONST_VolSurface}.
- *  @param s lattice is built for s time steps from time zero.
+ *  @param T lattice is built for s time steps from time zero.
  *  @param steps number of equal sized time steps in each Libor accrual interval.
  *  @param rescale rescale the rows of the correlation matrix root to unity (book 8.1.2).
  */
-LmmLattice(int r, LiborFactorLoading* fl, int s, int steps=1, bool rescale=false) : 
-Lattice< LmmNode<LmmNodeBase> >(s),
-n(fl->getDimension()), nSteps(steps),
+LmmLattice(int q, LiborFactorLoading* fl, int T, int steps=1, bool rescale=false) : 
+Lattice<LmmNode>(T),
+n(fl->getDimension()), 
+r(q),
+nSteps(steps),
 delta(fl->getDeltas()[0]),
-dt((delta/steps),
+dt(delta/steps),
 a(sqrt(dt)),
-U0(n),
-H0(n+1),
+Y0(n),
 factorLoading(fl),
 sg(n-1,1),
 R(fl->getRho().rankReducedRoot(r)),
-data(0)
-{  
+latticeData(0)
+{ 
+	// check the number of factors
+	if((r!=2)&&(r!=3)){
+		
+	   std::cout << "\n\nLmmLatticeconstructor: number of factors must be 2 or 3 but is " << r
+	             << "\nTerminating.";
+	   exit(1);
+    }		
+		
 	// check if Libor accrual periods are constant
 	const RealArray1D& deltas=fl->getDeltas();
 	Real delta=deltas[0];
@@ -238,7 +248,7 @@ data(0)
 	             << "\nTerminating.";
 	   exit(1);
     }
-		
+	
 	// check if volatilities are constant
 	if(fl->getType().volType!=VolSurface::CONST) {
 			
@@ -246,20 +256,15 @@ data(0)
 	             << "\nTerminating.";
 	   exit(1);
     }	
-	
-	
+		
 	// set log(U_j(0)), j=0,1,...,n-1
     const RealArray1D& x=factorLoading->getInitialXLibors();     // x[j]=X_j(0)
     for(int j=0;j<n;j++){ 
 			
 	    // U_j(0)=X_j(0)(1+X_{j+1}(0))...(1+X_{n-1}(0))
 		Real Uj0=x[j]; for(int k=j+1;k<n;k++) Uj0*=1+x[k]; 
-		U0[j]=Uj0;
+		Y0[j]=std::log(Uj0);
 	}
-		
-	// set H_j(0)
-    H0[n]=1.0;
-	for(int j=n-1;j>=0;j--) H0[j]=H0[j+1]+U0[j];
 
     // set constant vols
 	for(int j=1;j<n;j++) sg[j]=factorLoading->sigma(j,0.0);
@@ -268,19 +273,21 @@ data(0)
 	// rescale rows to unit norm.
 	if(rescale)
 	for(int i=1;i<n;i++){
-			
-		Real f=0.0;      // norm of row_i(R)
-		for(int j=0;j<r;j++) f+=R(i,j)*R(i,j);
-		f=sqrt(f);
-		R.scaleRow(i,1.0/f);
-	}
-		
-	data = new LmmLatticeData(steps,dt,sg,U0,R);
 	
-	buildLattice(s);
-	testFactorization();
-		
+		Real f=0.0;      // norm of row_i(R)
+		for(int j=0;j<r;j++) f+=R(i,j)*R(i,j); 
+		f=sqrt(f);
+
+		R.scaleRow(i,1.0/f);
+
+	}
+			
+	latticeData = new LmmLatticeData(steps,dt,sg,Y0,R);
+	
 } // end constructor
+
+
+~LmmLattice(){ delete &R, delete latticeData; }
 
 
 /** Tests the accuracy of the rank r factorization of the correlation matrix.*/
@@ -309,20 +316,15 @@ std::ostream& printSelf(std::ostream& os) const
 	
 private:
 
-	LmmLatticeData* data;    // data object passed to nodes
-
-/** Specializes in the two and three factor case.*/
-virtual void buildLattice(int m) = 0;
-
 
 // continuous time reached after time step s=0,1,...
 Real tau(int s)
 {
-    const RealArray1D& T=factorLoading->getTenorStructure();
+    const RealArray1D& T_=factorLoading->getTenorStructure();
   	int t=s/nSteps;
-   	Real delta_t=T[t+1]-T[t];
+   	Real delta_t=T_[t+1]-T_[t];
 		
-    return T[t]+(delta_t*(s%nSteps))/nSteps;
+    return T_[t]+(delta_t*(s%nSteps))/nSteps;
 }	
 	
 
@@ -352,9 +354,11 @@ std::ostream& operator << (std::ostream& os, const LmmLattice<LmmNode>& ltt);
  *  The lattice makes nSteps time steps of equal length \f$dt=\delta/nSteps\f$ in 
  *  each accrual interval. Consequently discrete time t corresponds to continuous time
  *  \f[t*dt=T_{t/nSteps}+(t\;mod\;nSteps)*dt.\f]
- *  For more details see the file reference for the file LmmLattice.h (click on
- *  "File List").
+ *  For more details see the file reference for the file LmmLattice.h.
+ *
+ * @param LmmNode heavyweight or lightweight LmmNodes.
  */
+template<class LmmNode>
 class LmmLattice2F : public LmmLattice<LmmNode> {
 
 public:
@@ -362,33 +366,68 @@ public:
 	
 // CONSTRUCTOR
 	
-	/** The {@link VolSurface} of the factor loading must be of type CONST.
-	 *  @param fl factor loading of the underlying LMM.
-	 *  @param t number of time steps in the lattice.
-	 *  @param steps number of time steps in each Libor accrual interval.
-	 *  @param rescale wether or not the correlation matrix root is <a href="#rescale">rescaled.</a>
-	 */
-	LmmLattice2F(LiborFactorLoading* fl, int t, int steps=1, bool rescale=true);	
-
-	
-	
-// TEST
-
-/** Sets up a ConstVolLmmLattice2F in dimension n and runs the {@link #selfTest}.
+/** The {@link VolSurface} of the factor loading must be of type CONST.
+ *  @param fl factor loading of the underlying LMM, must have {@link CONST_VolSurface}.
+ *  @param s number of time steps in the lattice.
+ *  @param steps number of time steps in each Libor accrual interval.
+ *  @param rescale wether or not the correlation matrix root is <a href="#rescale">rescaled.</a>
  */
-void test(int n) const;
-		
+LmmLattice2F(LiborFactorLoading* fl, int s, int steps=1, bool rescale=true) :
+LmmLattice<LmmNode>(2,fl,s,steps,rescale) 
+{   
+	buildLattice(s);
+	testFactorization();
+}
+	
+	
+// SAMPLE LATTICE
+
+/** A sample three factor lattice in dimension n (number of Libor accrual periods)
+ *  build with n-3 time steps (one per accrual period).
+ */
+static LmmLattice2F* sample(int n) 
+{
+	Timer watch; watch.start();
+	LiborFactorLoading*
+	fl=LiborFactorLoading::sample(n,VolSurface::CONST,Correlations::CS);
+	LmmLattice2F* lattice = new LmmLattice2F(fl,n-3);
+	watch.stop();
+	watch.report("Building 2 factor LMM lattice");
+	return lattice;
+}
+
+/** Builds a lattice in in dimension n (number of Libor accrual periods)
+ *  build with n-3 time steps (one per accrual period) and runs the selfTest().
+ */
+static void test(int n)
+{
+	LmmLattice2F* lattice = sample(n);
+	lattice->selfTest();
+	delete lattice;
+}
 		
 
 private:
 
-	
-	// build lattice with m time steps
-	void buildLattice(int m);
+// build lattice with m time steps
+void buildLattice(int m)
+{
+	std::cout << "\n\nBuilding lattice: " << *this
+	          << "\n\nTime steps: " << m << endl << endl;
+	LatticeBuilder::
+	buildTwoFactorLattice<LmmNode,LmmLatticeData>(m,nodeList,latticeData);         		  
+
+} // end buildLattice
+
 	
 
 }; // end LmmLattice2F
 
+
+/** Lightweight two factor LmmLattice. Little memory, builds fast, computes slowly.*/
+typedef LmmLattice2F<LiteLmmNode> LiteLmmLattice2F;
+/** Heavyweight two factor LmmLattice. Memory hungry, builds slowly, computes fast.*/
+typedef LmmLattice2F<HeavyLmmNode> HeavyLmmLattice2F;
 
 
 /**********************************************************************************
@@ -411,44 +450,76 @@ private:
  *  each accrual interval. Consequently discrete time t corresponds to continuous time
  *  \f[t*dt=T_{t/nSteps}+(t\;mod\;nSteps)*dt.\f]
  */
-class ConstVolLmmLattice3F : public LmmLattice<LmmNode3F> {
+template<class LmmNode>
+class LmmLattice3F : public LmmLattice<LmmNode> {
 	
 public:
 
 	
 // CONSTRUCTOR
 	
-	/** The {@link VolSurface} of the factor loading must be of type CONST.
-	 *  @param fl factor loading of the underlying LMM.
-	 *  @param t number of time steps in the lattice.
-	 *  @param steps number of time seps in each Libor accrual interval.
-	 *  @param rescale wether or not the correlation matrix root is <a href="#rescale">rescaled.</a>
-	 */
-	ConstVolLmmLattice3F(LiborFactorLoading* fl, int t, int steps=1, bool rescale=true);	
-	
-	
-	
-// TEST
-
-/** Sets up a ConstVolLmmLattice3F in dimension n and runs the {@link #selfTest}.
+/** The {@link VolSurface} of the factor loading must be of type CONST.
+ *  @param fl factor loading of the underlying LMM, must have {@link CONST_VolSurface}.
+ *  @param s number of time steps in the lattice.
+ *  @param steps number of time seps in each Libor accrual interval.
+ *  @param rescale wether or not the correlation matrix root is <a href="#rescale">rescaled.</a>
  */
-void test(int n) const;
-		
-		
+LmmLattice3F(LiborFactorLoading* fl, int s, int steps=1, bool rescale=true) :	
+LmmLattice<LmmNode>(3,fl,s,steps,rescale) 
+{   
+	buildLattice(s);
+	testFactorization();
+}
+	
+	
+// SAMPLE LATTICE AND TEST
 
+/** A sample three factor lattice in dimension n (number of Libor accrual periods)
+ *  build with n-3 time steps (one per accrual period).
+ */
+static LmmLattice3F* sample(int n) 
+{
+	Timer watch; watch.start();
+	LiborFactorLoading*
+	fl=LiborFactorLoading::sample(n,VolSurface::CONST,Correlations::CS);
+	LmmLattice3F* lattice = new LmmLattice3F(fl,n-3);
+	watch.stop();
+	watch.report("Building 3 factor LMM lattice");
+	return lattice;
+}
+
+/** Builds a lattice in in dimension n (number of Libor accrual periods)
+ *  build with n-3 time steps (one per accrual period) and runs the selfTest().
+ */
+static void test(int n)
+{
+	LmmLattice3F* lattice = sample(n);
+	lattice->selfTest();
+	delete lattice;
+}
+		
+		
 private:
 	
+// build lattice with m time steps.
+void buildLattice(int m)
+{
+	std::cout << "\n\nBuilding lattice: " << *this
+	          << "\n\nTime steps: " << m << endl << endl;
+	LatticeBuilder::
+	buildThreeFactorLattice<LmmNode,LmmLatticeData>(m,nodeList,latticeData);         	
+
+} // end buildLattice
+
 	
-	// build lattice with m time steps.
-	void buildLattice(int m);
-	
-
-
-
 }; // end LmmLattice3F
 
 
-	
+
+/** Lightweight three factor LmmLattice. Little memory, builds fast, computes slowly.*/
+typedef LmmLattice3F<LiteLmmNode> LiteLmmLattice3F;
+/** Heavyweight three factor LmmLattice. Memory hungry, builds slowly, computes fast.*/
+typedef LmmLattice3F<HeavyLmmNode> HeavyLmmLattice3F;	
 
 
 

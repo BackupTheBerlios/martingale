@@ -95,6 +95,15 @@ typedef Type_t<long double> LongDouble_t;
 typedef Type_t<Real> Real_t;
 
 
+/** General printing of all types which implement printSelf(std::ostream& os)
+ */
+template<class C>
+std::ostream& operator << (std::ostream& os, const C& c)
+{
+	return c.printSelf(os);
+}
+
+
 
 
 /***************************************************************************************

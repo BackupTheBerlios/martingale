@@ -49,7 +49,7 @@ namespace LiborFunctional {
 	 * @param H vector of accrual factors.
 	 * @param delta vector of accrual periods.
 	 */
-	Real Hpq(int p, int q, const RealArray1D& H, const RealArray1D& delta);	
+	Real H_pq(int p, int q, const RealArray1D& H, const RealArray1D& delta);	
 		
 	/** Swaprate for swap on [T_p,T_q].
 	 * @param H vector of accrual factors.
@@ -58,3 +58,11 @@ namespace LiborFunctional {
 	Real S_pq(int p, int q, const RealArray1D& H, const RealArray1D& delta);
 
 };
+
+
+
+MTGL_END_NAMESPACE(Martingale)
+
+#endif
+
+

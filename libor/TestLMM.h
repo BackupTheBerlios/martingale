@@ -27,6 +27,7 @@ spyqqqdia@yahoo.com
 #include "Derivatives.h"
 #include "LiborFactorLoading.h"
 #include "LiborMarketModel.h"            // for inclusion to main.cc
+#include "LmmLattice.h"
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
@@ -226,11 +227,40 @@ void testCallOnZeroCouponBondPrice(int n, int lmmType, int volType, int corrType
 
 /*******************************************************************************
  *
- *                  LIBORS WITH REDUCED NUMBER OF FACTORS
+ *                  LATTICE TESTS
  *
  ******************************************************************************/
 
-
+/** Asks for the number of factors and dimension n and then builds a 
+ *  corresponding Lmmlattice with n-3 time steps (one time step per accrual interval)
+ *  and runs the selftest on the lattice.
+ */
+void testLmmLattice()
+{
+	int do_again=1;
+	// main loop
+	while(do_again==1){
+	
+	    std::cout << "\n\nBuilding and testing a lattice for the driftless libor market model:"
+	              << "\nEnter dimension n of Libor process: n = ";
+	    int n; std::cin >> n;
+	    std::cout << "Enter number r of factors (2 or 3): r = ";
+	    int r; std::cin >> r;
+	    std::cout << "Light (h=5) or heavyweight (h=7) lattice? h = ";
+     	int h; std::cin >> h;
+	    switch(r*h){
+		
+		    case 10 : LiteLmmLattice2F::test(n); break;
+	        case 15 : LiteLmmLattice3F::test(n); break;
+		    case 14 : HeavyLmmLattice2F::test(n); break;
+	        case 21 : HeavyLmmLattice3F::test(n); break;
+			default : std::cout << "\n\n\nYou did not enter the parameters right.";
+		}
+		
+		std::cout << "\n\nDo another run (yes = 1, no = 0) do_again = ";
+		std::cin >> do_again;
+	}
+} // end testLmmlattice
 
 
 	

@@ -24,19 +24,15 @@ spyqqqdia@yahoo.com
 #define martingale_basketlattice_h
 
 #include "TypedefsMacros.h"
-//#include "Matrices.h"
-#include "Matrix.h"
 #include "Lattice.h"
+#include "Matrix.h"
+#include "Utils.h"
+#include "Node.h"
+#include "FactorLoading.h"
+#include <iostream>
+#include <cmath>
 
 MTGL_BEGIN_NAMESPACE(Martingale)
-
-
-
-
-// we are using
-class BasketNode2F;              
-class BasketNode3F;
-
 
 
 
@@ -146,30 +142,30 @@ struct BasketLatticeData {
 	Real ticksize;
 	/** the volatilities \f$\sigma_j\f$.*/
 	const RealArray1D& sg;
-	/** the initial values \f$S_j(0)\f$.*/
-	const RealArray1D& S0;
+	/** the initial values \f$Y_j(0)=log(S_j(0))\f$.*/
+	const RealArray1D& log_S0;
 	/** drift -sigma_j^2*dt/2 of Y_j over a single time step.*/	
-	const RealArray1D& driftunit;  
+	RealArray1D driftUnit;  
 	/** rank r approximate pseudo square root of the log(S_j) covariance matrix.*/
 	const RealMatrix& R;     
 	
 
-	/** @param T number of time steps.
+	/** @param steps number of time steps.
 	 *  @param dt size of time step.
 	 *  @param vols the volatilities \f$\sigma_j\f$.
-	 *  @param S_0 the initial values \f$S_j(0)\f$.
+	 *  @param Y0 the initial values \f$Y_j(0)=log(S_j(0))\f$.
 	 *  @param Q rank r approximate pseudo square root of the log(S_j) covariation matrix.
 	 */
-	BasketLatticeInfo
-	(int T,
+	BasketLatticeData
+	(int steps,
      Real dt,
-	 const RealArrray1D& vols,
-	 const RealArrray1D& S_0,
+	 const RealArray1D& vols,
+	 const RealArray1D& Y0,
 	 const RealMatrix& Q
 	) :
-	n(Q.rows()), nSteps(steps), r(Q.cols()), 
+	n(Q.rows()), T(steps), r(Q.cols()), 
 	timestep(dt), ticksize(sqrt(dt)),
-	sg(vols), S0(S_0), driftUnit(n), R(Q)
+	sg(vols), log_S0(Y0), driftUnit(n), R(Q)
     {  
 		// drifts per time step
 		for(int i=0;i<n;i++) driftUnit[i]=-sg[i]*sg[i]*dt/2;
@@ -187,17 +183,23 @@ class BasketLattice : public Lattice<BasketNode> {
 	
 protected:
 	
-	int n,       // number of assets
-	    T,       // number of time steps to the horizon
-	    r;       // the number of factors
+	ConstantFactorLoading* fl_;   // the asst factor loading
+	
+	int n_,       // number of assets
+	    T_,       // number of time steps to the horizon
+	    r_;       // the number of factors
 	    
-	Real dt;     // size of time step
+	Real dt_;     // size of time step
 	
 	// all indices start at zero
-	RealArray1D S0;         // initial asset prices
-	RealArray1D sg;         // volatilities sg[j]=sigma_j
+	RealArray1D Y0_;         // initial asset price logs Y0[j]=log(S_j(0))
+	RealArray1D sg_;         // volatilities sg[j]=sigma_j
 	/** rank r approximate pseudo square root of the log(S_j) covariance matrix.*/
-	const RealMatrix& R;    
+	const RealMatrix& R_; 
+	
+	// data object handed to nodes
+	BasketLatticeData* latticeData;
+	
 	
 public:
 
@@ -205,37 +207,47 @@ public:
 
     /** Number of assets
 	 */
-    int getDimension() const { return n; }
+    int getDimension() const { return n_; }
 	
-    /** The vector of initial asset prices.
+    /** The vector of initial asset price logs.
 	 */
-    RealVector& getS0() { return S0; }
+    RealVector& get_log_S0() { return Y0; }
+
+	
+// ERROR IN THE RANK 2 FATCORIZATION OF THE COVARIANCE MATRICES
+	
+/** Computes the relative errors in the trace norm of the approximate rank r 
+ *  factorization rho=RR' of the correlation matrix rho. See book, Appendix A.1.
+ */
+void testFactorization() const 
+{
+	fl->getCorrelationMatrix().testFactorization
+	(r,"Relative error of the rank r factorization of the correlation matrix (trace norm)");
+}
 	
 	
 // CONSTRUCTOR
 	
-	/** Use index base zero throughout.
-	 *  @param r the number of factors.
-	 *  @param fl the factorloading of the assets.
-	 *  @param T number of time steps.
-	 *  @param dt size of time step.
-	 *  @param S0 initial asset prices.
-	 *  @param fl the factorloading of the assets.
-	 */
-    BasketLattice
-    (int r, ConstantFactorLoading* fl int T_, Real dt_, RealVector S0_) : 
-    Lattice<BasketNode>(_T),
-    n(fl->getDimension()), T(_T), 
-	dt(_dt), S0(_S0), sg(fl->getVols()),
-	R(fl->correlationMatrix().rankReducedRoot(r)),
-	data(T_,dt_,sg,S0,R)
-    {    }
+/** Use index base zero throughout.
+ *  @param r the number of factors.
+ *  @param fl the factorloading of the assets.
+ *  @param T number of time steps.
+ *  @param dt size of time step.
+ *  @param S0 initial asset prices.
+ *  @param fl the factorloading of the assets.
+ */
+BasketLattice
+(int r, ConstantFactorLoading* fl, int T, Real dt, RealVector S0) : 
+Lattice<BasketNode>(T),
+n_(fl->getDimension()), T_(T), 
+dt_(dt), Y0_(n), sg_(fl->getVols()),
+R_(fl->correlationMatrix().rankReducedRoot(r)),
+latticeData(0)
+{   
+	for(int i=0;i<n;i++) Y0_[i]=std::log(S0[i]);
+	latticeData = new BasketLatticeData(T,dt,sg_,Y0_,R_);
+}
 
-	
-private:
-	
-	BasketLatticeData* data;
-	
   
 }; // end BasketLattice
 
@@ -254,74 +266,102 @@ private:
  *  You must have at least two assets.
  *  For more details see the file reference for the file BasketLattice.h.
  */
-class BasketLattice2F : public BasketLattice<BasketNode2F> {
-	
-	
-	// approximate rank two root of the correlation matrix rho
-	RealMatrix& R;
+template<typename BasketNode>
+class BasketLattice2F : public BasketLattice<BasketNode> {
+
 	
 public:
-
-
 	
 // CONSTRUCTOR
 	
-	/** Use index base zero throughout.
-	 *  @param n number of assets
-	 *  @param T number of time steps.
-	 *  @param dt size of time step.
-	 *  @param S0 initial asset prices.
-	 *  @param sg asset volatilities.
-	 *  @param rho correlation of returns.
-	 */
-	BasketLattice2F
-	(int _n, int _T, Real _dt, RealVector& _S0, RealVector& _sg, UTRRealMatrix& _rho);
-	
+/** Use index base zero throughout.
+ *  @param fl the asset factor loading.
+ *  @param T number of time steps.
+ *  @param dt size of time step.
+ *  @param S0 initial asset prices.
+ */
+BasketLattice2F
+(ConstantFactorLoading* fl, int T, Real dt, RealVector S0) : 
+BasketLattice<BasketNode>(2,fl,T,dt,S0) 
+{    
+	buildLattice(T);
+	testFactorization();
+}
+
+
+// SAMPLE LATTICE AND TEST
 			
-	/** Sample lattice with n assets and T time steps of size dt=0.1.
-	 *  All asset prices start at S_j(0)=100.0 and all volatilities are 0.3.
-	 *  The correlation of returns are given by 
-	 *  \f$\rho_{ij}=exp(0.2(i-j))\ i\leq j\f$.
-	 */
-	static BasketLattice2F* sample(int n,int T);
+/** Sample lattice with n assets and T time steps of size dt=0.1.
+ *  All asset prices start at S_j(0)=100.0 and all volatilities are 0.3.
+ *  The correlation of returns are given by 
+ *  \f$\rho_{ij}=exp(0.2(i-j))\ i\leq j\f$.
+ */
+static BasketLattice2F* sample(int n,int T)
+{
+	// initial asset prices
+	RealVector S0(n);
+	for(int j=0;j<n;j++) S0[j]=100.0;
+			
+	// volatilities
+	RealVector sg(n);
+	for(int j=0;j<n;j++) sg[j]=0.3;
+			
+	// correlation of returns
+	UTRRealMatrix rho(n);
+    for(int j=0;j<n;j++)
+	for(int k=j;k<n;k++) rho(j,k)=std::exp(0.1*(j-k));
 	
+	// the factorloading
+	ConstantFactorLoading* fl = new ConstantFactorLoading(n,vols,rho);
+			
+	// time step
+	Real dt=0.1;
+		
+	return new BasketLattice2F(fl,T,dt,S0);
+}
 
-
-// ERROR IN THE RANK 2 FATCORIZATION OF THE COVARIANCE MATRICES
-	
-    /** Computes the relative errors in the trae norm of the approximate rank two 
-     *  factorization rho=RR' of the correlation matrix rho. See book, Appendix A.1.
-     */
-    void testFactorization() const;
-
-	
-	
-	
-// TEST
-
-   /** Builds sample lattice with n assets and T time steps and runs the self test.
-	*/
-	static void test(int n, int T);	
+/** Builds a lattice in in dimension n (number of Libor accrual periods)
+ *  build with n-3 time steps (one per accrual period) and runs the selfTest().
+ */
+static void test(int n)
+{
+	BasketLattice2F* lattice = sample(n);
+	lattice->selfTest();
+	delete lattice;
+}
 		
 
 private:
 	
+	// approximate rank two root of the correlation matrix rho
+	RealMatrix& R;
 	
-	/** Computes the vector H of accrual factors on the node node.
-	 */
-	void setAssetPrices(BasketNode2F* node);
-	
-	// build lattice with m time steps
-	void buildLattice();
+// build lattice with m time steps.
+void buildLattice(int m)
+{
+	std::cout << "\n\nBuilding lattice: " << *this
+	          << "\nTime steps: " << m << endl << endl;
+	LatticeBuilder::
+	buildTwoFactorLattice<BasketNode,BasketLatticeData>(m,nodeList,latticeData);         	
+
+} // end buildLattice
 	
 
 }; // end BasketLattice2F
 
 
 
+/** Lightweight two factor BasketLattice. Little memory, builds fast, computes slowly.*/
+typedef BasketLattice2F<LiteBasketNode> LiteBasketLattice2F;
+/** Heavyweight two factor BasketLattice. Memory hungry, builds slowly, computes fast.*/
+typedef BasketLattice2F<HeavyBasketNode> HeavyBasketLattice2F;	
+
+
+
+
 /**********************************************************************************
  *
- *            TWO FACTOR BASKET LATTICE
+ *            THREE FACTOR BASKET LATTICE
  *
  *********************************************************************************/
 		
@@ -330,66 +370,94 @@ private:
  *  You must have at least three assets.
  *  For more details see the file reference for the file BasketLattice.h.
  */
-class BasketLattice3F : public BasketLattice<BasketNode3F> {
+template<typename BasketNode>
+class BasketLattice3F : public BasketLattice<BasketNode> {
 	
 	// approximate rank three root of the correlation matrix rho
 	RealMatrix& R;
 	
+
 public:
-
-
 	
 // CONSTRUCTOR
 	
-	/** Use index base zero throughout.
-	 *  @param n number of assets
-	 *  @param T number of time steps.
-	 *  @param dt size of time step.
-	 *  @param S0 initial asset prices.
-	 *  @param sg asset volatilities.
-	 *  @param rho correlation of returns.
-	 */
-	BasketLattice3F
-	(int _n, int _T, Real _dt, RealVector& _S0, RealVector& _sg, UTRRealMatrix& _rho);
-	
-	
-	/** Sample lattice with n assets and T time steps of size dt=0.1.
-	 *  All asset prices start at S_j(0)=100.0 and all volatilities are 0.3.
-	 *  The correlation of returns are given by 
-	 *  \f$\rho_{ij}=exp(0.2(i-j))\ i\leq j\f$.
-	 */
-	static BasketLattice3F* sample(int n, int T);
+/** Use index base zero throughout.
+ *  @param fl the asset factor loading.
+ *  @param T number of time steps.
+ *  @param dt size of time step.
+ *  @param S0 initial asset prices.
+ */
+BasketLattice3F
+(ConstantFactorLoading* fl, int T, Real dt, RealVector S0) : 
+BasketLattice<BasketNode>(3,fl,T,dt,S0) 
+{    
+	buildLattice(T);
+	testFactorization();
+}
 
 
-// ERROR IN THE RANK 2 FATCORIZATION OF THE COVARIANCE MATRICES
-	
-    /** Computes the relative errors in the trae norm of the approximate rank two 
-     *  factorization rho=RR' of the correlation matrix rho. See book, Appendix A.1.
-     */
-    void testFactorization() const;
+// SAMPLE LATTICE AND TEST
 
+/** Sample lattice with n assets and T time steps of size dt=0.1.
+ *  All asset prices start at S_j(0)=100.0 and all volatilities are 0.3.
+ *  The correlation of returns are given by 
+ *  \f$\rho_{ij}=exp(0.2(i-j))\ i\leq j\f$.
+ */
+static BasketLattice3F* sample(int n, int T)
+{
+	// initial asset prices
+	RealVector S0(n);
+	for(int j=0;j<n;j++) S0[j]=100.0;
+			
+	// volatilities
+	RealVector sg(n);
+	for(int j=0;j<n;j++) sg[j]=0.3;
+			
+	// correlation of returns
+	UTRRealMatrix rho(n);
+    for(int j=0;j<n;j++)
+	for(int k=j;k<n;k++) rho(j,k)=std::exp(0.2*(j-k));
 	
-	
-	
-// TEST
-
-   /** Builds sample lattice with n assets and T time steps and runs the self test.
-	*/
-	static void test(int n, int T);	
+	// the factorloading
+	ConstantFactorLoading* fl = new ConstantFactorLoading(n,vols,rho);
+			
+	// time step
+	Real dt=0.1;
 		
+	return new BasketLattice3F(fl,T,dt,S0);
+}
+
+/** Builds a lattice in in dimension n (number of Libor accrual periods)
+ *  build with n-3 time steps (one per accrual period) and runs the selfTest().
+ */
+static void test(int n)
+{
+	BasketLattice3F* lattice = sample(n);
+	lattice->selfTest();
+	delete lattice;
+}
+
 
 private:
 	
-	
-	/** Computes the vector H of accrual factors on the node node.
-	 */
-	void setAssetPrices(BasketNode3F* node);
-	
-	// build lattice with m time steps
-	void buildLattice();
+// build lattice with m time steps.
+void buildLattice(int m)
+{
+	std::cout << "\n\nBuilding lattice: " << *this
+	          << "\nTime steps: " << m << endl << endl;
+	LatticeBuilder::
+	buildThreeFactorLattice<BasketNode,BasketLatticeData>(m,nodeList,latticeData);         	
+
+} // end buildLattice
 	
 
 }; // end BasketLattice3F
+
+
+/** Lightweight three factor BasketLattice. Little memory, builds fast, computes slowly.*/
+typedef BasketLattice3F<LiteBasketNode> LiteBasketLattice3F;
+/** Heavyweight three factor BasketLattice. Memory hungry, builds slowly, computes fast.*/
+typedef BasketLattice3F<HeavyBasketNode> HeavyBasketLattice3F;	
 
 
 	

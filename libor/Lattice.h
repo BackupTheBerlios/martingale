@@ -31,6 +31,8 @@ spyqqqdia@yahoo.com
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
+using std::list;
+
 
 /*! \file Lattice.h
  *  General lattice as a vector of pointers to the list of nodes at
@@ -75,18 +77,16 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  *
  * @param Node the type of nodes in this lattice.
  */
-template<typename Node_t>
+template<typename Node>
 class Lattice {
 	
 protected:
 	
 	/** Number of time steps in the lattice. */
-	int m;
-	/** Number of nodes. */
-	int nodes;         
+	int T;   
 				
 	// nodeList[t] is the list of pointers to nodes at time t
-	vector< std::list<Node_t*>* > nodeList; 
+	vector< list<Node*>* > nodeList; 
 
 	
 public:
@@ -94,15 +94,15 @@ public:
 
 // ACCESSORS
 
-    int getTimeSteps() const { return m; }
+    int getTimeSteps() const { return T; }
 	
 	/** The list of nodes at time t.
 	 */
-	std::list<Node_t*>& getNodeList(int t) { return *(nodeList[t]); }
+	list<Node*>& getNodeList(int t) { return *(nodeList[t]); }
 	
 	/** The root node of the lattice.
 	 */
-	Node_t* getRoot(){ return nodeList[0]->front(); }
+	Node* getRoot(){ return nodeList[0]->front(); }
 	
 	
 // CONSTRUCTOR
@@ -110,18 +110,18 @@ public:
 	/** @param s number of time steps in the lattice.
 	 */
 	Lattice(int s) : 
-	m(s), nodes(0), nodeList(m+1)
+	T(s), nodeList(T+1)
 	{  
 		// the lists of nodes at each time t
-		for(int t=0;t<=m;t++)
-		nodeList[t]=new std::list<Node_t*>(); // empty list
+		for(int t=0;t<=T;t++)
+		nodeList[t]=new list<Node*>(); // empty list
 	}
 
 	
 	~Lattice()
     {
 		// the lists of nodes at each time t
-		for(int t=0;t<=m;t++) getNodeList(t).~list<Node_t*>();
+		for(int t=0;t<=T;t++) getNodeList(t).~list<Node*>(); 
 	}
 		   		
 	
@@ -131,28 +131,28 @@ public:
 	 */
 	void selfTest()
     {	
-		cout << endl << endl
-		     << "Checking nodes, total number: " << nodes << endl;
+		cout << endl << endl << "Checking nodes until time T-1 = " << T-1 << endl;
 		// loop over times t
-		for(int t=0;t<m;t++){
+		for(int t=0;t<T;t++){
 			
-			cout << "\nNodes at time t = " << t << ";";
+			std::cout << "\nNodes at time t = " << t << ";";
 			
 			// probabilities at each node and their sum
 			Real p,psum=0.0;   
 			bool prob_failure=false;
 						
-			std::list<Node_t*>* nodes=nodeList[t];
+			list<Node*>* nodes=nodeList[t];
+
 			// iterate over list elements, iterator is pointer to pointer to node
-			std::list<Node_t*>::const_iterator theNode;
+			list<Node*>::const_iterator theNode;
 			for(theNode=nodes->begin(); theNode!=nodes->end(); ++theNode){
-				
-				Node_t* node=*theNode;
-				std::list<Edge>& edges=node->getEdges();
-		        std::list<Edge>::const_iterator theEdge;           // pointer to edge
+		
+				Node* node=*theNode;
+				list<Edge>& edges=node->getEdges();
+		        list<Edge>::const_iterator theEdge;           // pointer to edge
 				psum=0.0;
 	        	for(theEdge=edges.begin(); theEdge!=edges.end(); ++theEdge){
-					
+						
 					p=theEdge->probability;
 					if((p<0)||(p>1)) prob_failure=true;
 					psum+=p;
@@ -167,18 +167,193 @@ public:
 				    exit(0);
 				 } // endif
 				
-			} // end for it
+			} // end for theNode
 							
             cout << " OK";
 			
 		} // end for t
-		
+        	
 	} // end selfTest()
 
 				
 
 }; // end Lattice
 
+
+
+/** <a name="lattice-builder"><b>Lattice builders.</b></a>
+ *  Standalone functions to build lattices with m time steps for which the state 
+ *  variable is a standard Brownian motion Z in r dimensions (the number of factors). 
+ *  Assumes that the nodes store the state Z_j=k[j]*a, a=sqrt(dt), j=0,1,...,r-1, 
+ *  in the integer vector k and have construtors of the form
+ *  <center><code>
+ *  Node(int s, int* k, LatticeData* latticeData),
+ *  </code></center>
+ *  where s is the number of time steps to reach the node from time zero,
+ *  k is the integer vector storing the state of Z and latticeData is  data object
+ *  handed to the nodes from the lattice.
+ *  Here dt is the size of the time step and a=sqrt(dt) the tick size of a standard 
+ *  Brownian motion over a time step of size dt. The type Node must define a function 
+ *  <code>int* getIntegerTicks()</code> returning 
+ *  the state vector k.
+ */
+namespace LatticeBuilder {
+
+/** Builds a <a href=#lattice-builder>two factor lattice</a>. 
+ * @param T number of time steps in the lattice.
+ * @param nodeList nodeList[t] is a pointer to the list of nodes at time t.
+ * @param latticeData data object handed to nodes from lattice.
+ */
+template<class Node, class LatticeData>
+void buildTwoFactorLattice
+(int T, vector< std::list<Node*>* >& nodeList, LatticeData* latticeData)
+{
+	int nodes=0;                                            // counter
+	list<Node*>& nodes_0=*(nodeList[0]);               // list of nodes at time t
+
+	// array of integer tick multiples Z_j=k[j]*a, j=0,1, at each node
+	IntArray1D k(2);
+
+	// the initial node n(s,k0,k1), k0=k1=0.
+	Node* nextNode=new Node(0,k,latticeData);
+			
+	// enter into node list at time s=0
+	nodes_0.push_back(nextNode); 
+	nodes++;
+
+	// for s=0,...,T-1 build nodes at time s+1 from nodes at time s
+	for(int s=0;s<T;s++) {
+
+		list<Node*>& listCurrentNodes=*(nodeList[s]);    // list of nodes at time t
+		list<Node*>& listNewNodes=*(nodeList[s+1]);      // list of nodes at time t+1
+
+		// registry for possible nodes at time s+1, n(s+1,i,j), 
+		// -(s+1) <= i=k[0],j=k[1] <= s+1
+		Array2D<Node*> newNodes(2*s+3,2*s+3,-s-1,-s-1);
+			
+		// run through the list of nodes at time t and connect to the new nodes
+		// iterator is pointer to pointer to node
+		list<Node*>::const_iterator theNode;
+		for(theNode=listCurrentNodes.begin(); theNode!=listCurrentNodes.end(); ++theNode)			
+		{
+			Node* currentNode=*theNode;
+			// state of this node
+			int* l=currentNode->getIntegerTicks();
+			// list of edges of this node
+			list<Edge>& edgeList=currentNode->getEdges();
+				
+				// loop over transitions p,q=-1,+1 (up/down tick)
+				for(int p=-1;p<2;p+=2)
+				for(int q=-1;q<2;q+=2) 
+				{	
+					// integer state we transition to
+					k[0]=l[0]+p; k[1]=l[1]+q;
+					// connect to this node in the registry
+					nextNode=newNodes(k[0],k[1]);
+					// if it does not exist yet
+					if(!nextNode){ 
+						
+						  nextNode=new Node(s,k,latticeData); 
+						  newNodes(k[0],k[1])=nextNode;                       // register the node
+						  listNewNodes.push_back(nextNode);                   // append to list
+						  nodes++; 
+					}
+					
+					// make an edge to the new node
+					Edge* edge=new Edge();
+					edge->node=nextNode;
+					edge->probability=0.25;
+					edgeList.push_back(*edge);
+					
+			   } // end for p,q
+	    } // end for theNode
+
+				
+		cout << "\nTime step = " << s+1 << ";  total nodes = " << nodes;
+		
+	} // end for s
+} // end buildLattice
+
+	
+
+/** Builds a <a href=#lattice-builder>three factor lattice</a>. 
+ * @param T number of time steps in the lattice.
+ * @param nodeList nodeList[t] is a pointer to the list of nodes at time t.
+ * @param latticeData data object handed to nodes from lattice.
+ */
+template<class Node, class LatticeData>
+void buildThreeFactorLattice
+(int T, vector< std::list<Node*>* >& nodeList, LatticeData* latticeData)
+{
+
+	int nodes=0;                                            // counter
+	list<Node*>& nodes_0=*(nodeList[0]);               // list of nodes at time t
+
+	// array of integer tick multiples Z_j=k[j]*a, j=0,1, at each node
+	IntArray1D k(3);
+	// the initial node n(s,k0,k1), k0=k1=0.
+	Node* nextNode=new Node(0,k,latticeData);
+			
+	// enter into node list at time s=0
+	nodes_0.push_back(nextNode); 
+	nodes++;
+	
+	// for s=0,...,T-1 build nodes at time s+1 from nodes at time s
+	for(int s=0;s<T;s++) {
+	
+		list<Node*>& listCurrentNodes=*(nodeList[s]);    // list of nodes at time t
+		list<Node*>& listNewNodes=*(nodeList[s+1]);      // list of nodes at time t+1
+
+		// registry for possible nodes at time s+1, n(s+1,i,j), 
+		// -(s+1) <= i=k[0],j=k[1] <= s+1
+		Array3D<Node*> newNodes(2*s+3,2*s+3,2*s+3,-s-1,-s-1,-s-1);
+			
+		// run through the list of nodes at time t and connect to the new nodes
+		// iterator is pointer to pointer to node
+		list<Node*>::const_iterator theNode;
+		for(theNode=listCurrentNodes.begin(); theNode!=listCurrentNodes.end(); ++theNode)			
+		{
+			Node* currentNode=*theNode;
+			// state of this node
+			int* l=currentNode->getIntegerTicks();
+			// list of edges of this node
+			list<Edge>& edgeList=currentNode->getEdges();
+				
+				// loop over transitions p,q=-1,+1 (up/down tick)
+				for(int p=-1;p<2;p+=2)
+				for(int q=-1;q<2;q+=2) 
+				for(int r=-1;r<2;r+=2) 
+				{	
+					// integer state we transition to
+					k[0]=l[0]+p; k[1]=l[1]+q; k[2]=l[2]+r;
+					// connect to this node in the registry
+					nextNode=newNodes(k[0],k[1],k[2]);
+					// if it does not exist yet
+					if(!nextNode){ 
+						
+						  nextNode=new Node(s,k,latticeData); 
+						  newNodes(k[0],k[1],k[2])=nextNode;                  // register the node
+						  listNewNodes.push_back(nextNode);                   // append to list
+						  nodes++; 
+					}
+					
+					// make an edge to the new node
+					Edge* edge=new Edge();
+					edge->node=nextNode;
+					edge->probability=0.125;
+					edgeList.push_back(*edge);
+					
+			   } // end for p,q
+	    } // end for theNode
+
+				
+		cout << "\nTime step = " << s+1 << ";  total nodes = " << nodes;
+		
+	} // end for s
+} // end buildLattice
+
+
+}; // end LatticeBuilder
 
 
 

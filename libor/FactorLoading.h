@@ -27,7 +27,6 @@ spyqqqdia@yahoo.com
 #define martingale_factorloading_h
 
 #include "TypedefsMacros.h"
-//#include "Matrices.h"
 #include "Matrix.h"
 
 MTGL_BEGIN_NAMESPACE(Martingale)
@@ -208,14 +207,16 @@ public:
 	
 // CORRELATIONS, VOLATILITIES, LOG-COVARIATION INTEGRALS
 	
-   /** The asset volatilities. */
-   const RealArray1D& getVols() const { return sg; }
-
    /** Instantaneous correlation \f$\rho_{ij}\f$ of \f$dY_i\f$ increments.
     */
    Real rho(int i, int j) const;
-	 
-   
+	
+   /** The instantaneous correlations of returns Y_j.*/
+   const UTRRealMatrix& getCorrelationMatrix(){ return corr; }
+	
+   /** The asset volatilities. */
+   const RealArray1D& getVols() const { return sg; }
+	    
    /** Volatility \f$\sigma_i(t)\f$ of \f$Y_i(t)\f$.
     *
     *@param i components of \f$Y\f$.

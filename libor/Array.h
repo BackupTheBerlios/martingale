@@ -22,7 +22,7 @@ spyqqqdia@yahoo.com
 
 #ifndef martingale_array_h    
 #define martingale_array_h
-//#define SUBSCRIPT_CHECK                        // comment this out for risky significant speedup
+#define SUBSCRIPT_CHECK                        // comment this out for risky significant speedup
 
 #include "TypedefsMacros.h"
 #include <cstdlib>                              // for exit()
@@ -175,6 +175,9 @@ public:
 		
     /** Number of array elements. */
 	int getDimension() const { return n; }
+	
+	/** Resets dimension, NO EFFECT ON MEMORY. */
+	void setDimension(int q) { n=q; }
 	
 	/** Pointer to data array */
 	S* getData() const { return dptr; }

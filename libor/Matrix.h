@@ -955,7 +955,7 @@ Real colNorm(int j)
  */
 Matrix& scaleRow(int i, Real f)
 {
-	for(int j=rowBegin(i);j<rowEnd(i);j++) entry(i,j)*=f;		
+	for(int j=rowBegin(i);j<rowEnd(i);j++) entry(i-a,j)*=f; 
 	return *this;
 } // end scaleRow
 
@@ -965,7 +965,7 @@ Matrix& scaleRow(int i, Real f)
  */
 Matrix& scaleCol(int j, Real f)
 {
-	for(int i=colBegin(j);i<colEnd(j);i++) entry(i,j)*=f;		
+	for(int i=colBegin(j);i<colEnd(j);i++) entry(i,j-b)*=f;		
 	return *this;
 } // end scaleRow
 
