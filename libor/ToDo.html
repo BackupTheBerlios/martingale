@@ -116,6 +116,16 @@ Run tests and examine the analytic swaption price formulas in the predictor-corr
 Both formulas produce very similar and often quite inaccurate prices.
 
 
+<h3>8-3-03:</h3>
+
+Move the swaption and caplet aggregate volatilities to square roots of quadratic forms instead of norms.
+Write a global function 
+
+quadraticFrom(const UTRRealMatrix& C, const vector& x)
+
+which returns (Cx,x). Here C is the upper half of a symmetric matrix.
+
+
 
 </body>
 </html>
