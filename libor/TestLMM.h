@@ -247,15 +247,11 @@ void testLmmLattice()
 	    int n; std::cin >> n;
 	    std::cout << "Enter number r of factors (2 or 3): r = ";
 	    int r; std::cin >> r;
-	    std::cout << "Light (h=5) or heavyweight (h=7) lattice? h = ";
-     	int h; std::cin >> h;
-	    switch(r*h){
+	    switch(r){
 		
-		    case 10 : LiteLmmLattice2F::test(n); break;
-	        case 15 : LiteLmmLattice3F::test(n); break;
-		    case 14 : HeavyLmmLattice2F::test(n); break;
-	        case 21 : HeavyLmmLattice3F::test(n); break;
-			default : std::cout << "\n\n\nYou did not enter the parameters right.";
+		    case 2 : LmmLattice2F::test(n); break;
+	        case 3 : LmmLattice3F::test(n); break;
+			default : std::cout << "\n\n\nNumber of factors must be two or three.";
 		}
 		
 		std::cout << "\n\nDo another run (yes = 1, no = 0) do_again = ";
@@ -286,17 +282,13 @@ void testLatticeSwaption(bool verbose=false)
 		int q; std::cin >> q;
 	    std::cout << "Enter number r of factors (2 or 3): r = ";
 	    int r; std::cin >> r;
-	    std::cout << "Light (h=5) or heavyweight (h=7) lattice? h = ";
-     	int h; std::cin >> h;
 		std::cout << "Number of time steps in each Libor accrual interval = ";
 		int nSteps; std::cin >> nSteps;
-	    switch(r*h){
+	    switch(r){
 		
-		    case 10 : LiteLatticeSwaption2F::test(p,q,nSteps,verbose); break;
-	        case 15 : LiteLatticeSwaption3F::test(p,q,nSteps,verbose); break;
-		    case 14 : HeavyLatticeSwaption2F::test(p,q,nSteps,verbose); break;
-	        case 21 : HeavyLatticeSwaption3F::test(p,q,nSteps,verbose); break;
-			default : std::cout << "\n\n\nYou did not enter the parameters right.";
+		    case 2 : LatticeSwaption2F::test(p,q,nSteps,verbose); break;
+	        case 3 : LatticeSwaption3F::test(p,q,nSteps,verbose); break;
+			default : std::cout << "\n\n\nNumber of factors must be two or three.";
 		}
 		
 		std::cout << "\n\nDo another run (yes = 1, no = 0) do_again = ";

@@ -22,7 +22,7 @@ spyqqqdia@yahoo.com
 
 #ifndef martingale_typedefsmacros_h
 #define martingale_typedefsmacros_h
-#include <string>
+
 
 
 #define MTGL_BEGIN_NAMESPACE(name) namespace name {
@@ -39,20 +39,6 @@ spyqqqdia@yahoo.com
 typedef double Real;
 
 
-// Types used to select the process dynamics by overloading the function
-// generating the standard normal increments driving the Libor paths
-
-/** Dynamics based on Mersenne Twister pseudorandom numbers.
- *  This type is used to select the process dynamics by overloading the function
- *  generating the standard normal increments driving the Libor paths
- */
-class MC { public: static string toString(){ return "Mersenne Twister."; } }; 
-
-/** Dynamics based on Sobol quasirandom numbers.
- *  This type is used to select the process dynamics by overloading the function
- *  generating the standard normal increments driving the Libor paths
- */
-class QMC { public: static string toString(){ return "Sobol sequence."; } };     
 
 
 #endif

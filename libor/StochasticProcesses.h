@@ -24,15 +24,16 @@ spyqqqdia@yahoo.com
 #define martingale_stochasticprocesses_h
 
 #include "TypedefsMacros.h"
-#include "StochasticProcess.h"
-//#include "Matrices.h"
-#include "Matrix.h"
+#include "StochasticProcess.h"          // base class
+#include "Array.h"
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 // we are using
 class FactorLoading;                     // FactorLoading.h
+class UTRRealMatrix;
+// class BrownianScalarProcess
 
 
 

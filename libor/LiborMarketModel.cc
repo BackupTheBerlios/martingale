@@ -28,7 +28,11 @@ spyqqqdia@yahoo.com
 #include "Array.h"
 #include "QuasiMonteCarlo.h"
 #include "LiborFactorLoading.h"
+#include <iostream>
 #include <string>
+
+using std::ostream;
+using std::string;
 
 
 MTGL_BEGIN_NAMESPACE(Martingale)
@@ -43,10 +47,12 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  
 
 // global insertion
-std::ostream& operator << (std::ostream& os, const LiborMarketModelType& lmmType)
+ostream& 
+LiborMarketModelType::
+printSelf(ostream& os) const
 {
-	std::string simulation;
-	switch(lmmType.type){
+	string simulation;
+	switch(type){
 		
 		case LiborMarketModelType::DL   :   simulation="driftless"; break;
 		case LiborMarketModelType::LFDL :   simulation="low factor driftless"; break;
@@ -57,7 +63,7 @@ std::ostream& operator << (std::ostream& os, const LiborMarketModelType& lmmType
 	return
 	os << "\n\nLibor market model:"
 	   << "\nSimulation: " << simulation 
-	   << lmmType.flType;
+	   << flType;
 }
 
 
@@ -70,7 +76,7 @@ std::ostream& operator << (std::ostream& os, const LiborMarketModelType& lmmType
 
 
 
-std::string 
+string 
 LiborMarketModel::
 lmmType(int type)
 {
@@ -343,15 +349,6 @@ bondAggregateVolatility(Bond* B, int t) const
 
 
 
-// GLOBAL INSERTION
-
-std::ostream& operator << 
-(std::ostream& os, const LiborMarketModel& lmm){ return lmm.printSelf(os); }
-
-
-
-
-
 
 /*******************************************************************************
  *
@@ -430,19 +427,14 @@ cashPrice() const
 	 
 // PRINTING 
 
-std::ostream& 
+ostream& 
 Bond::
-printSelf(std::ostream& os) const
+printSelf(ostream& os) const
 {
     return 
 	os << "Bond along [T_"<<p<<",T_"<<q<<"], n="<<n<< endl
 	   << "Coupons: " << c;
 }
-
-
-// GLOBAL INSERTION
-std::ostream& operator << 
-(std::ostream& os, const Bond& bond){ return bond.printSelf(os); }
 
 
 

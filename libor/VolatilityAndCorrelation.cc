@@ -35,6 +35,13 @@ spyqqqdia@yahoo.com
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
+using std::exp;
+using std::ostream;
+using std::string;
+using std::cout;
+using std::endl;
+
+
 
 
 
@@ -45,7 +52,7 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  ******************************************************************************/
  
  
-std::string 
+string 
 VolSurface::
 volSurfaceType()
 {
@@ -59,7 +66,7 @@ volSurfaceType()
 }
 
 
-std::string 
+string 
 VolSurface::
 volSurfaceType(int type)
 {
@@ -85,16 +92,11 @@ sample(int type)
 	   case JR    : return JR_VolSurface::sample(); 
 	   case CONST : return CONST_VolSurface::sample(); 
    }
-   std::cout << "\n\nVolSurface::sample(): unknown VolSurface type = " << type
+   cout << "\n\nVolSurface::sample(): unknown VolSurface type = " << type
         << ". Exiting.";
    exit(1);
 }
 
-
-// GLOBAL INSERTION
-
-std::ostream& operator << 
-(std::ostream& os, const VolSurface& vols){ return vols.printSelf(os); }
 
 
 // TEST OF VOLATILITY INTEGRALS
@@ -103,7 +105,7 @@ void
 VolSurface::
 testVolSurfaceIntegrals(int N, Real precision)
 {
-	std::cout << "\n\n\n\nTesting volatility integrals: " << endl << *this;
+	cout << "\n\n\n\nTesting volatility integrals: " << endl << *this;
 		
 	Real analytic, montecarlo, sum, ft, u, t,
 	     sg_tT1, sg_tT2;  // sigma(t,T)
@@ -132,15 +134,15 @@ testVolSurfaceIntegrals(int N, Real precision)
 		Real error=100*abs(montecarlo-analytic)/analytic;
 		if(error>precision){
 			
-		     std::cout << "\n\nTest failed."
-			           << "\nAnalytic integral: " << analytic
-			           << "\nMonte Carlo integral: " << montecarlo
-			           << "\nRelative error (%): " << error
-			           << "Aborting.";
-			exit(1);
+		     cout << "\n\nTest failed."
+	              << "\nAnalytic integral: " << analytic
+	              << "\nMonte Carlo integral: " << montecarlo
+		          << "\nRelative error (%): " << error
+		          << "Aborting.";
+			 exit(1);
 		}
 	} // end main loop
-	std::cout << "\n\n Test passed.";
+	cout << "\n\n Test passed.";
 } // end testVolSurfaceIntegrals
 			    
 			         
@@ -155,22 +157,22 @@ testVolSurfaceIntegrals(int N, Real precision)
 
 Real 
 M_VolSurface::
-F(Real D, Real s) const { return D*std::exp(s/D); }  
+F(Real D, Real s) const { return D*exp(s/D); }  
     
 
 Real 
 M_VolSurface::
-G(Real D, Real s) const { return D*std::exp(s/D)*(s-D); }   
+G(Real D, Real s) const { return D*exp(s/D)*(s-D); }   
 
 
 Real 
 M_VolSurface::	
-H(Real D, Real s) const { return D*std::exp(s/D)*((s-D)*(s-D)+D*D); }  
+H(Real D, Real s) const { return D*exp(s/D)*((s-D)*(s-D)+D*D); }  
          
 
 Real 
 M_VolSurface::	
-g(Real x) const { return 1+a*x*std::exp(-x/d); }
+g(Real x) const { return 1+a*x*exp(-x/d); }
 
 	
 Real 
@@ -199,9 +201,9 @@ integral_sgsg(Real t, Real T1, Real T2) const
 } //end integral_sgsg 
 
 
-std::ostream& 
+ostream& 
 M_VolSurface::
-printSelf(std::ostream& os) const
+printSelf(ostream& os) const
 {
   	return os << "\nVolSurface, type book, 6.11.1, " 
 	          << "a=" << a << ", d=" << d;
@@ -225,7 +227,7 @@ JR_VolSurface::
 sigma(Real t, Real T) const 
 { 
    Real s=(T-t);
-   return d+(a+b*s)*std::exp(-c*s);
+   return d+(a+b*s)*exp(-c*s);
 }
 
 
@@ -241,9 +243,9 @@ integral_sgsg(Real t, Real T1, Real T2) const
         cd=c*d;
               
    f=1.0/(c*c*c);
-   A=ac*cd*(std::exp(ctmT2)+std::exp(ctmT1))+c*cd*cd*t;
-   B=b*cd*(std::exp(ctmT1)*(ctmT1-1)+std::exp(ctmT2)*(ctmT2-1));
-   C=std::exp(q)*(ac*(ac+b*(1-q))+b*b*(0.5*(1-q)+ctmT1*ctmT2))/2;
+   A=ac*cd*(exp(ctmT2)+exp(ctmT1))+c*cd*cd*t;
+   B=b*cd*(exp(ctmT1)*(ctmT1-1)+exp(ctmT2)*(ctmT2-1));
+   C=exp(q)*(ac*(ac+b*(1-q))+b*b*(0.5*(1-q)+ctmT1*ctmT2))/2;
        
    return f*(A-B+C);
 } // end integral_sgsg
@@ -258,9 +260,9 @@ sample()
 }
 
 
-std::ostream& 
+ostream& 
 JR_VolSurface::
-printSelf(std::ostream& os) const 
+printSelf(ostream& os) const 
 {
    	return
 	os << "\nVolSurface, type Jaeckel-Rebonato, " 
@@ -274,9 +276,9 @@ printSelf(std::ostream& os) const
 
 // CONST_VolSurface
 
-std::ostream& 
+ostream& 
 CONST_VolSurface::
-printSelf(std::ostream& os) const
+printSelf(ostream& os) const
 {
    	return os << "\nVolSurface, type: constant.";
 }
@@ -352,12 +354,6 @@ setParameters(Real _alpha, Real _beta, Real _r_oo)
 }
 
 
-// GLOBAL INSERTION
-
-std::ostream& operator << 
-(std::ostream& os, const Correlations& vols){ return vols.printSelf(os); }
-
-
 
 // JR_Correlations
 
@@ -375,7 +371,7 @@ setCorrelations()
 {
     for(int i=1;i<n;i++)
     for(int j=i;j<n;j++) 
-	   correlationMatrix(i,j)=std::exp(beta*(T[i]-T[j])); 
+	   correlationMatrix(i,j)=exp(beta*(T[i]-T[j])); 
 }
 
 
@@ -391,9 +387,9 @@ sample(int n, Real delta=0.25)
 }
 	
 
-std::ostream& 
+ostream& 
 JR_Correlations::
-printSelf(std::ostream& os) const
+printSelf(ostream& os) const
 {
 	return
 	os << "\nCorrelations: Jaeckel-Rebonato, " 
@@ -434,9 +430,9 @@ f(Real x) const
 }
 
 
-std::ostream& 
+ostream& 
 CS_Correlations::
-printSelf(std::ostream& os) const
+printSelf(ostream& os) const
 {
 	return
 	os << "\nCorrelations: Coffee-Shoenmakers, " 

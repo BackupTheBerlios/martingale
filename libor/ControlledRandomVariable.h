@@ -28,11 +28,15 @@ spyqqqdia@yahoo.com
 #define martingale_controlled_randomvariable_h 
 
 #include "TypedefsMacros.h"
-#include "RandomObject.h"
-//#include "Matrices.h"
-#include "Matrix.h"
+#include "RandomObject.h"                 // base class
+#include "Matrix.h"                       // typedef problem in forward declarations
+
 
 MTGL_BEGIN_NAMESPACE(Martingale)
+
+
+// dependencies: 
+// class RealVector;
 
 
 
@@ -68,7 +72,7 @@ public:
 	/** <code>beta</code> must be initialized from each concrete subclass 
 	 *  by calling <code>setBeta()</code>.
 	 */
-	ControlledRandomVariable() : RandomVector(2), beta(0.0) { }
+	ControlledRandomVariable();
 
 	
 // RANDOM DEVIATE - CONTROL VARIATE PAIR, CONTROL VARIATE MEAN

@@ -32,18 +32,19 @@ spyqqqdia@yahoo.com
 #define martingale_derivatives_h
 
 #include "TypedefsMacros.h"
-//#include "Matrices.h"
-#include "Matrix.h"
-#include "RandomObject.h"
-#include "ControlledRandomVariable.h"
+#include "Matrix.h"                                // typedef problem in forward declarations
+#include "RandomObject.h"                          // base class
+#include "ControlledRandomVariable.h"              // base class
 
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
-// we are using
+// dependencies
+class std::ostream;
 class LiborMarketModel;
 class Bond;
+// class RealVector;
 
 
 

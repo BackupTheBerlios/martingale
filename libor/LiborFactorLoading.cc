@@ -22,14 +22,16 @@ spyqqqdia@yahoo.com
 
 
 
-
-#include "Array.h"
 #include "LiborFactorLoading.h"
+#include "VolatilityAndCorrelation.h"
 #include "Random.h"
 #include "Utils.h"
 #include <string>
 #include <cmath>
 #include <iostream>
+
+using std::ostream;
+using std::string;
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
@@ -41,14 +43,31 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  * 
  ******************************************************************************/
 
+LiborFactorLoadingType::
+LiborFactorLoadingType(int volSurface, int correlations) :
+volType(volSurface), corrType(correlations) 
+{    }                                                                         
 
-// global insertion
-std::ostream& operator << (std::ostream& os, const LiborFactorLoadingType& flType)
+
+string 
+LiborFactorLoadingType::
+volSurfaceType() const { return VolSurface::volSurfaceType(volType); }
+
+
+string 
+LiborFactorLoadingType::
+correlationType() const { return Correlations::correlationType(corrType); }
+
+
+ostream& 
+LiborFactorLoadingType::
+printSelf(ostream& os) const
 {
 	return
-	os << "\nLibor factor loading: VolSurface: " << flType.volSurfaceType() 
-	   << ", Correlations: " << flType.correlationType();
+	os << "\nLibor factor loading: VolSurface: " << volSurfaceType() 
+	   << ", Correlations: " << correlationType();
 }
+
 
 /*******************************************************************************
  *
@@ -108,9 +127,9 @@ sample(int n, int volType=VolSurface::JR, int corrType=Correlations::CS)
 	
 	
 	
-std::ostream& 
+ostream& 
 LiborFactorLoading::
-printSelf(std::ostream& os) const
+printSelf(ostream& os) const
 {
 	RealVector L0(n,l.getData());      // initial Libors		
 	RealVector vols(n-1,1);            // annualized volatilities

@@ -26,7 +26,7 @@ spyqqqdia@yahoo.com
 #define martingale_optimizer_h
 
 #include "TypedefsMacros.h"
-#include "Array.h"
+#include "Array.h"                            // direct members
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 

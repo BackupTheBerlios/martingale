@@ -22,10 +22,11 @@ spyqqqdia@yahoo.com
 
 #ifndef martingale_array_h    
 #define martingale_array_h
-#define SUBSCRIPT_CHECK                        // comment this out for risky significant speedup
+//#define SUBSCRIPT_CHECK                        // comment this out for risky significant speedup
 
 #include "TypedefsMacros.h"
 #include <cstdlib>                              // for exit()
+#include <string>
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 

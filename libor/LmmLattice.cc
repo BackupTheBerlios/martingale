@@ -20,228 +20,266 @@ spyqqqdia@yahoo.com
 
 */
 
+
 #include "LmmLattice.h"
-#include "LiborFactorLoading.h"
 #include "Node.h"
-#include "Array.h"
+#include "Lattice.h"
 #include "Utils.h"
+#include "Matrix.h"
+#include "LiborFactorLoading.h" 
+#include <iostream>
 #include <cmath>
+
+using std::ostream;
+using std::cout;
+using std::log;
+
 
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 
+// LMM LATTICE DATA
+
+
+LmmLatticeData::
+LmmLatticeData
+(int steps,
+ Real dt,
+ const RealArray1D& vols,
+ const RealArray1D& Y_0, 
+ const RealMatrix& Q
+) :
+n(1+Q.rows()), nSteps(steps), r(Q.cols()), 
+timestep(dt), ticksize(sqrt(dt)), delta(steps*dt),
+sg(vols), log_U0(Y_0), driftUnit(Q.rows(),1), R(Q)
+{  
+	for(int i=1;i<n;i++) driftUnit[i]=-sg[i]*sg[i]*dt/2; 
+}
+	
+
+
+// GENERAL LMM LATTICE
+
+LmmLattice::
+LmmLattice(int q, LiborFactorLoading* fl, int t, int steps=1) : 
+Lattice<LmmNode>(t*steps),
+n(fl->getDimension()), 
+r(q),
+nSteps(steps),
+delta(fl->getDeltas()[0]),
+dt(delta/steps),
+a(sqrt(dt)),
+Y0(n),
+factorLoading(fl),
+sg(n-1,1),
+R(fl->getRho().rankReducedRoot(r)),
+latticeData(0)
+{ 
+	// check the number of factors
+	if((r!=2)&&(r!=3)){
+		
+	   cout << "\n\nLmmLatticeconstructor: number of factors must be 2 or 3 but is " << r
+	             << "\nTerminating.";
+	   exit(1);
+    }		
+		
+	// check if Libor accrual periods are constant
+	const RealArray1D& deltas=fl->getDeltas();
+	Real delta=deltas[0];
+	for(int j=0;j<n;j++) if(deltas[j]!=delta) {
+			
+	   cout << "\n\nLmmLatticeconstructor: Libor accrual periods not constant."
+	             << "\nTerminating.";
+	   exit(1);
+    }
+	
+	// check if volatilities are constant
+	if(fl->getType().volType!=VolSurface::CONST) {
+			
+	   cout << "\n\nLmmLattice-constructor: volatility surface not constant."
+	             << "\nTerminating.";
+	   exit(1);
+    }	
+		
+	// set log(U_j(0)), j=0,1,...,n-1
+    const RealArray1D& x=factorLoading->getInitialXLibors();     // x[j]=X_j(0)
+    for(int j=0;j<n;j++){ 
+			
+	    // U_j(0)=X_j(0)(1+X_{j+1}(0))...(1+X_{n-1}(0))
+		Real Uj0=x[j]; for(int k=j+1;k<n;k++) Uj0*=1+x[k]; 
+		Y0[j]=log(Uj0);
+	}
+
+    // set constant vols
+	for(int j=1;j<n;j++) sg[j]=factorLoading->sigma(j,0.0);
+			
+	latticeData = new LmmLatticeData(steps,dt,sg,Y0,R);
+	
+} // end constructor
 
 
 
-template<typename LmmNode>
-std::ostream& operator << (std::ostream& os, const LmmLattice<LmmNode>& ltt)
+void 
+LmmLattice::
+rescaleVols()
 {
-	return ltt.printSelf(os);
+	for(int i=1;i<n;i++){
+	
+		Real f=0.0;      // norm of row_i(R)
+		for(int j=0;j<r;j++) f+=R(i,j)*R(i,j); 
+		f=sqrt(f);
+
+		R.scaleRow(i,1.0/f);
+	}
 }
 
 
-				
-
-/**********************************************************************************
- *
- *            CONSTANT VOLATILITY TWO FACTOR LMM LATTICE
- *
- *********************************************************************************/
-
-
-
 
 void 
-ConstVolLmmLattice2F::
-buildLattice(int m)
+LmmLattice::
+testFactorization() const
 {
-	std::cout << "\n\nBuilding lattice: " << *this
-	          << "\nTime steps: " << m << endl << endl;
-	          		  
-	std::list<LmmNode2F*>& nodes_0=*(nodeList[0]);               // list of nodes at time t
-		
-	// the initial node, i=j=0.
-	LmmNode2F* nextNode=new LmmNode2F(factorLoading,0,nSteps,0,0);
-	for(int j=0;j<=n;j++) nextNode->getH()[j]=H0[j];
-			
-	// enter into node list at time t=0
-	nodes_0.push_back(nextNode); 
-	nodes++;
-		
-	// for t=0,...,m-1 build nodes at time t+1 from nodes at time t
-	for(int s=0;s<m;s++) {
-	
-		std::list<LmmNode2F*>& listCurrentNodes=*(nodeList[s]);    // list of nodes at time t
-		std::list<LmmNode2F*>& listNewNodes=*(nodeList[s+1]);      // list of nodes at time t+1
+	cout << "\n\nRelative errors of the approximate rank " << r << " factorization"
+	     << "\nrho=RR' (rank(R)=" << r << ") of the correlation matrix rho"
+	     << "\n(trace norm): " << endl << endl;
+  
+	factorLoading->getRho().testFactorization(r);
 
-		// registry for possible nodes at time t+1, n(t+1,i,j), 
-		// -(t+1) <= i,j <= t+1
-		Array2D<LmmNode2F*> newNodes(2*s+3,2*s+3,-s-1,-s-1);
-			
-		// run through the list of nodes at time t and connect to the new nodes
-		// iterator is pointer to pointer to node
-		std::list<LmmNode2F*>::const_iterator theNode;
-		for(theNode=listCurrentNodes.begin(); theNode!=listCurrentNodes.end(); ++theNode)			
-		{
-			LmmNode2F* currentNode=*theNode;
-			// state of this node
-			int i=currentNode->get_i(), j=currentNode->get_j();
-			// list of edges of this node
-			std::list<Edge>& edgeList=currentNode->getEdges();
-				
-				// loop over transitions k,l=-1,1 (up/down tick)
-				for(int k=-1;k<2;k+=2)
-				for(int l=-1;l<2;l+=2) 
-				{	
-					// connect to node n(s+1,i+k,j+l) in registry
-					nextNode=newNodes(i+k,j+l);
-					// if it does not exist yet
-					if(!nextNode){ 
-						
-						  nextNode=new LmmNode2F(factorLoading,s+1,nSteps,i+k,j+l); 
-						  newNodes(i+k,j+l)=nextNode;                         // register the node
-						  listNewNodes.push_back(nextNode);                   // append to list
-						  setStateVariables(nextNode);
-						  nodes++; 
-					}
-					
-					// make an edge to the new node
-					Edge* edge=new Edge();
-					edge->node=nextNode;
-					edge->probability=0.25;
-					edgeList.push_back(*edge);
-					
-			   } // end for k,l
-	    } // end for theNode
+}   // end factorAnalysis
 
-				
-		cout << "\nTotal nodes = " << nodes;
-		
-	} // end for s
-} // end buildLattice
-	
 
-	
 
-void 
-ConstVolLmmLattice2F::
-test(int n) const
+ostream& 
+LmmLattice::
+printSelf(ostream& os) const
 {
-	Timer watch; watch.start();
+	return
+	os << "LMM lattice:"
+	   << "\nNumber of time steps in each accrual interval: " << nSteps 
+	   << endl << *factorLoading;
+}
+
+
+
+Real 
+LmmLattice::
+tau(int s)
+{
+    const RealArray1D& T_=factorLoading->getTenorStructure();
+  	int t=s/nSteps;
+   	Real delta_t=T_[t+1]-T_[t];
+		
+    return T_[t]+(delta_t*(s%nSteps))/nSteps;
+}	
+	
+
+
+// TWO FACTOR LMM LATTICE
+
+
+LmmLattice2F::
+LmmLattice2F
+(LiborFactorLoading* fl, int t, int steps=1,bool verbose=false) :
+LmmLattice(2,fl,t,steps) 
+{   
+	buildLattice(t*steps,verbose);     // m=t*steps is the number of time steps
+	if(verbose) testFactorization(); 
+}
+
+
+
+LmmLattice2F* 
+LmmLattice2F::
+sample(int n, int p, int nSteps, bool verbose=false) 
+{
 	LiborFactorLoading*
 	fl=LiborFactorLoading::sample(n,VolSurface::CONST,Correlations::CS);
-	ConstVolLmmLattice2F lattice(fl,n-3);
-	lattice.selfTest();
-	watch.stop();
-	watch.report("3 factor LMM lattice construction and self test");
+	LmmLattice2F* lattice = new LmmLattice2F(fl,p,nSteps,verbose);
+	return lattice;
 }
 
 
-
-/**********************************************************************************
- *
- *            CONSTANT VOLATILITY THREE FACTOR LMM LATTICE
- *
- *********************************************************************************/
-	
-				
-
-
-
 void 
-ConstVolLmmLattice3F::
-buildLattice(int m)
+LmmLattice2F::
+test(int n)
 {
-	std::cout << "\n\nBuilding lattice: " << *this
-	          << "\nTime steps: " << m << endl << endl;
-		  
-	std::list<LmmNode3F*>& nodes_0=*(nodeList[0]);               // list of nodes at time t
+    Timer watch; watch.start();
+	LmmLattice2F* lattice = sample(n,n,1,true);
+	lattice->rescaleVols();
+	lattice->selfTest();
+	delete lattice;
+	watch.stop();
+	watch.report("Two factor LmmLattice test");
+}
 		
-	// the initial node, i=j=k=0.
-	LmmNode3F* nextNode=new LmmNode3F(factorLoading,0,nSteps,0,0,0);
-	for(int j=0;j<=n;j++) nextNode->getH()[j]=H0[j];
-			
-	// enter into node list at time t=0
-	nodes_0.push_back(nextNode); 
-	nodes++;
-		
-	// for t=0,...,m-1 build nodes at time t+1 from nodes at time t
-	for(int s=0;s<m;s++) {
-	
-		std::list<LmmNode3F*>& listCurrentNodes=*(nodeList[s]);    // list of nodes at time t
-		std::list<LmmNode3F*>& listNewNodes=*(nodeList[s+1]);      // list of nodes at time t+1
 
-		// registry for possible nodes at time t+1, n(t+1,i,j), 
-		// -(t+1) <= i,j <= t+1
-		Array3D<LmmNode3F*> newNodes(2*s+3,2*s+3,2*s+3,-s-1,-s-1,-s-1);
-			
-		// run through the list of nodes at time t and connect to the new nodes
-		// iterator is pointer to pointer to node
-		std::list<LmmNode3F*>::const_iterator theNode;
-		for(theNode=listCurrentNodes.begin(); theNode!=listCurrentNodes.end(); ++theNode)			
-		{
-			LmmNode3F* currentNode=*theNode;
-			// state of this node
-			int i=currentNode->get_i(), 
-			    j=currentNode->get_j(),
-			    k=currentNode->get_k();
-			// list of edges of this node
-			std::list<Edge>& edgeList=currentNode->getEdges();
-				
-				// loop over transitions i,j,k += +/-1 (up/down tick of Z1,Z2,Z3)
-				for(int p=-1;p<2;p+=2)
-				for(int q=-1;q<2;q+=2)
-				for(int r=-1;r<2;r+=2)       // p,q,r = +/- 1
-				{	
-					// connect to node n(s+1,i+p,j+q,k+r) in registry
-					nextNode=newNodes(i+p,j+q,k+r);
-					// if it does not exist yet
-					if(!nextNode){ 
-						
-						  nextNode=new LmmNode3F(factorLoading,s+1,nSteps,i+p,j+q,k+r); 
-						  newNodes(i+p,j+q,k+r)=nextNode;                         // register the node
-						  listNewNodes.push_back(nextNode);                       // append to list
-						  setStateVariables(nextNode);
-						  nodes++; 
-					}
-					
-					// make an edge to the new node
-					Edge* edge=new Edge();
-					edge->node=nextNode;
-					edge->probability=0.125;            // 1/8
-					edgeList.push_back(*edge);
-					
-			   } // end for p,q,r
-		} // end for theNode
+void 
+LmmLattice2F::
+buildLattice(int m, bool verbose)
+{
+	if(verbose)
+	cout << "\n\nBuilding lattice: " << *this
+	          << "\n\nTime steps: " << m << endl << endl;
+	LatticeBuilder::
+	buildTwoFactorLattice<LmmNode,LmmLatticeData>(m,nodeList,latticeData,verbose);         		  
 
-		cout << "\nTotal nodes = " << nodes;
-	} // end for t
 } // end buildLattice
-	
-	
 
+
+
+// THREE FACTOR LMM LATTICE
+
+
+LmmLattice3F::
+LmmLattice3F
+(LiborFactorLoading* fl, int t, int steps=1, bool verbose=false) :	
+LmmLattice(3,fl,t,steps) 
+{   
+	buildLattice(t*steps,verbose);     // m=t*steps is the number of time steps
+	if(verbose) testFactorization();
+}
+
+
+LmmLattice3F* 
+LmmLattice3F::
+sample(int n, int p, int nSteps, bool verbose=false) 
+{
+	LiborFactorLoading*
+	fl=LiborFactorLoading::sample(n,VolSurface::CONST,Correlations::CS);
+	LmmLattice3F* lattice = new LmmLattice3F(fl,p,nSteps,verbose);
+	return lattice;
+}
 
 
 void 
-ConstVolLmmLattice3F::
-test(int n) const
+LmmLattice3F::
+test(int n)
 {
 	Timer watch; watch.start();
-	LiborFactorLoading* 
-	fl=LiborFactorLoading::sample(n,VolSurface::CONST,Correlations::CS);
-	ConstVolLmmLattice3F lattice(fl,n-3);
-	lattice.selfTest();
+	LmmLattice3F* lattice = sample(n,n,1,true);
+	lattice->rescaleVols();
+	lattice->selfTest();
+	delete lattice;
 	watch.stop();
-	watch.report("3 factor LMM lattice construction and self test");
+	watch.report("Three factor LmmLattice test");
 }
+		
+		
+void 
+LmmLattice3F::
+buildLattice(int m, bool verbose)
+{
+	if(verbose)
+	cout << "\n\nBuilding lattice: " << *this
+	          << "\n\nTime steps: " << m << endl << endl;
+	LatticeBuilder::
+	buildThreeFactorLattice<LmmNode,LmmLatticeData>(m,nodeList,latticeData,verbose);         	
 
+} // end buildLattice
 
 
 
 MTGL_END_NAMESPACE(Martingale)
-
-
-
 

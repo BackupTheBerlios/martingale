@@ -25,6 +25,7 @@ spyqqqdia@yahoo.com
 #include "Random.h"
 #include "StochasticProcess.h"
 #include "FactorLoading.h"
+#include "Matrix.h"
 
 
 MTGL_BEGIN_NAMESPACE(Martingale)

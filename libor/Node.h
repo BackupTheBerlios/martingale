@@ -26,16 +26,21 @@ spyqqqdia@yahoo.com
 
 #include "TypedefsMacros.h"
 #include "Utils.h"
-#include "Array.h"
-#include "LiborFunctional.h"
-#include <vector>
+#include "Array.h"                    // problem with typdefs in forward declarations
+#include <vector>                     // direct member
 
-MTGL_BEGIN_NAMESPACE(Martingale)
 
 using std::vector;
 
+
+
+MTGL_BEGIN_NAMESPACE(Martingale)
+
+
 // forward declarations
 class LiborFactorLoading;             // LiborFactorLoading.h
+class std::ostream;
+// class RealArray1D;
 
 
 /*! \file Node.h
@@ -167,16 +172,16 @@ public:
  *
  *********************************************************************************/
 
+
 // forward declaration
 class LmmLatticeData;
-
 	
 
-/** <p>Lightweight base for nodes in an {@link LmmLattice}.
+/** <p>Node in an {@link LmmLattice}.
  *  Stores only the two state variables from which the accrual factors
- *  \f$H_j\f$ are computed. Here we store as little as possible in each node.
+ *  \f$H_j\f$ are computed. Smallest possible memory footprint.
  */
-class LmmNode_LiteBase : public Node {
+class LmmNode : public Node {
 	
 protected:
 	
@@ -188,9 +193,9 @@ public:
  *  @param k state Z_j=k[j]*a of the driving Brownian motion Z.
  *  @param info object encapsulating information about the lattice the node lives in.
  */
-LmmNode_LiteBase(int s, const IntArray1D& k, LmmLatticeData* latticeData);
+LmmNode(int s, const IntArray1D& k, LmmLatticeData* latticeData);
 
-~LmmNode_LiteBase(){ delete[] k_; }
+virtual ~LmmNode(){ delete[] k_; }
 
 
 /** The state Z_j=k[j]*a of the Brownian driver at this node.
@@ -207,8 +212,30 @@ int* getIntegerTicks(){ return k_; }
  */
 const RealArray1D& Hvect(int p);
 
-/** Prints what type of node it is.*/
-static std::ostream& printType(std::ostream& os);
+	
+/** The forward price \f$H_{p,q}\f$ of the annuity \f$B_{p,q}\f$ over the 
+ *  interval [T_p,T_q] at this node.
+ */
+Real H_pq(int p, int q);
+	
+	
+/** The swaprate \f$S_{p,q}\f$ for a swap on the interval [T_p,T_q] at this node.
+ */
+Real swapRate(int p, int q);
+	
+	
+/** Payoff of a forward swaption with strike rate kappa exercising into a swap on 
+ *  the interval [T_p,T_q] at this node. Payoff is accrued forward to the horizon T_n. 
+ */
+Real forwardSwaptionPayoff(int p, int q, Real kappa);
+
+
+/** Forward accrued payoff of a caplet with strike rate kappa at this node. 
+ *  Assumes that the node lives at the Libor reset point at which Libor for
+ *  this caplet is set.
+ */
+Real forwardCapletPayoff(Real kappa);
+
 
 /** Diagnostic. Prints the time t, vector H and field pi.*/
 std::ostream& printSelf(std::ostream& os);
@@ -229,158 +256,8 @@ private:
 int get_t() const;
 
 
-}; // end LmmNode_LiteBase
-	
-	
-
-/** Heavyweight nodes in an {@link LmmLattice}.
- *  Stores the entire vector \f$H=(H_j,\dots,H_n)\f$ of accrual factors
- *  still alive at the time at which the node lives. The values are computed
- *  in the constructor of the node.
- */
-class LmmNode_HeavyBase : public Node {
-	
-protected:
-	
-   LmmLatticeData* lattice;   // information about the LmmLattice the node lives in.
-
-public:
-/** 
- *  @param s number of time steps to reach the node from time zero.
- *  @param k state Z_j=k[j]*a, a=sqrt(dt), of the Brownian driver Z.
- *  @param info object encapsulating information about the lattice the node lives in.
- */
-LmmNode_HeavyBase(int s, const IntArray1D& k, LmmLatticeData* latticeData);	
-~LmmNode_HeavyBase(){ delete[] k_; }
-
-
-/** The state Z_j=k[j]*a of the Brownian driver at this node.
- *  Here a=sqrt(dt) is the ticksize of a standard Brownian motion Z over a time step 
- *  of size dt.
- */
-int* getIntegerTicks(){ return k_; }
-	
-/** The vector \f$H=(H_p,\dots,H_n)\f$ of accrual factors at the node.
- *  Natural indices j=p,...,n.
- */
-const RealArray1D& Hvect(int p){ return H_; }
-
-/** Prints what type of node it is.*/
-static std::ostream& printType(std::ostream& os);
-
-/** Diagnostic. Prints the time t, vector H and field pi.*/
-std::ostream& printSelf(std::ostream& os) const;
-
-
-private:
-
-	int* k_;                           // Z_j=k[j]*a, a=sqrt(dt) the tick size of a standard Brownian 
-	                                   // motion over an interval of length dt.
-	RealArray1D H_;                    // the vector H=(H_j,...,H_n) of accrual factors still alive
-	                                   // at the time at which the node lives.
-    static RealArray1D V_;             // workspace for the volatility parts V_j of the log(U_j),
-                                       // book 8.1
-
-/** Returns t such that the node lives in the accrual interval \f$(T_{t-1},T_t]\f$.
- */
-int get_t() const;
-
-
-}; // end LmmNode_HeavyBase
-
-
-
-
-/** <p>General node in an {@link LmmLattice}. Heavy or lightweight according as to 
- *  which base class is chosen as the template parameter:
- *
- * <p><b>LmmNodeBase=LmmNode_LiteBase.</b> This results in lightweight nodes which
- * use less memory but increase the computational burden. The preferred approach
- * since it allows us to have lattices with 2,500,000 nodes.
- * Two factor lattices can be built for about 230 time steps (1GB main memory).
- *
- * <p><b>LmmNodeBase=LmmNode_HeavyBase.</b> This results in heavyweight nodes which
- * use much more memory but decrease the computational burden.
- * Two factor lattices can be built for about 50 time steps (1GB main memory).
- * Unclear if this memory - computation tradeoff is worth it since processor
- * to main memory communication is so slow.
- *
- * <p>The Barton-Nachman trick (derivation from template parameter) is used to
- * avoid making a virtual function call to the basic method Hvect(int).
- *
- */
-template<class LmmNodeBase>
-class LmmNode : public LmmNodeBase {
-	
-public :
-	
-	/** The base type {@link LmmNode_LiteBase} or {@link LmmNode_HeavyBase} */
-	typedef LmmNodeBase BaseType;
-	
-/** The parameter signature is that of the base class constructors 
- *  LmmNodeBase(...).
- *  
- *  @param s number of time steps to reach the node from time zero.
- *  @param k state Z_j=k[j]*a, a=sqrt(dt), of the Brownian driver Z.
- *  @param info object encapsulating information about the lattice the node lives in.
- */
-LmmNode(int s, const IntArray1D& k, LmmLatticeData* latticeData) :
-LmmNodeBase(s,k,latticeData)
-{   }
-
-	
-/** The forward price \f$H_{p,q}\f$ of the annuity \f$B_{p,q}\f$ over the 
- *  interval [T_p,T_q] at this node.
- */
-Real H_pq(int p, int q)
-{
-	const RealArray1D& H=Hvect(p);
-	Real delta = lattice->delta;
-	return LiborFunctional::H_pq(p,q,H,delta);
-}
-	
-	
-/** The swaprate \f$S_{p,q}\f$ for a swap on the interval [T_p,T_q] at this node.
- */
-Real swapRate(int p, int q)
-{
-	const RealArray1D& H=Hvect(p);
-	Real delta = lattice->delta;
-	return LiborFunctional::swapRate(p,q,H,delta);
-}
-	
-	
-/** Payoff of a forward swaption with strike rate kappa exercising into a swap on 
- *  the interval [T_p,T_q] at this node. Payoff is accrued forward to the horizon T_n. 
- */
-Real forwardSwaptionPayoff(int p, int q, Real kappa)
-{
-	const RealArray1D& H=Hvect(p);
-	Real delta = lattice->delta;
-	return LiborFunctional::forwardSwaptionPayoff(p,q,kappa,H,delta);
-}
-
-/** Forward accrued payoff of a caplet with strike rate kappa at this node. 
- *  Assumes that the node lives at the Libor reset point at which Libor for
- *  this caplet is set.
- */
-Real forwardCapletPayoff(Real kappa)
-{
-	const RealArray1D& H=Hvect(p);
-	int i=get_t();
-	Real delta = lattice->delta;
-	return LiborFunctional::forwardCapletPayoff(i,kappa,H,delta);
-}
-
-
 }; // end LmmNode
-
-
-/** Small and slower.*/
-typedef LmmNode<LmmNode_LiteBase> LiteLmmNode;
-/** Large and faster for repeated pricing in the same lattice.*/
-typedef LmmNode<LmmNode_HeavyBase> HeavyLmmNode;
-
+	
 		
 	
 	
@@ -395,14 +272,13 @@ typedef LmmNode<LmmNode_HeavyBase> HeavyLmmNode;
 class BasketLatticeData;
 
 
-/** <p>Lightweight nodes in a {@link BasketLattice}.
+/** <p>Node in a {@link BasketLattice}.
  *  Stores only the r state variables from which the assets
- *  \f$S_j\f$ are computed. Here we store as little as possible in each node.
- *
- * <p>The only service provided is the computation of the vector S
- * of accrual factors at this node.
+ *  \f$S_j\f$ are computed. Smallest possible memory footprint.
+ *  The only service provided is the computation of the asset
+ *  price vector S. 
  */
-class LiteBasketNode : public Node {
+class BasketNode : public Node {
 
 public:	
 /** 
@@ -410,8 +286,8 @@ public:
  *  @param k state Z_j=k[j]*a of the driving Brownian motion Z.
  *  @param info object encapsulating information about the lattice the node lives in.
  */
-LiteBasketNode(int s, const IntArray1D& k, BasketLatticeData* latticeData);
-~LiteBasketNode(){ delete[] k_; }
+BasketNode(int s, const IntArray1D& k, BasketLatticeData* latticeData);
+~BasketNode(){ delete[] k_; }
 	
 /** <p>The vector of assets \f$S=(S_p,\dots,S_n)\f$ at the node.
  *  Natural indices j=p,...,n.
@@ -427,8 +303,6 @@ const RealArray1D& Svect(int p);
  */
 int* getIntegerTicks(){ return k_; }
 
-/** Prints what type of node it is.*/
-static std::ostream& printType(std::ostream& os);
 
 /** Diagnostic. Prints the time t, vector H and field pi.*/
 std::ostream& printSelf(std::ostream& os);
@@ -445,62 +319,8 @@ private:
 	                                 // motion over an interval of length dt.
 
 
-}; // end LiteBasketNode
+}; // end BasketNode
 
-
-	
-	
-
-/** Heavyweight node in a {@link BasketLattice}.
- *  Stores the entire asset vector \f$S=(S_1,\dots,S_n)\f$ at the node. 
- *  The values are computed in the constructor of the node.
- */
-class HeavyBasketNode : public Node {
-
-public:
-/** 
- *  @param s number of time steps to reach the node from time zero.
- *  @param k state Z_j=k[j]*a, a=sqrt(dt), of the Brownian driver Z.
- *  @param info object encapsulating information about the lattice the node lives in.
- */
-HeavyBasketNode(int s, const IntArray1D& k, BasketLatticeData* latticeData);	
-~HeavyBasketNode(){ delete[] k_; }
-	
-	
-/** The vector of assets \f$S=(H_p,\dots,H_n)\f$ at the node.
- *  Natural indices j=p,...,n.
- */
-const RealArray1D& Svect(int p){ return S_; }
-
-/** The state Z_j=k[j]*a of the Brownian driver at this node.
- *  Here a=sqrt(dt) is the ticksize of a standard Brownian motion Z over a time step 
- *  of size dt.
- */
-int* getIntegerTicks(){ return k_; }
-
-/** Prints what type of node it is.*/
-static std::ostream& printType(std::ostream& os);
-
-/** Diagnostic. Prints the time t, vector H and field pi.*/
-std::ostream& printSelf(std::ostream& os) const;
-
-
-private:
-
-    static RealArray1D V_;             // workspace for the volatility parts V_j of the log(S_j),
-                                       // book 3.11
-	BasketLatticeData* lattice;        // information about the Lattice the node lives in.
-	int* k_;                           // Z_j=k[j]*a, a=sqrt(dt) the tick size of a standard Brownian 
-	                                   // motion over an interval of length dt.
-	RealArray1D S_;                    // the vector S=(S_0,...,S_{n-1}) of assets the node.
-
-/** Returns t such that the node lives in the accrual interval \f$(T_{t-1},T_t]\f$.
- */
-int get_t() const;
-
-
-}; // end HeavyBasketNode
-		
 	
 
 	

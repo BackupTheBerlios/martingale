@@ -169,6 +169,39 @@ in TestLMM.h#testLatticeSwaption() but dies on array index out of bound error
 the second time through the loop. 
 
 
+<h3>8-11-03:</h3>
+
+Fix the above mentioned bug.
+Clean up the include structure: get rid of &lt;iostream&gt; in all headers, include this in the
+source files instead. In headers declare
+<p>
+class std::ostream;
+<p>
+Insource files include &lt;iostream&gt; and declare
+<p>
+using std::ostream;<br>
+using std::cout;<br>
+using std::endl;<br>
+<p>
+In general make includes in headers MINIMAL (compile times).
+Get rid of all operators
+<p>
+ostream& operator &lt;&lt; (ostream& os, const T& t)
+<p>
+since these are now covered by a template in Utils.h.
+
+
+<a name="8-12-03"></a>
+<h3>8-12-03:</h3>
+
+Clear up the problem with the typedef in forward declarations and remove "#include Matrix.h"
+from headers if it is not really needed.
+Seemingly we don't have to declare std::ostream; Find out if this is really so or if <iostream> is
+sloppily included somewhere.
+Clear up the linker problem when splitting TestLMM.h into header and source file.
+Split all Test*.h files into header and source files.
+
+
 
 </body>
 </html>

@@ -21,14 +21,19 @@ spyqqqdia@yahoo.com
 */
 
 #include "LowFactorDriftlessLMM.h"
+#include "Utils.h"
 #include "Array.h"
-//#include "Matrices.h"
 #include "Matrix.h"
 #include "StochasticGenerator.h"
 #include "LiborFactorLoading.h"
 #include <cmath>
-//#include <math.h>
 #include <algorithm>
+
+using std::ostream;
+using std::cout;
+using std::endl;
+using std::log;
+using std::exp;
 
 
 MTGL_BEGIN_NAMESPACE(Martingale)
@@ -141,7 +146,7 @@ printWienerIncrements(int t, int s) const
 	for(int k=0;k<r;k++){ 
 		
 		cout << Z(u,k) << " "; 
-		if(k==r-1) std::cout << endl; 
+		if(k==r-1) cout << endl; 
 	}
 } // end printWienerIncrements
 	
@@ -377,9 +382,9 @@ factorizationTest() const
 
 
 	 
-std::ostream& 
+ostream& 
 LowFactorDriftlessLMM::
-printSelf(std::ostream& os) const
+printSelf(ostream& os) const
 {
 	return
 	os << "\nDriftless Libor Market Model, random dynamics: " << *SG

@@ -24,8 +24,7 @@ spyqqqdia@yahoo.com
 #define martingale_dirichletproblem_h
 
 #include "TypedefsMacros.h"
-//#include "Matrices.h"
-#include "Matrix.h"
+#include "Matrix.h"                           // typedef problem in forward declarations
 
 MTGL_BEGIN_NAMESPACE(Martingale) 
 
@@ -36,6 +35,7 @@ class EuclideanRegion;
 class Ball;
 class VectorBrownianMotion;
 class StoppingTime;
+// class RealVector
  
  
 /** <p>This class solves the Dirichlet problem for a EuclideanRegion G (in any dimension): 

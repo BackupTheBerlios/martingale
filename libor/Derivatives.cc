@@ -38,11 +38,11 @@ spyqqqdia@yahoo.com
 #include "DriftlessLMM.h"
 #include "LowFactorDriftlessLMM.h"
 #include "LiborMarketModel.h"          // Bond
-#include <math.h>
-#include <cmath>
-#include <algorithm>
-//#include <string>
+#include <algorithm>                   // max
 #include <iostream>
+
+
+using std::ostream;
 
 
 MTGL_BEGIN_NAMESPACE(Martingale)
@@ -143,12 +143,6 @@ getControlVariateMean()
 
 
 
-// GLOBAL INSERTION
-
-std::ostream& operator << 
-(std::ostream& os, const Derivative& fl){ return fl.printSelf(os); }
-
-
 /*******************************************************************************
  *
  *                          LIBOR DERIVATIVE
@@ -167,9 +161,9 @@ LiborDerivative::
 effectiveDimension() const { return LMM->effectiveDimension(0, horizon); }
 	
 	
-std::ostream& 
+ostream& 
 LiborDerivative::
-printSelf(std::ostream& os) const { return os << "Generic Libor Derivative"; } 
+printSelf(ostream& os) const { return os << "Generic Libor Derivative"; } 
 	
 		
 
@@ -328,9 +322,9 @@ analyticForwardPrice() const
 } 
    
 
-std::ostream& 
+ostream& 
 Caplet::
-printSelf(std::ostream& os) const
+printSelf(ostream& os) const
 { return os << "\nCaplet Cplt([T_"<<i<<",T_"<<i+1<<"],"<<kappa<<")"; }
 
 
@@ -372,7 +366,7 @@ nextForwardPayoff()
 	Real S_pqT,B_pqT,h,f;
 	S_pqT=LMM->swapRate(p,q,t);                   // swaprate S_{p,q}(T_t)
     B_pqT=LMM->B_pq(p,q,t);
-    h=B_pqT*max<Real>(S_pqT-kappa,0.0);           // payoff at time T_t
+    h=B_pqT*max(S_pqT-kappa,0.0);                 // payoff at time T_t
     f=LMM->H_ii(t);                               // H_t(T_t) accrual T_t->T_n at time T_t
      // move this from time T_t to time T_n
     return f*h;	
@@ -398,7 +392,7 @@ nextControlledForwardPayoff()
     Real S_pqT,B_pqT,h,ft,fp,fq;
 	S_pqT=LMM->swapRate(p,q,t);                   // swaprate S_{p,q}(T_t)
 	B_pqT=LMM->B_pq(p,q,t);
-	h=B_pqT*max<Real>(S_pqT-kappa,0.0);           // payoff at time T_t
+	h=B_pqT*max(S_pqT-kappa,0.0);                 // payoff at time T_t
 	ft=LMM->H_ii(t),                              // H_t(T_t) accrual to horizon from time t
 	fp=LMM->H_it(p,t),                            // H_p(T_t)
 	fq=LMM->H_it(q,t);                            // H_q(T_t)
@@ -425,9 +419,9 @@ analyticForwardPrice() const
 } 
    
 
-std::ostream& 
+ostream& 
 Swaption::
-printSelf(std::ostream& os) const
+printSelf(ostream& os) const
 {  return os << "\nSwaption Swpn(T_"<<t<<",[T_"<<p<<",T_"<<q<<"],"<<kappa<<")"; }
 
 	
@@ -545,9 +539,9 @@ analyticForwardPrice() const
    
   
    
-std::ostream& 
+ostream& 
 BondCall::
-printSelf(std::ostream& os) const
+printSelf(ostream& os) const
 {  
    os << "Call on bond B with strike K =: " << K << endl;
    return B->printSelf(os);                                         // linkage problems with os << *B

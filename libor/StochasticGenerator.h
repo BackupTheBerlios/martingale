@@ -24,18 +24,23 @@ spyqqqdia@yahoo.com
 #define martingale_stochasticgenerator_h
 
 #include "TypedefsMacros.h"
+#include "Utils.h"
 #include "Random.h"
-//#include "Matrices.h"
-#include "Matrix.h"
-#include <iostream>
+#include "Matrix.h"          // problem with typedefs in forward declarations
+
 
 MTGL_BEGIN_NAMESPACE(Martingale) 
 
 
 
 
-// we are using
+// depedencies
 class LowDiscrepancySequence;
+//class RealVector;
+//class UTRRealMatrix;
+//class RealMatrix;
+//class RealArray2D;
+class std::ostream;
 
 
 
@@ -147,9 +152,6 @@ public:
 }; // end StochasticGenerator
 
 
-
-// GLOBAL INSERTION
-std::ostream& operator << (std::ostream& os, const StochasticGenerator& sg);
 
 
 /*********************************************************************************

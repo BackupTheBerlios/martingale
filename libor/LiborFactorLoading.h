@@ -27,17 +27,24 @@ spyqqqdia@yahoo.com
 #define martingale_liborfactorloading_h
 
 #include "TypedefsMacros.h"
-//#include "Matrices.h"
-#include "Matrix.h"
-#include "VolatilityAndCorrelation.h"
-#include <string>
-#include <iostream>
+#include "Array.h"                            // direct members
+#include "Matrix.h"                           // problem with typedefs in forward declarations
+#include <string>                             // problem with string forward declaration
+#include "VolatilityAndCorrelation.h"         // reference to VolSurface::JR, Correlations::CS
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
-// we are using
-extern Real exp(Real);
+// dependencies
+class std::ostream;
+// class VolSurface;
+// class Correlations;
+// extern int VolSurface::JR;
+// extern int Correlations::CS;
+// class std::string;
+// class RealArray1D;
+
+
 
 
 
@@ -60,17 +67,15 @@ extern Real exp(Real);
 	  /** @param volSurface VolSurface::CONST,JR,M.
 	   *  @param correlations Correlations::JR,CS.
 	   */
-	  LiborFactorLoadingType(int volSurface, int correlations) :
-	  volType(volSurface), corrType(correlations) {    }                                                                         
+	  LiborFactorLoadingType(int volSurface, int correlations);                                                                    
 	  
-      std::string volSurfaceType() const { return VolSurface::volSurfaceType(volType); }
-	  std::string correlationType() const { return Correlations::correlationType(corrType); }
+      std::string volSurfaceType() const;
+	  std::string correlationType() const;
 	  
-	  friend std::ostream& operator << (std::ostream&, const LiborFactorLoadingType&);
+	  std::ostream& printSelf(std::ostream&) const;
 };
 
-// global insertion
-std::ostream& operator << (std::ostream& os, const LiborFactorLoadingType& flType);
+
 
 
 

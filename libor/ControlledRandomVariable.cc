@@ -22,9 +22,17 @@ spyqqqdia@yahoo.com
 
 
 #include "ControlledRandomVariable.h"
+#include "RandomObject.h"                 
+#include "Matrix.h"
 
 
 MTGL_BEGIN_NAMESPACE(Martingale)
+
+
+ControlledRandomVariable::
+ControlledRandomVariable() : RandomVector(2), 
+beta(0.0) 
+{ }
 
 		 
 Real 

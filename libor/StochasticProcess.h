@@ -23,6 +23,7 @@ spyqqqdia@yahoo.com
 #ifndef martingale_stochasticprocess_h
 #define martingale_stochasticprocess_h
 
+// template class fully defined in header
 #include "Array.h"
 #include "RandomObject.h"
 #include "StochasticGenerator.h"

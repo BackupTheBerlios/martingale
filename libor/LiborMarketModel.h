@@ -31,8 +31,8 @@ spyqqqdia@yahoo.com
 #define martingale_libormarketmodel_h
 
 #include "TypedefsMacros.h"
-//#include "Matrices.h"
-#include "Matrix.h"
+#include "Utils.h"
+#include "Matrix.h"                // problem with typedefs in forward declarations
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
@@ -44,10 +44,12 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  */
 
 
-// we are using
+// dependencies
+class std::ostream;
 struct LiborFactorLoadingType;
 class LiborFactorLoading;
 class Bond;  // defined below
+// class RealArray1D;
 
 
 
@@ -79,11 +81,10 @@ class Bond;  // defined below
 	  LiborMarketModelType(const LiborFactorLoadingType& lflType, int lmmType) :
 	  flType(lflType), type(lmmType)  {    }                                                                         
 	  
-	  friend std::ostream& operator << (std::ostream&, const LiborMarketModelType& lmmType);
+	  std::ostream& printSelf(std::ostream&) const;
 };
 
-// global insertion
-std::ostream& operator << (std::ostream& os, const LiborMarketModelType& lmmType);
+
 
 
 

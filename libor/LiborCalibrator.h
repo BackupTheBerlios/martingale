@@ -24,22 +24,27 @@ spyqqqdia@yahoo.com
 #define martingale_lmm_calibrator_h
 
 #include "TypedefsMacros.h"
-#include "FinMath.h"
-#include "LiborFactorLoading.h"
-#include "Optimizer.h"
 #include "Utils.h"
-#include <iostream>
-#include <fstream>
-#include <list>
-#include <string>
-#include <cmath>
-
-//#include <string>
-#include <math.h>
+#include "FinMath.h"
+#include "Matrix.h"                         // direct members 
+#include "Optimizer.h"                      // base class
+#include "VolatilityAndCorrelation.h"       // reference to VolSurface::JR, Correlations::CS
+#include <fstream>                          // direct members ifstream, ofstream
 
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
+// dependencies
+class std::ostream;
+class LiborFactorLoading;
+// class RealArray1D;
+// class RealVector;
+// class UTRRealMatrix;
+// template<class> class Array1D;
+// class VolSurface;
+// extern int VolSurface::JR;
+// class Correlations;
+// extern int Correlations::CS;
 
 
 
@@ -443,12 +448,7 @@ public:
 	 const char* swaptionsInFile="SwaptionsIn.txt", 
 	 const char* capletsOutFile="CapletsOut.txt", 	 
 	 const char* swaptionsOutFile="SwaptionsOut.txt"
-	) :	
-    LmmCalibrator(fl,capletsInFile,swaptionsInFile,capletsOutFile,swaptionsOutFile),
-	capletImpliedSigma(fl->getDimension()-1,1),
-	cvMatrix(fl->getDimension()), 
-	x(fl->getDimension())
-    {    }
+	);
 
 	
 	

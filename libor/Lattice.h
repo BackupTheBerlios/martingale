@@ -23,6 +23,7 @@ spyqqqdia@yahoo.com
 #ifndef martingale_lattice_h    
 #define martingale_lattice_h
 
+// definitions are in the header
 #include "TypedefsMacros.h"
 #include "Node.h"
 #include <vector>

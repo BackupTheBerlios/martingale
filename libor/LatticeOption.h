@@ -23,7 +23,7 @@ spyqqqdia@yahoo.com
 #ifndef martingale_latticeoption_h    
 #define martingale_latticeoption_h
 
-// template class must be implemented in header
+// definitions are in header
 #include "TypedefsMacros.h"
 #include "LatticeOption.h"
 #include "Node.h"
@@ -288,23 +288,15 @@ static void test(int p, int q, int nSteps, bool verbose=false)
 }	
 	
 	
-	
 }; // end LatticeSwaption
 
 
 
-
 /** Swaption in two factor lightweight Lmmlattice.*/
-typedef LatticeSwaption<LiteLmmLattice2F> LiteLatticeSwaption2F;
+typedef LatticeSwaption<LmmLattice2F> LatticeSwaption2F;
 /** Swaption in three factor lightweight Lmmlattice.*/
-typedef LatticeSwaption<LiteLmmLattice3F> LiteLatticeSwaption3F;
-/** Swaption in two factor heavyweight Lmmlattice.*/
-typedef LatticeSwaption<HeavyLmmLattice2F> HeavyLatticeSwaption2F;
-/** Swaption in three factor heavyweight Lmmlattice.*/
-typedef LatticeSwaption<HeavyLmmLattice3F> HeavyLatticeSwaption3F;
-		
-	
-	
+typedef LatticeSwaption<LmmLattice3F> LatticeSwaption3F;
+
 
 
 

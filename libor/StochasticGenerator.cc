@@ -22,7 +22,11 @@ spyqqqdia@yahoo.com
 
 #include "StochasticGenerator.h"
 #include "QuasiMonteCarlo.h"
+#include "Random.h"
+#include "Matrix.h"
 #include <iostream>
+
+using std::ostream;
 
 
 MTGL_BEGIN_NAMESPACE(Martingale)
@@ -35,21 +39,12 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  *
  *********************************************************************************/
 
-std::ostream& 
+ostream& 
 StochasticGenerator::
-printSelf(std::ostream& os) const
+printSelf(ostream& os) const
 {
 	   return os << "\nUnspecified stochastic generator.";
 }
-
-
-
-
-// GLOBAL INSERTION
-
-std::ostream& operator << 
-(std::ostream& os, const StochasticGenerator& sg){ return sg.printSelf(os); }
-
 
 
 /*********************************************************************************
@@ -68,9 +63,9 @@ newWienerIncrements(int t, int T, UTRRealMatrix& Z)
 }
 
 
-std::ostream& 
+ostream& 
 MonteCarloLiborDriver::
-printSelf(std::ostream& os) const { return os << "Mersenne Twister."; }
+printSelf(ostream& os) const { return os << "Mersenne Twister."; }
 
 
 
@@ -98,9 +93,9 @@ SobolLiborDriver::
 restart(){ if(lds) lds->restart(); }
 	
 
-std::ostream& 
+ostream& 
 SobolLiborDriver::
-printSelf(std::ostream& os) const { return os << "Sobol sequence."; }
+printSelf(ostream& os) const { return os << "Sobol sequence."; }
 
 
 
@@ -124,9 +119,9 @@ newWienerIncrements(int t, int s, RealMatrix& Z)
 {   newWienerIncrements(t,s,Z.getData());  }
 	
 	
-std::ostream& 
+ostream& 
 MonteCarloVectorDriver::
-printSelf(std::ostream& os) const { return os << "Mersenne Twister."; }
+printSelf(ostream& os) const { return os << "Mersenne Twister."; }
 	
 
 
@@ -158,9 +153,9 @@ SobolVectorDriver::
 restart(){ if(lds) lds->restart(); }
 	
 
-std::ostream& 
+ostream& 
 SobolVectorDriver::
-printSelf(std::ostream& os) const { return os << "Sobol sequence."; }
+printSelf(ostream& os) const { return os << "Sobol sequence."; }
 
 
 /*********************************************************************************
@@ -178,9 +173,9 @@ newWienerIncrements(int t, int s, Real* Z)
 }
 	
 
-std::ostream& 
+ostream& 
 MonteCarloScalarDriver::
-printSelf(std::ostream& os) const { return os << "Mersenne Twister."; }
+printSelf(ostream& os) const { return os << "Mersenne Twister."; }
 
 
 
@@ -202,9 +197,9 @@ SobolScalarDriver::
 restart(){ if(lds) lds->restart(); }
 	
 
-std::ostream& 
+ostream& 
 SobolScalarDriver::
-printSelf(std::ostream& os) const { return os << "Sobol sequence."; }
+printSelf(ostream& os) const { return os << "Sobol sequence."; }
 
 
 MTGL_END_NAMESPACE(Martingale)

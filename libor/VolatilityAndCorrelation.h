@@ -27,7 +27,6 @@ spyqqqdia@yahoo.com
 #define martingale_volatilityandcorrelation_h
 
 #include "TypedefsMacros.h"
-//#include "Matrices.h"
 #include "Matrix.h"
 #include <string>
 #include <iostream>
@@ -42,9 +41,6 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  * {@link LiborFactorLoading}.
  */
 
-
-// we are using
-extern Real exp(Real);
 
 
 
@@ -169,10 +165,6 @@ public:
 
 }; // end VolSurface
 
-
-
-// GLOBAL INSERTION
-std::ostream& operator << (std::ostream& os, const VolSurface& vols);
 
 
 
@@ -406,10 +398,6 @@ public:
 	
 }; // end Correlations
 
-
-
-// GLOBAL INSERTION
-std::ostream& operator << (std::ostream& os, const Correlations& vols);
 
 
 

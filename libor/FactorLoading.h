@@ -27,14 +27,17 @@ spyqqqdia@yahoo.com
 #define martingale_factorloading_h
 
 #include "TypedefsMacros.h"
-#include "Matrix.h"
+#include "Matrix.h"                   // direct members
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 
-// we are using
+// dependencies
 class std::ostream;
+// class UTRRealMatrix;
+// class RealMatrix;
+// class RealArray1D;
 
 
 
@@ -174,9 +177,6 @@ public:
    
 }; // end FactorLoading
 
-
-// GLOBAL INSERTION
-std::ostream& operator << (std::ostream& os, const FactorLoading& fl);
 
 
 

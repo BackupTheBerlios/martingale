@@ -31,20 +31,21 @@ spyqqqdia@yahoo.com
 #define martingale_predictorcorrectorlmm_h
 
 #include "TypedefsMacros.h"
-#include "LiborMarketModel.h"
-//#include "Matrices.h"
-#include "Matrix.h"
+#include "LiborMarketModel.h"         // base class
+#include "Matrix.h"                   // direct members
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 
-// we are using
+// dependencies
 class StochasticGenerator;       // StochasticGenerator.h
 class SobolLiborDriver;
 class MonteCarloLiborDriver;
 class LiborFactorLoading;        // LiborFactorLoading.h
-
+// class UTRRealMatrix;
+// class RealArray1D;
+// class RealVector;
 
 
 

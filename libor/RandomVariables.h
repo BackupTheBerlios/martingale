@@ -27,7 +27,8 @@ spyqqqdia@yahoo.com
 #define martingale_randomvariables_h 
 
 #include "TypedefsMacros.h"
-#include "ControlledRandomVariable.h"
+#include "RandomObject.h"                     // base class
+#include "ControlledRandomVariable.h"       // base class
 
 
 MTGL_BEGIN_NAMESPACE(Martingale)

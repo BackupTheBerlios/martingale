@@ -25,15 +25,15 @@ spyqqqdia@yahoo.com
 #define martingale_lowfactordriftlesslmm_h
 
 #include "TypedefsMacros.h"
-#include "LiborMarketModel.h"
-//#include "Matrices.h"
-#include "Matrix.h"
+#include "LiborMarketModel.h"                // base class
+#include "Matrix.h"                          // direct members
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 
-// forward declarations
+// dependencies
+class std::ostream;
 class UTRMatrixSequence;
 class StochasticGenerator;       // StochasticGenerator.h
 class SobolLiborDriver;

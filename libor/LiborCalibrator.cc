@@ -23,19 +23,19 @@ spyqqqdia@yahoo.com
 #include "LiborCalibrator.h"
 #include "TypedefsMacros.h"
 #include "FinMath.h"
+#include "LiborFactorLoading.h"
 #include "LiborMarketModel.h"
 #include "Optimizer.h"
 #include "Utils.h"
 #include <iostream>
-#include <fstream>
 #include <list>
 #include <string>
 #include <cmath>
-
 #include "QuasiMonteCarlo.h"
 
-//#include <string>
-#include <math.h>
+using std::ostream;
+using std::istream;
+using std::abs;
 
 
 
@@ -58,7 +58,7 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  *  since we wan to use this function to write synthetic
  *  calibration data.
  */
-std::ostream& operator << (std::ostream& os, const SwaptionData& swpn)
+ostream& operator << (ostream& os, const SwaptionData& swpn)
 {
 	os << swpn.p << "  " << swpn.q << "  " << swpn.strike << "  " 
 	   << swpn.forwardPrice;
@@ -67,7 +67,7 @@ std::ostream& operator << (std::ostream& os, const SwaptionData& swpn)
 
 
 /** Read swaption data from stream: p, q, strike, forward price. */
-std::istream& operator >> (std::istream& is, SwaptionData& swpn)
+istream& operator >> (istream& is, SwaptionData& swpn)
 {
 	is >> swpn.p >> swpn.q >> swpn.strike >> swpn.forwardPrice;
     return is;
@@ -78,7 +78,7 @@ std::istream& operator >> (std::istream& is, SwaptionData& swpn)
 
 /** Write caplet data to stream: i, strike, forward price.
  */
-std::ostream& operator << (std::ostream& os, const CapletData& cplt)
+ostream& operator << (ostream& os, const CapletData& cplt)
 {
 	os << cplt.i << "  " << cplt.strike << "  " << cplt.forwardPrice << "  ";
     return os;
@@ -87,7 +87,7 @@ std::ostream& operator << (std::ostream& os, const CapletData& cplt)
 
 /** Read caplet data from stream: i, strike, forward price.
  */
-std::istream& operator >> (std::istream& is, CapletData& cplt)
+istream& operator >> (istream& is, CapletData& cplt)
 {
 	is >> cplt.i >> cplt.strike >> cplt.forwardPrice;
     return is;
@@ -360,6 +360,20 @@ meanRelativeCalibrationError()
  *              StandardLMM-Calibrator
  *
  *********************************************************************************/
+
+StandardLmmCalibrator::
+StandardLmmCalibrator
+(LiborFactorLoading* fl,
+ const char* capletsInFile="CapletsIn.txt", 
+ const char* swaptionsInFile="SwaptionsIn.txt", 
+ const char* capletsOutFile="CapletsOut.txt", 	 
+ const char* swaptionsOutFile="SwaptionsOut.txt"
+) :	
+LmmCalibrator(fl,capletsInFile,swaptionsInFile,capletsOutFile,swaptionsOutFile),
+capletImpliedSigma(fl->getDimension()-1,1),
+cvMatrix(fl->getDimension()), 
+x(fl->getDimension())
+{    }
 
 
 

@@ -23,12 +23,12 @@ spyqqqdia@yahoo.com
 #ifndef martingale_randomobject_h    
 #define martingale_randomobject_h
 
+// template class fully defined in header
 #include "TypedefsMacros.h"
-//#include "Matrices.h"
 #include "Matrix.h"
 #include "Utils.h"
 #include "Random.h"  
-#include <string>
+
 
 
 // The whole implementation is in the header!
