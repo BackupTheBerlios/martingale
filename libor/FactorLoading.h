@@ -107,10 +107,10 @@ public:
 	
  
 	
-    /** Constructor.
-     * @param dim dimension n of Y.
-     */
-    FactorLoading(int dim) : n(dim) {  }
+   /** Constructor.
+    * @param dim dimension n of Y.
+    */
+   FactorLoading(int dim) : n(dim) {  }
 	
 	
 // CORRELATIONS, VOLATILITIES, LOG-COVARIATION INTEGRALS
@@ -138,10 +138,15 @@ public:
    
 	/** Message and fields.*/
 	virtual std::ostream& printSelf(std::ostream& os) const = 0;
-   
+ 
+ 
+// CORRELATION OF RETURNS
 
-// LOG-COVARIATION MATRICES AND DRIFT LINEARIZATION MATRICES
+  /** The constant correlation matrix of the \f$Y_j=log(S_j)\f$.*/ 
+   const UTRRealMatrix& correlationMatrix() const;
 
+
+// LOG-COVARIATION MATRICES
    
   /** The matrix CV of covariations \f$\langle Y_i,Y_j\rangle_t^T\f$
    *  \f[CV_{ij}=\int_t^T\sigma_i(s)\sigma_j(s)\rho_{ij}(s)ds,\f]
@@ -189,7 +194,7 @@ std::ostream& operator << (std::ostream& os, const FactorLoading& fl);
 class ConstantFactorLoading : public FactorLoading {
 	
    UTRRealMatrix corr;          // the correlations rho_ij
-   RealVector sg;               // the volatilities sigma_i
+   RealArray1D sg;              // the volatilities sigma_i
 	
 public:
 	
@@ -197,10 +202,14 @@ public:
 	 *  @param vols constant volatilities \f$\sigma_i\f$.
 	 *  @param rho  constant instantaneous correlations \f$\rho_{ij}\f$.of \f$dY_i\f$..
 	 */
-	ConstantFactorLoading(int dim, const RealVector& vols, const UTRRealMatrix& rho) :
+	ConstantFactorLoading(int dim, const RealArray1D& vols, const UTRRealMatrix& rho) :
 	FactorLoading(dim), corr(rho), sg(vols) {  }
 
+	
 // CORRELATIONS, VOLATILITIES, LOG-COVARIATION INTEGRALS
+	
+   /** The asset volatilities. */
+   const RealArray1D& getVols() const { return sg; }
 
    /** Instantaneous correlation \f$\rho_{ij}\f$ of \f$dY_i\f$ increments.
     */

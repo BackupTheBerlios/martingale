@@ -722,9 +722,6 @@ struct ProductType<S,MatrixType,MatrixType> { typedef MatrixType type; };
 ***************************************************************************************/
 
 
-#define SMALL 30           // some memory allocation optimizations below this size
-
-
 /** <p>Square lower triangular, upper triangular, symmetric or general rectangular matrix 
  *  with indices based on arbitrary bases a,b stored in row major order. 
  *  This means that the indices used with the subscripting operators are 

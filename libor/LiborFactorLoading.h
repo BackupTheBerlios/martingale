@@ -135,7 +135,7 @@ protected:
 	
     VolSurface* vol;           // volatility surface
 	Correlations* corr;        // log-Libor correlations
-	Correlations&  rho;         // correlations *corrs
+	Correlations&  rho;        // correlations *corrs
 		
 public:
 	

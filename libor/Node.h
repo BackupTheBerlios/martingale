@@ -25,11 +25,10 @@ spyqqqdia@yahoo.com
 #define martingale_node_h
 
 #include "TypedefsMacros.h"
-//#include "Matrices.h"
-#include "Matrix.h"
 #include <list>
 
 MTGL_BEGIN_NAMESPACE(Martingale)
+
 
 
 // we are using
@@ -160,207 +159,130 @@ public:
  *
  *********************************************************************************/
 
+// forward declaration
+class LmmLatticeData;
+class RealArray1D;
+class IntArray1D;
 
-/** Single <a href="lmm-node">node</a> in an {@link LmmLattice} containing the vector H
- *  of accrual factors \f$H_j\f$ which  survive to the time at which the node lives.
- *  These are used as the most efficient means to store the state of the underlying 
- *  Libor process. Contains methods to compute Libors, swap rates, bonds, etc from these. 
- *  The mechanics of evolving the \f$H_j\f$ is left to derived classes.
- *  For more details see the file reference for the file Node.h (click on
- *  "File List").
- *  
+/** <p>Lightweight nodes in an {@link LmmLattice}.
+ *  Stores only the two state variables from which the accrual factors
+ *  \f$H_j\f$ are computed. Here we store as little as possible in each node.
+ *
+ * <p>The only service provided is the computation of the vector H
+ * of accrual factors at this node. This vector is the most efficient way
+ * to store the state of the Libor process at this node.
+ *
+ * <p>The other functionals of the Libor process such as 
+ * swaprates, swaption payoffs, caplet payoffs, annuities, bonds,...
+ * are computed from the vector H by global functions which take H as a 
+ * parameter. Reason: avoid the repeated computation of H.
  */
-class LmmNode : public Node {
-	
-protected:
-	
-	/** Factor loading of the underlying lMM. */
-	LiborFactorLoading* factorLoading;
-	
-	/** Dimension of underlying LMM. */
-	int n;
-	
-	/** Number of time steps in each Libor accrual interval. */
-	int nSteps;
-	
-	/** The accrual factors H_j(T_t), j=t,...,n at this node,
-	 *  natural indexation, index base t.
-	 */
-	RealArray1D H; 
+class LiteLmmNode {
 
 	
-public:
-	
-// ACCESSORS
-
-    /** Returns t such that the node lives in the accrual interval \f$(T_{t-1},T_t]\f$.
-	 */
-	int get_t() const
-    {
-		if(s%nSteps==0) return s/nSteps;
-		return s/nSteps+1;
-	}		
-	
-	RealArray1D& getH(){ return H; }
-	
-	
-// CONSTRUCTOR
-	
-	/** @param fl factor loading of underlying Libor process.
-	 *  @param s number of time steps to reach the node from time zero.
-	 *  @param steps number of time steps in each Libor accrual interval.
-	 */
-	LmmNode(LiborFactorLoading* fl, int s, int steps=1);
-				 
-	
-
-	
-// DIAGNOSTIC
-
-	
-	/** Diagnostic. Prints the time t, vector H and field pi.
-	 */
-	void printState() const;
-	
-	/** What type of LMM node it is (2 or 3 factors).*/
-	static std::ostream& printType(std::ostream& os);
-
-	
-	
-// LIBORS, SWAPRATES, ANNUITY (PBV)
-	
-	/** Libor \f$X_j=\delta_jL_j\f$ at this node.
-	 */
-	Real X(int j) const;
-
-	
-	/** Forward price of the annuity (PBV)
-	 *  \f$H_{p,q}=B_{p,q}/B_n=\sum\nolimits_{j=p}^{q-1}\delta_jH_{j+1}\f$
-	 *  at this node.
-	 */
-	Real Hpq(int p, int q) const;
-	
-	
-	/** Forward swaprate \f$S_{p,q}\f$ at this node, swap interval
-	 *  \f$[T_p,T_q]\f$, where \f$t\leq p<q\f$. Here t is the discrete time
-	 *  at which the node lives.
-	 */	  
-	Real swapRate(int p, int q) const { return (H[p]-H[q])/Hpq(p,q); }
-		
-
-// ZERO COUPON BONDS
-		
-    /** The zero coupon bond \f$B_i\f$ expiring at time \f$T_i\f$ at this node. 
-	 */
-	Real B_i(int i) const
-	{ 
-		int t=get_t();
-		return H[i]/H[t]; 
-	}
-	
-
-}; // end LmmNode
-	
-
-
-/**********************************************************************************
- *
- *            NODE IN 2 FACTOR LMM LATTICE
- *
- *********************************************************************************/
-
-
-
-
-/** <p><a href="lmm-node-3f">Node</a> in a 2 factor lattice for the Libor market 
- *  model {@link LmmLattice2F}.
- *  For more details see the file reference for the file Node.h (click on
- *  "File List").
+/** 
+ *  @param s number of the time step at which the node lives.
+ *  @param k state Z_j=k[j]*a of the driving Brownian motion Z.
+ *  @param info object encapsulating information about the lattice the node lives in.
  */
-class LmmNode2F : public LmmNode {
-	
-	int i,                  // Z1=ia
-		j;                  // Z2=ja,
-    // a=sqrt(dt) the tick size of a standard Brownian motion over an interval of length dt.
-	
-public:
-		
-// ACCESSORS
-	
-	int get_i() const { return i; }
-	int get_j() const { return j; }
-	
-	
-// CONSTRUCTOR
-	
-	/** @param s number of time steps to reach this node from time zero.
-	 *  @param nSteps number of time steps in each Libor acrual interval.
-	 *  @param k state Z_1=ka
-	 *  @param l state Z_2=la
-	 */
-	LmmNode2F(LiborFactorLoading* fl, int s, int nSteps, int k, int l) : LmmNode(fl,s,nSteps),
-    i(k), j(l)
-	{	}
-	
-	/** What type of LMM node it is (2 or 3 factors).*/
-	static std::ostream& printType(std::ostream& os);
-	
+LiteLmmNode(int s, const IntArray1D& k, int LmmLatticeInfo* info);
 
-}; // end LmmNode2F
+~LiteLmmNode(){ delete[] k_; }
 	
-
-
-
-/**********************************************************************************
- *
- *            NODE IN 3 FACTOR LMM LATTICE
- *
- *********************************************************************************/
-
-
-
-
-/** <p><a href="lmm-node-3f">Node</a> in a 3 factor lattice for the Libor market model 
- *  {@link LmmLattice3F}.
- *  For more details see the file reference for the file Node.h (click on
- *  "File List").
+/** <p>The vector \f$H=(H_p,\dots,H_n)\f$ of accrual factors at the node.
+ *  Natural indices j=p,...,n.
+ *  <p>This is a view of this vector in a static workspace (speed, no memory allocation).
+ *  If the vector has to be preserved it must be copied before commands execute
+ *  which overwrite the workspace.
  */
-class LmmNode3F : public LmmNode {
+const RealArray1D& Hvect(int p);
+
+/** Prints what type of node it is.*/
+static std::ostream& printType(std::ostream& os);
+
+/** Diagnostic. Prints the time t, vector H and field pi.*/
+std::ostream& printSelf(std::ostream& os) const;
+
+
+private:
+
+	static RealArray1D H_;           // workspace for accrual factors H_j
+	static RealArray1D V_;           // workspace for volatility parts V_j of the log(U_j)
+	                                 // book, 8.1
+	
+	int s_;                          // number of time step at which the node lives.
+	int* k_;                         // Z_j=k[j]*a, state of the Brownian driver
+	                                 // a=sqrt(dt) the tick size of a standard Brownian 
+	                                 // motion over an interval of length dt.
+	LmmLatticeInfo* lattice;         // information about the LmmLattice the node lives in.
+	
+/** Returns t such that the node lives in the accrual interval \f$(T_{t-1},T_t]\f$.
+ */
+int get_t() const;
+
+
+}; // end LiteLmmNode
+
+
+	
 	
 
-	int i,                  // state Z1=ia
-		j,                  // state Z2=ja
-	    k;                  // state Z3=ka,  
-    // a=sqrt(dt) the tick size of a standard Brownian motion over an interval of length dt.
-
+/** Heavyweight nodes in an {@link LmmLattice}.
+ *  Stores the entire vector \f$H=(H_j,\dots,H_n)\f$ of accrual factors
+ *  still alive at the time at which the node lives. The values are computed
+ *  in the constructor of the node.
+ *
+ * <p>The only service provided is the computation of the vector H
+ * of accrual factors at this node. This vector is the most efficient way
+ * to store the state of the Libor process at this node.
+ *
+ * <p>The other functionals of the Libor process such as 
+ * swaprates, swaption payoffs, caplet payoffs, annuities, bonds,...
+ * are computed from the vector H by global functions which take H as a 
+ * parameter. Reason: conformity with the case of LiteLmmNodes.
+ */
+class HeavyLmmNode {
 	
-public:
+/** 
+ *  @param s number of the time step at which the node lives.
+ *  @param k state Z_j=k[j]*a, a=sqrt(dt), of the Brownian driver Z.
+ *  @param info object encapsulating information about the lattice the node lives in.
+ */
+HeavyLmmNode(int s, const IntArray1D& k, LmmLatticeInfo* info);	
+~HeavyLmmNode(){ delete[] k_; }
+	
+	
+/** The vector \f$H=(H_p,\dots,H_n)\f$ of accrual factors at the node.
+ *  Natural indices j=p,...,n.
+ */
+const RealArray1D& Hvect(int p){ return H; }
+
+/** Prints what type of node it is.*/
+static std::ostream& printType(std::ostream& os);
+
+/** Diagnostic. Prints the time t, vector H and field pi.*/
+std::ostream& printSelf(std::ostream& os) const;
+
+
+private:
+
+	int s_;                            // number of time step at which the node lives.
+	int* k_;                           // Z_j=k[j]*a, a=sqrt(dt) the tick size of a standard Brownian 
+	                                   // motion over an interval of length dt.
+    LmmLatticeInfo* lattice;           // information about the LmmLattice the node lives in.
+	RealArray1D H_;                    // the vector H=(H_j,...,H_n) of accrual factors still alive
+	                                   // at the time at which the node lives.
+    static RealArray1D V_;             // workspace for the volatility parts V_j of the log(U_j),
+                                       // book 8.1
+
+/** Returns t such that the node lives in the accrual interval \f$(T_{t-1},T_t]\f$.
+ */
+int get_t() const;
+
+
+}; // end HeavyLmmNode
 		
-// ACCESSORS
 	
-	int get_i() const { return i; }
-	int get_j() const { return j; }
-	int get_k() const { return k; }
-	
-// CONSTRUCTOR
-	
-	/** @param s number of time steps to reach this node from time zero.
-	 *  @param nSteps number of time steps in each Libor acrual interval.
-	 *  @param p state Z1=pa.
-	 *  @param q state Z2=qa.
-	 *  @param r state Z3=ra.
-	 */
-	LmmNode3F(LiborFactorLoading* fl, int s, int nSteps, int p, int q, int r) : LmmNode(fl,s,nSteps),
-    i(p), j(q), k(r)
-	{	}
-				 
-	/** What type of LMM node it is (2 or 3 factors).*/
-	static std::ostream& printType(std::ostream& os);
-	
-
-}; // end LmmNode3F
-	
-
 	
 
 /**********************************************************************************
@@ -369,153 +291,108 @@ public:
  *
  *********************************************************************************/
 
+// forward declaration
+class BasketLatticeData;
 
-/** Single <a href="lmm-node">node</a> in a basket of assets with constant volatilities.
- *  Contains the vector S of asset prices.
- *  For more details see the file reference for the file BasketLattice.h.
- *  
+
+/** <p>Lightweight nodes in a {@link BasketLattice}.
+ *  Stores only the r state variables from which the assets
+ *  \f$S_j\f$ are computed. Here we store as little as possible in each node.
+ *
+ * <p>The only service provided is the computation of the vector S
+ * of accrual factors at this node.
  */
-class BasketNode : public Node {
-	
-protected:
-	
-	/** Number of assets */
-	int n;
-	
-	/** Vector of asset prices, index base zero.
-	 */
-	RealArray1D S; 
+class LiteBasketNode {
 
 	
-public:
-	
-// ACCESSORS
-	
-	/** Vector of asset prices. */
-	RealArray1D& getS() { return S; }
-	
-	
-// CONSTRUCTOR
-	
-	/** @param n number of assets.
-	 *  @param s number of time steps to reach the node from time zero.
-	 */
-	BasketNode(int _n, int _s): Node(s), n(_n), S(_n) { }
-				 
-	
-
-	
-// DIAGNOSTIC
-
-	
-	/** Diagnostic. Prints the time t, vector H and field pi.
-	 */
-	void printState() const;
-		
-	/** What type of LMM node it is (2 or 3 factors).*/
-	static std::ostream& printType(std::ostream& os);
-	 	
-
-}; // end BasketNode
-	
-
-
-
-/**********************************************************************************
- *
- *            NODE IN 2 FACTOR BASKET 
- *
- *********************************************************************************/
-
-
-
-/** Node in a 2 factor lattice for a basket of constant volatility assets.
- *  For more details see the file reference for the file BasketLattice.h.
+/** 
+ *  @param s number of the time step at which the node lives.
+ *  @param k state Z_j=k[j]*a of the driving Brownian motion Z.
+ *  @param info object encapsulating information about the lattice the node lives in.
  */
-class BasketNode2F : public BasketNode {
+LiteBasketNode(int s, const IntArray1D& k, int BasketLatticeData* latticeData);
+~LiteBasketNode(){ delete[] k_; }
 	
-	int i,                  // Z1=ia
-		j;                  // Z2=ja,
-    // a=sqrt(dt) the tick size of a standard Brownian motion over an interval of length dt.
-	
-public:
-		
-// ACCESSORS
-	
-	int get_i(){ return i; }
-	int get_j(){ return j; }
-	
-	
-// CONSTRUCTOR
-	
-	/** @param n number of assets.
-	 *  @param s number of time steps to reach this node from time zero.  
-	 *  @param k state Z_1=ka
-	 *  @param l state Z_2=la
-	 */
-	BasketNode2F(int n, int s, int k, int l) : BasketNode(n,s),
-    i(k), j(l)
-	{	}
-	
-	/** What type of node it is (2 or 3 factors).*/
-	static std::ostream& printType(std::ostream& os);
-	
-
-}; // end LmmNode2F
-	
-
-
-
-/**********************************************************************************
- *
- *            NODE IN 3 FACTOR BASKET LATTICE
- *
- *********************************************************************************/
-
-
-
-/** Node in a 3 factor lattice for a basket of constant volatility assets.
- *  For more details see the file reference for the file BasketLattice.h.
+/** <p>The vector of assets \f$S=(S_p,\dots,S_n)\f$ at the node.
+ *  Natural indices j=p,...,n.
+ *  <p>This is a view of this vector in a static workspace (speed, no memory allocation).
+ *  If the vector has to be preserved it must be copied before commands execute
+ *  which overwrite the workspace.
  */
-class BasketNode3F : public BasketNode {
+const RealArray1D& Svect(int p);
+
+/** Prints what type of node it is.*/
+static std::ostream& printType(std::ostream& os);
+
+/** Diagnostic. Prints the time t, vector H and field pi.*/
+std::ostream& printSelf(std::ostream& os) const;
+
+
+private:
+
+	static RealArray1D S_;           // workspace for the assets H_j
+	static RealArray1D V_;           // workspace for volatility parts V_j of the log(S_j)
+	                                 // book, 3.11 and 8.1.
+	
+	int s_;                          // number of time step at which the node lives.
+	int* k_;                         // Z_j=k[j]*a, state of the Brownian driver
+	                                 // a=sqrt(dt) the tick size of a standard Brownian 
+	                                 // motion over an interval of length dt.
+	BasketLatticeData* lattice;      // information about the Lattice the node lives in.
+
+
+}; // end LiteBasketNode
+
+
+	
 	
 
-	int i,                  // state Z1=ia
-		j,                  // state Z2=ja
-	    k;                  // state Z3=ka,  
-    // a=sqrt(dt) the tick size of a standard Brownian motion over an interval of length dt.
-
+/** Heavyweight node in a {@link BasketLattice}.
+ *  Stores the entire asset vector \f$S=(S_1,\dots,S_n)\f$ at the node. 
+ *  The values are computed in the constructor of the node.
+ */
+class HeavyBasketNode {
 	
-public:
+/** 
+ *  @param s number of the time step at which the node lives.
+ *  @param k state Z_j=k[j]*a, a=sqrt(dt), of the Brownian driver Z.
+ *  @param info object encapsulating information about the lattice the node lives in.
+ */
+HeavyBasketNode(int s, const IntArray1D& k, BasketLatticeData* latticeData);	
+~HeavyBasketNode(){ delete[] k_; }
+	
+	
+/** The vector of assets \f$S=(H_p,\dots,H_n)\f$ at the node.
+ *  Natural indices j=p,...,n.
+ */
+const RealArray1D& Svect(int p){ return S_; }
+
+/** Prints what type of node it is.*/
+static std::ostream& printType(std::ostream& os);
+
+/** Diagnostic. Prints the time t, vector H and field pi.*/
+std::ostream& printSelf(std::ostream& os) const;
+
+
+private:
+
+	int s_;                            // number of time step at which the node lives.
+	int* k_;                           // Z_j=k[j]*a, a=sqrt(dt) the tick size of a standard Brownian 
+	                                   // motion over an interval of length dt.
+	RealArray1D H;                     // the vector H=(H_j,...,H_n) of accrual factors still alive
+	                                   // at the time at which the node lives.
+    BasketLatticeData* lattice;        // information about the Lattice the node lives in.
+
+/** Returns t such that the node lives in the accrual interval \f$(T_{t-1},T_t]\f$.
+ */
+int get_t() const;
+
+
+}; // end HeavyLmmNode
 		
-// ACCESSORS
-	
-	int get_i(){ return i; }
-	int get_j(){ return j; }
-	int get_k(){ return k; }
-	
-// CONSTRUCTOR
-	
-	/** @param n number of assets.
-	 *  @param s number of time steps to reach this node from time zero.
-	 *  @param p state Z1=pa.
-	 *  @param q state Z2=qa.
-	 *  @param r state Z3=ra.
-	 */
-	BasketNode3F(int n, int s, int p, int q, int r) : BasketNode(n,s),
-    i(p), j(q), k(r)
-	{	}
-	
-	/** What type of node it is (2 or 3 factors).*/
-	static std::ostream& printType(std::ostream& os);
-				 
-	
-}; // end BasketNode3F
 	
 
-
-
-
+	
 MTGL_END_NAMESPACE(Martingale)
 
 #endif

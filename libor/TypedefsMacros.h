@@ -24,15 +24,17 @@ spyqqqdia@yahoo.com
 #define martingale_typedefsmacros_h
 #include <string>
 
-/*
- * TypedefsMacros.h
- *
- * Created on February 22, 2003, 6:00 PM
- */
 
 
 #define MTGL_BEGIN_NAMESPACE(name) namespace name {
 #define MTGL_END_NAMESPACE(name) }
+
+
+#define SMALL       30               // matrix optimizations below this size.
+#define LMM_MAX_DIM 300              // maximal dimension of a Libor process for
+                                     // which a lattice can be built.
+#define BASKET_MAX_DIM 300           // maximum number of assets in a basket for
+                                     // which a lattice can be built.
 
 // the basic scalar type
 typedef double Real;

@@ -67,10 +67,8 @@ class BasketNode3F;
  *  \f[\rho=UU',\f]
  *  where U is the matrix with rows \f$r_i(U)=u_i\f$. Typically the unit vectors 
  *  \f$u_i\f$ are not given but the correlation matrix \f$\rho\f$ is a model parameter.
- *  From this the matrix \f$U\f$ can be computed as a pseudo square root of \f$\rho\f$.
- *  See book, Appendix A.1. If we are willing to work with the full set of n factors
- *  we can compute U using the Cholesky factorization. This gives us some speed gain
- *  because of the triangular nature of the resulting matrix U. However we can also 
+ *  From this the matrix \f$U\f$ can be computed as a pseudo squareroot of \f$\rho\f$.
+ *  See book, Appendix A.1. To keep the number of nodes manageable we must 
  *  reduce the number of factors, that is, the dimension of the Brownian motion W.
  *  If we want to run an r-factor model we compute U as an approximate r-factor
  *  pseudo square root of \f$\rho\$. Then U is an \f$n\times r\f$ matrix and the 
@@ -130,6 +128,55 @@ class BasketNode3F;
  *         LATTICE FOR A BASKET OF ASSETS WITH CONSTANT VOLATILITIES
  *
  *********************************************************************************/
+ 
+ 
+ 
+/** Information about the LmmLattice which must be conveyed to the nodes.
+ */
+struct BasketLatticeData {
+	
+	int 
+	    /** number of assets: */     n,        
+	    /** number of time steps:*/  T,   
+	    /** number of factors: */    r;
+	
+	/** time step.*/
+	Real timestep;
+	/** ticksize a=sqrt(dt) of a standard Brownian motion over a single time step.*/
+	Real ticksize;
+	/** the volatilities \f$\sigma_j\f$.*/
+	const RealArray1D& sg;
+	/** the initial values \f$S_j(0)\f$.*/
+	const RealArray1D& S0;
+	/** drift -sigma_j^2*dt/2 of Y_j over a single time step.*/	
+	const RealArray1D& driftunit;  
+	/** rank r approximate pseudo square root of the log(S_j) covariance matrix.*/
+	const RealMatrix& R;     
+	
+
+	/** @param T number of time steps.
+	 *  @param dt size of time step.
+	 *  @param vols the volatilities \f$\sigma_j\f$.
+	 *  @param S_0 the initial values \f$S_j(0)\f$.
+	 *  @param Q rank r approximate pseudo square root of the log(S_j) covariation matrix.
+	 */
+	BasketLatticeInfo
+	(int T,
+     Real dt,
+	 const RealArrray1D& vols,
+	 const RealArrray1D& S_0,
+	 const RealMatrix& Q
+	) :
+	n(Q.rows()), nSteps(steps), r(Q.cols()), 
+	timestep(dt), ticksize(sqrt(dt)),
+	sg(vols), S0(S_0), driftUnit(n), R(Q)
+    {  
+		// drifts per time step
+		for(int i=0;i<n;i++) driftUnit[i]=-sg[i]*sg[i]*dt/2;
+	}
+	
+}; // end BasketLatticeInfo
+
 
 /** Lattice for a basket of constant volatility assets.
  *  No decision on the number of factors.
@@ -141,16 +188,16 @@ class BasketLattice : public Lattice<BasketNode> {
 protected:
 	
 	int n,       // number of assets
-	    T;       // number of time steps to the horizon
+	    T,       // number of time steps to the horizon
+	    r;       // the number of factors
 	    
-	Real dt,     // size of the time step
-	     a;      // a=sqrt(dt) tick size of standard Brownian motion
+	Real dt;     // size of time step
 	
 	// all indices start at zero
-	RealVector S0;         // initial asset prices
-	RealVector sg;         // volatilities sg[j]=sigma_j
-	RealVector driftunit;  // drift sigma_j^2*dt/2 of Y_j over a single time step
-	UTRRealMatrix rho;     // correlation matrix.	
+	RealArray1D S0;         // initial asset prices
+	RealArray1D sg;         // volatilities sg[j]=sigma_j
+	/** rank r approximate pseudo square root of the log(S_j) covariance matrix.*/
+	const RealMatrix& R;    
 	
 public:
 
@@ -168,20 +215,26 @@ public:
 // CONSTRUCTOR
 	
 	/** Use index base zero throughout.
-	 *  @param n number of assets
+	 *  @param r the number of factors.
+	 *  @param fl the factorloading of the assets.
 	 *  @param T number of time steps.
 	 *  @param dt size of time step.
 	 *  @param S0 initial asset prices.
-	 *  @param sg asset volatilities.
-	 *  @param rho correlation of returns.
+	 *  @param fl the factorloading of the assets.
 	 */
     BasketLattice
-    (int _n, int _T, Real _dt, RealVector _S0, RealVector _sg, UTRRealMatrix& _rho) : 
+    (int r, ConstantFactorLoading* fl int T_, Real dt_, RealVector S0_) : 
     Lattice<BasketNode>(_T),
-    n(_n), T(_T), dt(_dt), a(sqrt(dt)), S0(_S0), sg(_sg), driftunit(_n), rho(_rho)
-    {  
-	    for(int j=0;j<n;j++) driftunit[j]=-sg[j]*sg[j]*dt/2.0;
-    }
+    n(fl->getDimension()), T(_T), 
+	dt(_dt), S0(_S0), sg(fl->getVols()),
+	R(fl->correlationMatrix().rankReducedRoot(r)),
+	data(T_,dt_,sg,S0,R)
+    {    }
+
+	
+private:
+	
+	BasketLatticeData* data;
 	
   
 }; // end BasketLattice
