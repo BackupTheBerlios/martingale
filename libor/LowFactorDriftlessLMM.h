@@ -116,7 +116,7 @@ public:
 	 *  of the covariation matrices C(t) which control the time steps.
 	 *  See {@link LiborFactorLoading#factorizationTest}.
 	 */
-   void factorizationTest(){ factorLoading->factorizationTest(r); }
+   void factorizationTest() const { factorLoading->factorizationTest(r); }
 
 
 // LIBORS
@@ -147,7 +147,7 @@ public:
       * @param p index of first Libor.
       * @param t discrete time.
       */
-     vector<Real>& XLvect(int t, int p);
+      const vector<Real>& XLvect(int t, int p);
 		 
 
 	
@@ -163,16 +163,14 @@ public:
     LowFactorDriftlessLMM(LiborFactorLoading* fl, int r);
 	
 	
-		
-	/** Sample LMM based on {@link CS_FactorLoading}.
+	/** Sample LMM, quarterly accrual.
 	 *
 	 * @param n dimension (number of accrual intervals).
-	 * @param delta length of each accrual interval.
+	 * @param volType type of volatility surface (VolSurface::JR,M,CONST).
+	 * @param corrType type of correlations (Correlations::JR,CS).
 	 * @param r number of factors.
 	 */
-	static LiborMarketModel* sample(int n, int r, Real delta);
-
-
+	static LiborMarketModel* sample(int n, int r, int volType, int corrType);
     
 
 // WIENER INCREMENTS	
@@ -181,7 +179,7 @@ public:
 	/** Prints the matrix Z of current Wiener increments,
 	 *  method is used for testing only.
 	 */
-	void printWienerIncrements(int t, int s);
+	void printWienerIncrements(int t, int s) const;
 	
 	
 	/** <p>The effective dimension of the simulation, that is, the number of 
@@ -260,7 +258,7 @@ public:
       *
       * @param i Libor index.
       */
-     Real vol(int i)
+     Real vol(int i) const
      {
   		 Real Sigma=capletAggregateVolatility(i);
 		 return Sigma/sqrt(T[i]);
@@ -276,7 +274,7 @@ public:
 	 /** Accrual factor \f$H_i(0)=B_i(0)/B_n(0)\f$, forward transport  
       *  \f$T_i\rightarrow T_n\f$ with Libors in state at time t=0.
       */
-     Real H_i0(int i){ return H(0,i); }
+     Real H_i0(int i) const { return H(0,i); }
      
 
     /** <p>Accrual factor \f$H_i(T_t)=B_i(T_t)/B_n(T_t)\f$. This factor shifts
@@ -288,7 +286,7 @@ public:
      * @param t current discrete time (continuous time <code>T_t</code>).
      * @param i cashflow shifted from time <code>T_i</code> to horizon.
      */
-     Real H_it(int i, int t){ return H(t,i); }
+     Real H_it(int i, int t) const { return H(t,i); }
 
 
      
@@ -297,7 +295,7 @@ public:
      *
      * @param i cashflow shifted from time \f$T_i\f$ to horizon.
      */
-     Real H_ii(int i){ return H(i,i); }
+     Real H_ii(int i) const { return H(i,i); }
 	 
 	 
 	/** \f$H_{p,q}(T_t)=B_{p,q}(T_t)/B_n(T_t)\f$, the forward price at horizon of the 
@@ -306,7 +304,7 @@ public:
      * @param p,q annuity along \f$[T_p,T_q]\f$.
 	 * @param t price at time \f$T_t\f$ (accrued forward to time \f$T_n\f$).
      */
-     Real H_pq(int p, int q, int t);
+     Real H_pq(int p, int q, int t) const;
 
 
  
@@ -319,7 +317,7 @@ public:
      *  
      * @param i bond matures at time \f$T_i\f$.
      */
-     Real B0(int i){  return H(0,i)/H(0,0); }
+     Real B0(int i) const {  return H(0,i)/H(0,0); }
 
  
     /** The zero coupon bond \f$B_i(T_t)=B(s,T)\f$ with \f$s=T_t, T=T_i\f$. 
@@ -329,7 +327,7 @@ public:
      *  @param t bond evaluated at time \f$T_t\leq T_i\f$
      *  @param i bond matures at time \f$T_i\f$.
      */
-    Real B(int i, int t){ return H(t,i)/H(t,t); }
+    Real B(int i, int t) const { return H(t,i)/H(t,t); }
 
 	
 
@@ -347,14 +345,14 @@ public:
       * @param p,q swap along \f$[T_p,T_q]\f$.
       * @param t discrete time.
       */ 
-     Real swapRate(int p, int q, int t);
+     Real swapRate(int p, int q, int t) const ;
 
 
      /** <p>The forward swap rate \f$S_{pq}(t)=k(t,[T_p,T_q])\f$ at time t=0.
       *
       * @param p,q swap along \f$[T_p,T_q]\f$.
       */ 
-     Real swapRate(int p, int q){ return swapRate(p,q,0); } 
+     Real swapRate(int p, int q) const { return swapRate(p,q,0); } 
 
  
 	 
@@ -369,7 +367,7 @@ public:
       * @param p,q annuity along \f$[T_p,T_q]\f$.
       * @param t discrete time.
       */ 
-     Real B_pq(int p, int q, int t);
+     Real B_pq(int p, int q, int t) const ;
 
      
      /** The annuity \f$B_{pq}(t)=\sum\nolimits_{k=p}^{q-1}\delta_kB_{k+1}(t)\f$
@@ -377,7 +375,7 @@ public:
       *
       * @param p,q annuity along \f$[T_p,T_q]\f$.
       */ 
-     Real B_pq(int p, int q){ return B_pq(p,q,0); }
+     Real B_pq(int p, int q) const { return B_pq(p,q,0); }
 	 
 	 
 	 
@@ -391,7 +389,7 @@ public:
 	*
     * @param i caplet on \f$[T_i,T_{i+1}]\f$.
     */ 
-     Real capletAggregateVolatility(int i);
+     Real capletAggregateVolatility(int i) const;
 	 
 	 
    /** Forecast for the total swap rate volatility
@@ -403,7 +401,7 @@ public:
     * @param p,q swap along on \f$[T_p,T_q]\f$.
     * @param t swaption exercise at time \f$T_t\leq T_p\f$.
     */ 
-     Real swaptionAggregateVolatility(int p, int q, int t);
+     Real swaptionAggregateVolatility(int p, int q, int t) const;
 
 
    /** Forecast for the total volatility \f$\Sigma(0,T_t)\f$ (of the
@@ -413,7 +411,7 @@ public:
     * @param B the bond
     * @param t call on bond exercises at time \f$T_t\f$.
     */ 
-     Real bondAggregateVolatility(Bond* B, int t);
+     Real bondAggregateVolatility(Bond* B, int t) const;
 
 
 	 
@@ -422,7 +420,8 @@ public:
     
     /** A message what type of factor loading it is, all the parameter values.
      */
-    string toString();
+    std::ostream& printSelf(std::ostream& os) const;
+	 
 	 
              
 

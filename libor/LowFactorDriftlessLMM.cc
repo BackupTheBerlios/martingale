@@ -35,8 +35,8 @@ using namespace Martingale;
 
 	 
 // (X_p(T_t),...,X_{n-1}(T_t)) 
-vector<Real>& LowFactorDriftlessLMM::
-XLvect(int t, int p) 
+const vector<Real>& LowFactorDriftlessLMM::
+XLvect(int t, int p)   
 { 
 	XVec.setDimension(n-p);
 	XVec.setIndexBase(p);
@@ -70,12 +70,10 @@ XVec(n)
 	// the deterministic drift steps
 	for(int t=0;t<n-1;t++){
 			
-		UTRMatrix<Real>& cvm_t=factorLoading->logLiborCovariationMatrix(t);
-		Matrix<Real>& cvmr_t=(&cvm_t)->rankReducedRoot(r);
-		UTRMatrix<Real>* ptr_cvm_t=&cvm_t; 
-		Matrix<Real>* ptr_cvmr_t=&cvmr_t;
-		logLiborCovariationMatrices.setMatrix(t,ptr_cvm_t);
-        lowRankCovariationMatrixRoots.setMatrix(t,ptr_cvmr_t);
+		const UTRMatrix<Real>& cvm_t=factorLoading->logLiborCovariationMatrix(t);
+		const Matrix<Real>& cvmr_t=(&cvm_t)->rankReducedRoot(r);
+		logLiborCovariationMatrices.setMatrix(t,cvm_t);
+        lowRankCovariationMatrixRoots.setMatrix(t,cvmr_t);
 		// deterministic drift steps
 		for(int j=t+1;j<n;j++) m(t,j)=-0.5*cvm_t(j,j);
 			
@@ -92,10 +90,10 @@ XVec(n)
 	
 		
 LiborMarketModel* LowFactorDriftlessLMM::
-sample(int n, int r, Real delta)
+sample(int n, int r, int volType, int corrType)
 {
 	LiborFactorLoading* 
-	fl=LiborMarketModel::sampleFactorLoading(n,delta,LiborMarketModel::CS);
+	fl=LiborFactorLoading(n,volType,corrType);
 	return new LowFactorDriftlessLMM(fl,r);
 }
 
@@ -105,7 +103,7 @@ sample(int n, int r, Real delta)
 // WIENER INCREMENTS	
 	
 
-void LowFactorDriftlessLMM::printWienerIncrements(int t, int s)
+void LowFactorDriftlessLMM::printWienerIncrements(int t, int s) const 
 {
     // recall that Z is an upper triangular array
     for(int u=t;u<s;u++){
@@ -123,12 +121,12 @@ void LowFactorDriftlessLMM::printWienerIncrements(int t, int s)
     
 
 // Time step T_t->T_{t+1} for Libors X_j, j>=p
-void LowFactorDriftlessLMM::timeStep(int t, int p)
+void LowFactorDriftlessLMM::timeStep(int t, int p) 
 {   
      /* The matrices needed for the time step T_t->T_{t+1}.
 	  * Note: column index is zero based.
       */
-     Matrix<Real>& R=lowRankCovariationMatrixRoots.getMatrix(t); 
+     const Matrix<Real>& R=lowRankCovariationMatrixRoots.getMatrix(t); 
                     
      int q=max(t+1,p);   
      // only Libors U_j, j>=q make the step. To check the index shifts 
@@ -162,7 +160,7 @@ void LowFactorDriftlessLMM::timeStep(int t, int p)
 // FORWARD PRICE OF THE ANNUITY (PBV)
    
 // H_pq(T_t)
-Real LowFactorDriftlessLMM::H_pq(int p, int q, int t)
+Real LowFactorDriftlessLMM::H_pq(int p, int q, int t) const 
 {
 	Real sum=0;
 	for(int k=p;k<q;k++) sum+=delta[k]*H_it(k+1,t);
@@ -174,13 +172,13 @@ Real LowFactorDriftlessLMM::H_pq(int p, int q, int t)
              
 
      
-     // S_{pq}(T_t)=k(T_t,[T_p,T_q])
-     Real LowFactorDriftlessLMM::swapRate(int p, int q, int t)
-     { 
-         Real num=U(t,p), denom=delta[p]*H(t,p+1);
-		 for(int j=p+1;j<q;j++){ num+=U(t,j); denom+=delta[j]*H(t,j+1); }
-		 return num/denom;
-     } //end Swap_Rate
+// S_{pq}(T_t)=k(T_t,[T_p,T_q])
+Real LowFactorDriftlessLMM::swapRate(int p, int q, int t) const 
+{ 
+     Real num=U(t,p), denom=delta[p]*H(t,p+1);
+     for(int j=p+1;j<q;j++){ num+=U(t,j); denom+=delta[j]*H(t,j+1); }
+     return num/denom;
+} //end Swap_Rate
 
 
 	 
@@ -189,68 +187,72 @@ Real LowFactorDriftlessLMM::H_pq(int p, int q, int t)
                   
      
      
-     // B_{pq}(T_t)=\sum_{k=p}^{q-1}\delta_kB_{k+1}(T_t).
-     Real LowFactorDriftlessLMM::B_pq(int p, int q, int t)
-     { 
-         Real S=delta[p]*H(t,p+1);
-		 for(int j=p+1;j<q;j++) S+=delta[j]*H(t,j+1);
-	     return S/H(t,t);
-     } //end B_pq
+// B_{pq}(T_t)=\sum_{k=p}^{q-1}\delta_kB_{k+1}(T_t).
+Real LowFactorDriftlessLMM::B_pq(int p, int q, int t) const 
+{ 
+     Real S=delta[p]*H(t,p+1);
+	 for(int j=p+1;j<q;j++) S+=delta[j]*H(t,j+1);
+	 return S/H(t,t);
+} //end B_pq
 
  
 	 
 // SWAPTION AND CAPLET AGGREGATE VOLATILITIES (SIGMA)
 	 
 
-     Real LowFactorDriftlessLMM::
-	 capletAggregateVolatility(int i)
-     { 
-		 UTRMatrix<Real>& R=factorLoading->logLiborCovariationMatrix(i,n,0,T[i]).utrRoot();
-		 vector<Real> x(n-i,i);
-		 x[i]=1;
-		 Real f=H(0,i+1); 
-		 for(int j=i+1;j<n;j++)x[j]=-U(0,j)/f;
-		 x*=R.transpose();
-		 return x.norm();
-     } // end capletAggregateVolatility
+Real LowFactorDriftlessLMM::
+capletAggregateVolatility(int i) const 
+{ 
+    const UTRMatrix<Real>& 
+	R=factorLoading->logLiborCovariationMatrix(i,n,0,T[i]).utrRoot();
+    vector<Real> x(n-i,i);
+	x[i]=1;
+	Real f=H(0,i+1); 
+	for(int j=i+1;j<n;j++)x[j]=-U(0,j)/f;
+	x*=R.transpose();
+	return x.norm();
+} // end capletAggregateVolatility
 	 
 	 
 
-     Real LowFactorDriftlessLMM::
-	 swaptionAggregateVolatility(int p, int q, int t)
-     { 
-		 UTRMatrix<Real>& Q=factorLoading->logLiborCovariationMatrix(p,n,0,T[t]).utrRoot();
-		 vector<Real> x(n-p,p);
-		 Real denom1=H(0,p)-H(0,q),
-		      denom2=0;
-		 for(int j=p;j<q;j++) denom2+=delta[j]*H(0,j+1);
+Real LowFactorDriftlessLMM::
+swaptionAggregateVolatility(int p, int q, int t) const 
+{ 
+    const UTRMatrix<Real>& 
+	Q=factorLoading->logLiborCovariationMatrix(p,n,0,T[t]).utrRoot();
+	vector<Real> x(n-p,p);
+	Real denom1=H(0,p)-H(0,q),
+		 denom2=0;
+	for(int j=p;j<q;j++) denom2+=delta[j]*H(0,j+1);
 			 
-		 x[p]=U(0,p)/denom1;
-		 for(int j=p+1;j<q;j++)x[j]=U(0,j)/denom1-(T[j]-T[p])*U(0,j)/denom2;
-		 for(int j=q;j<n;j++)  x[j]=-(T[q]-T[p])*U(0,j)/denom2;
-		 x*=Q.transpose();
-		 return x.norm();
-     } // end swaptionAggregateVolatility
+	x[p]=U(0,p)/denom1;
+	for(int j=p+1;j<q;j++)x[j]=U(0,j)/denom1-(T[j]-T[p])*U(0,j)/denom2;
+	for(int j=q;j<n;j++)  x[j]=-(T[q]-T[p])*U(0,j)/denom2;
+	x*=Q.transpose();
+	return x.norm();
+} // end swaptionAggregateVolatility
 
 
 
-     Real LowFactorDriftlessLMM::
-	 bondAggregateVolatility(Bond* B, int t)
-     { 
-         int p=B->get_p(), 
-		     q=B->get_q();
-		 Real F=B->forwardPrice();
-		 RealArray1D& b=B->get_b();
+Real LowFactorDriftlessLMM::
+bondAggregateVolatility(Bond* B, int t) const 
+{ 
+    int p=B->get_p(), 
+		q=B->get_q();
+	Real F=B->forwardPrice();
+	const RealArray1D& b=B->get_b();
 		 		 
-		 UTRMatrix<Real>& R=factorLoading->logLiborCovariationMatrix(t,n,0,T[t]).utrRoot();
-		 vector<Real> x(n-t,t);
+    
+	const UTRMatrix<Real>& 
+	R=factorLoading->logLiborCovariationMatrix(t,n,0,T[t]).utrRoot();
+	vector<Real> x(n-t,t);
 			 
-		 for(int j=t;j<p;j++)  x[j]=-U(0,j)/H_i0(t);
-		 for(int j=p;j<q;j++)  x[j]=b[j]*U(0,j)/F-U(0,j)/H_i0(t);
-		 for(int j=q;j<n;j++)  x[j]=b[q-1]*U(0,j)/F-U(0,j)/H_i0(t);
-		 x*=R.transpose();
-		 return x.norm();
-     } // end bondAggregateVolatility
+	for(int j=t;j<p;j++)  x[j]=-U(0,j)/H_i0(t);
+	for(int j=p;j<q;j++)  x[j]=b[j]*U(0,j)/F-U(0,j)/H_i0(t);
+	for(int j=q;j<n;j++)  x[j]=b[q-1]*U(0,j)/F-U(0,j)/H_i0(t);
+	x*=R.transpose();
+	return x.norm();
+} // end bondAggregateVolatility
 
 
 	 
@@ -260,19 +262,18 @@ Real LowFactorDriftlessLMM::H_pq(int p, int q, int t)
 // STRING MESSAGE
     
 
-    string LowFactorDriftlessLMM::toString()
+    std::ostream& DriftlessLMM::printSelf(std::ostream& os) const
     {
 		vector<Real> vols(n); vols[0]=0;
 		for(int i=1;i<n;i++) vols[i]=vol(i); 
 
-		ostringstream os;
-		os << "\nDriftless Libor Market Model, random dynamics: " << SG->toString() << endl
+		return
+		os << "\nDriftless Libor Market Model, random dynamics: " << SG << endl
 		   << "State variables: Gaussian forward transported Libors" << endl 
 		   << "U_j=X_j(1+X_{j+1})...(1+X_{n-1})" << endl
 		   << "These are driftless, very fast exact simulation." << endl
-		   << factorLoading->toString() 
+		   << factorLoading 
 		   << "\n\nLibor volatilities:\n" << vols;      
-        return os.str();
      }
 	 
              

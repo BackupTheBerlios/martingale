@@ -82,13 +82,13 @@ class PredictorCorrectorLMM : public LiborMarketModel {
     UTRMatrix<Real> Y;
 
     // drift step vector
-    RealArrayD1 m;
+    RealArray1D m;
     
     // volatility step vector
-    RealArrayD1 V;
+    RealArray1D V;
     
     // vector used to store factors X_j(t)/(1+X_j(t)) during time steps
-    RealArrayD1 F;
+    RealArray1D F;
     
     // the log-Libor covariation matrices needed for the time steps
     UTRMatrixSequence logLiborCovariationMatrices;
@@ -99,7 +99,7 @@ class PredictorCorrectorLMM : public LiborMarketModel {
 	
     StochasticGenerator* SG;    // generates the Wiener increments driving the paths     
 	
-	vector<Real>& XVec;         // cache for fast returning of X-Libor vectors.
+	vector<Real> XVec;          // cache for fast returning of X-Libor vectors.
 
 
 
@@ -149,7 +149,7 @@ public:
       * @param p index of first Libor.
       * @param t discrete time.
       */
-     vector<Real>& XLvect(int t, int p);
+     const vector<Real>& XLvect(int t, int p);
 		 
 
 	
@@ -164,12 +164,13 @@ public:
     PredictorCorrectorLMM(LiborFactorLoading* fl);	
 	
 		
-	/** Sample LMM based on {@link JR_FactorLoading}.
+	/** Sample LMM, quarterly accrual.
 	 *
 	 * @param n dimension (number of accrual intervals).
-	 * @param delta length of each accrual interval.
+	 * @param volType type of volatility surface (VolSurface::JR,M,CONST).
+	 * @param corrType type of correlations (Correlations::JR,CS).
 	 */
-	static LiborMarketModel* sample(int n, Real delta);
+	static LiborMarketModel* sample(int n, int volType, int corrType);
     
 
     
@@ -180,7 +181,7 @@ public:
 	/** Prints the matrix Z of current Wiener increments,
 	 *  method is used for testing only.
 	 */
-	void printWienerIncrements(int t, int s);
+	void printWienerIncrements(int t, int s) const;
 	
 	
 	/** <p>The effective dimension of the simulation, that is, the number of 
@@ -259,7 +260,7 @@ public:
 	*
     * @param i caplet on \f$[T_i,T_{i+1}]\f$.
     */ 
-    Real capletAggregateVolatility(int i);
+    Real capletAggregateVolatility(int i) const;
 	 
 	 
    /** <p>Analytic forecast for the swap rate volatility
@@ -270,22 +271,22 @@ public:
     * @param p,q swap along on \f$[T_p,T_q]\f$.
     * @param t swaption exercise at time \f$T_t\leq T_p\f$.
     */ 
-    Real swaptionAggregateVolatility(int p, int q, int t);
+    Real swaptionAggregateVolatility(int p, int q, int t)  const;
     
      
      
      
 // STRING MESSAGE
-    
-    
-    /** A message what type of factor loading it is, all the parameter values.
-     */
-    string toString();
+
+   /** Message and fields. */
+   std::ostream& printSelf(std::ostream& os) const;
 	 
              
 
 
 }; // end PredictorCorrectorLMM
+
+
 
 
 

@@ -34,7 +34,7 @@ spyqqqdia@yahoo.com
 #include "tnt_array1d_utils.h"
 #include "tnt_array2d_utils.h"
 #include "Array.h"
-//include "Utils.h"                 
+//#include "Utils.h"                 
 
 /*
  * DataStructures.h
@@ -84,13 +84,14 @@ S relativeError(S exact, S approx, S epsilon)
  *  must be a scalar type (float, double, long double).
  */
 template<typename S>
-JAMA::Eigenvalue<S>* eigenDecomposition(UTRMatrix<S>& C)
+JAMA::Eigenvalue<S>* eigenDecomposition(const UTRMatrix<S>& C)
 {
-	int dim=C.getDimension();
-	Real** c=C.getData();
+	int dim=C.getDimension(),
+	    b=C.getIndexBase();
+
 	TNT::Array2D<S> cv(dim,dim);
 	for(int i=0;i<dim;i++)
-	for(int j=i;j<dim;j++) cv[i][j]=cv[j][i]=c[i][j-i];
+	for(int j=i;j<dim;j++) cv[i][j]=cv[j][i]=C(i+b,j+b);
 	return new JAMA::Eigenvalue<S>(cv);
 }
 
@@ -104,7 +105,7 @@ JAMA::Eigenvalue<S>* eigenDecomposition(UTRMatrix<S>& C)
  * <p>Maintains the row index base of C, columns indexed from zero.
  */
 template<typename S>
-Matrix<S>& rank_Reduced_Root(UTRMatrix<S>& C, int r)
+Matrix<S>& rank_Reduced_Root(const UTRMatrix<S>& C, int r)
 {
 	int dim=C.getDimension(),
 	    base=C.getIndexBase();
@@ -130,7 +131,7 @@ Matrix<S>& rank_Reduced_Root(UTRMatrix<S>& C, int r)
  *  must be a scalar type (float, double, long double).
  */
 template<typename S>
-static void factorAnalysis(UTRMatrix<S>& C)
+static void factorAnalysis(const UTRMatrix<S>& C, int r)
 {
 	int dim=C.getDimension();
     JAMA::Eigenvalue<S>* eigval=eigenDecomposition(C);
@@ -144,7 +145,7 @@ static void factorAnalysis(UTRMatrix<S>& C)
 	S sum=0.0; 
 	cout << endl << endl
 		 << "Variability captured by the i largest eigenvalues: ";
-	for(int i=dim-1;i>=dim-5;i--){
+	for(int i=dim-1;i>=dim-r;i--){
 			
 		sum+=l[i];
 		cout << "\ni=" << dim-i << ": " << 100.0*sum/traceNorm << "%";
@@ -162,7 +163,7 @@ static void factorAnalysis(UTRMatrix<S>& C)
  * @param message short description of test.
  */
 template<typename S>
-void factorizationTest(UTRMatrix<S>& C, int r, string message="")
+void factorizationTest(const UTRMatrix<S>& C, int r, string message="")
 {		
 	Matrix<S> D(C);	
 	Real D_norm=D.norm();
@@ -237,7 +238,7 @@ public:
    
    /** Constructor initializes with zeroes
     */
-   vector(int d, int base=0) : 
+   explicit vector(int d, int base=0) : 
    dim(d), b(base), dptr(new S[d]) 
    { 
 	   for(int i=0;i<dim;i++) dptr[i]=0; 
@@ -406,20 +407,12 @@ public:
 	   return *this;
    }
    
-   /** this+=Au, no checking if operation defined.
-    */
-   vector& peqAu(const TNT::Array2D<S>& A, vector<S>& u)
-   { 
-	   int n=A.dim2();
-	   for(int i=0;i<dim;i++)
-	   for(int j=0;j<n;j++) dptr[i]+=A[i][j]*u[j];
-   }
    
    
 // MEAN, EUCLIDEAN NORM
    
       /** Arithmetic mean of the components. */
-   S mean()
+   S mean() const
    {  
 	   Real sum=0; 
 	   for(int i=0;i<dim;i++) sum+=dptr[i];
@@ -429,7 +422,7 @@ public:
    /** The euclidean norm. Type S must support an absolute value <code>fabs(S& s)</code>
     *  mapping to Real.
     */
-   Real norm()
+   Real norm() const
    {  
 	   Real sum=0, absx_i; 
 	   for(int i=0;i<dim;i++){ absx_i=fabs(dptr[i]); sum+=absx_i*absx_i; }
@@ -452,7 +445,7 @@ public:
  * smaller than relevant orders of magnitude.
  * @param test string printed to identify test.
  */
-void testEquals(const vector<S>& v, S precision, S epsilon, string test)
+void testEquals(const vector<S>& v, S precision, S epsilon, string test) const
 {
 	int vdim=v.getDimension(), vbase=v.getIndexBase(); 
 	if((vdim!=dim)||(vbase!=b)){
@@ -475,40 +468,41 @@ void testEquals(const vector<S>& v, S precision, S epsilon, string test)
     std::cout << "\n"+test+": passed.";
 } // end testEquals
 
-
-// TO STRING
-
-/** Message identifying the object (parameter values, etc)
- */
-std::string toString()
-{
-     ostringstream os;
-	 os << endl << "Vector of dimension " << dim << ":" << endl;
-     for(int i=0;i<dim-1;i++) os << dptr[i] << ", ";
-     os << dptr[dim-1] << endl;
-
-	 return os.str();
-}
-
 	
-	   
-    
+	      
 }; // end vector
+
+
+
+
+/** print vector
+ */
+template<class S>
+std::ostream& operator << (std::ostream& os, const vector<S>& v)
+{
+	int d=v.getDimension();
+    S* vdptr=v.getData();
+	os << endl << "vector of dimension " << d << ":" << endl;
+    for(int i=0;i<d-1;i++) os << vdptr[i] << ", ";
+    os << vdptr[d-1];
+    return os << endl << endl;
+} // end operator <<
 
 	
 
 
 /***************************************************************************************
-
-                              MATRIX CLASSES
-
+ *
+ *                             MATRIX CLASSES
+ *
 ***************************************************************************************/
 
 /*! \file Matrices.h
  * <p>Vectors, square lower triangular, square upper triangular and rectangular matrices 
- * stored in row major order. Barebones implementation with no bounds checking or checking 
- * of dimensional compatibility. All operations implemented as straightforward C-style loops 
- * with no optimizations.</p>
+ * stored in row major order. Barebones naive implementation with no checking of dimensional 
+ * compatibility. All operations implemented as straightforward  
+ * C-style loops with no optimizations. No attempts to avoid temporaries.
+ * To check subscripting bounds #define SUBSCRIPT_CHECK.</p>
  *
  * <p>Matrix indices can be based on an arbitrary base b. This means that the indices
  * used with the subscripting operators are 
@@ -533,9 +527,13 @@ std::string toString()
  * B (slower) and the operator ^= which multiplies on the right with B'.</p>
  */
 
-///////////////////////////////////
-// SQUARE LOWER TRIANGULAR MATRICES
-///////////////////////////////////
+
+
+/***************************************************************************************
+ *
+ *                             SQUARE LOWER TRIANGULAR MATRICES
+ *
+***************************************************************************************/
 
 /** <p>Square lower triangular matrix with indices with arbitrary base (the same in both 
  *  dimensions) and entries of type <code>S</code> stored in row major order. 
@@ -603,7 +601,7 @@ const S& operator()(int i, int j) const
  * smaller than relevant orders of magnitude.
  * @param test string printed to identify test.
  */
-void testEquals(const LTRMatrix<S>& A, S precision, S epsilon, string test)
+void testEquals(const LTRMatrix<S>& A, S precision, S epsilon, string test) const
 {
 	int d=A.getDimension(), baseA=A.getIndexBase();
 	if((d!=dim)||(baseA!=base)){
@@ -702,11 +700,11 @@ dim(n), base(b), dptr(new S*[dim])
 /** Square root of sum of absolute values of entries squared. 
  *  Type S must support absolute value <code>fabs(S& s)</code> mapping to Real.
  */
-Real norm()
+Real norm() const
 {
-	S** a=dptr; Real sum=0.0, absij;
+	Real sum=0.0, absij;
 	for(int i=0;i<dim;i++)
-	for(int j=0;j<=i;j++) { absij=fabs(a[i][j]); sum+=absij*absij; }
+	for(int j=0;j<=i;j++) { absij=fabs(dptr[i][j]); sum+=absij*absij; }
 	
 	return sqrt(sum);
 } // end norm
@@ -721,10 +719,9 @@ Real norm()
  */
 UTRMatrix<S>& transpose() const
 {
-    S** a=dptr;
 	UTRMatrix<S>& at=*(new UTRMatrix<S>(dim,base));
     for(int i=0;i<dim;i++)
-	for(int j=i;j<dim;j++) at(i+base,j+base)=a[j][i];
+	for(int j=i;j<dim;j++) at(i+base,j+base)=dptr[j][i];
 	
 	return at;
 }
@@ -736,10 +733,9 @@ UTRMatrix<S>& transpose() const
 LTRMatrix<S>& operator += (const LTRMatrix<S>& B)
 {
 	// direct data access for speed
-	S** a=dptr; 
 	S** b=B.getData();
 	for(int i=0;i<dim;i++)
-	for(int j=0;j<=i;j++) a[i][j]+=b[i][j];
+	for(int j=0;j<=i;j++) dptr[i][j]+=b[i][j];
 		
 	return *this;
 } // end operator +=
@@ -749,10 +745,8 @@ LTRMatrix<S>& operator += (const LTRMatrix<S>& B)
  */
 LTRMatrix<S>& operator *= (Real f)
 {
-	// direct data access for speed
-	S** a=dptr;
 	for(int i=0;i<dim;i++)
-	for(int j=0;j<=i;j++) a[i][j]*=f;
+	for(int j=0;j<=i;j++) dptr[i][j]*=f;
 		
 	return *this;
 } // end operator +=
@@ -822,7 +816,7 @@ LTRMatrix<S>& operator ^= (const UTRMatrix<S>& B)
 /** The upper triangular half of the product <code>c=aa'</code>, 
  *  where <code>a=this</code>.
  */
-UTRMatrix<S>& aat()
+UTRMatrix<S>& aat() const
 {
 	S** a=dptr;
 	UTRMatrix<S>& c=*(new UTRMatrix<S>(dim,base));
@@ -843,7 +837,7 @@ UTRMatrix<S>& aat()
 /** Matrix exponential <code>exp(A)</code>. Note <code>exp(A)</code> 
  *  is again lower triangular.
  */
-LTRMatrix<S>& exp()
+LTRMatrix<S>& exp() const
 {
     int n=2;
 	Real fn=norm(), f=4.0, g=1.0;
@@ -875,13 +869,16 @@ LTRMatrix<S>& exp()
 } // end exp
 
 
-// TO STRING
+	
+}; // end LTRMatrix
 
-/** String with matrix entries.
+
+/** print lower triangular matrix
  */
-std::string toString()
+template<class S>
+std::ostream& operator << (std::ostream& os, const LTRMatrix<S>& A)
 {
-    ostringstream os;
+	int dim=A.getDimension(), b=A.getIndexBase();
 	os << endl << "Lower triangular matrix, dimension " << dim << ":" 
 	   << endl << endl;
 	for(int i=b;i<dim+b;i++){
@@ -889,22 +886,20 @@ std::string toString()
 		for(int j=b;j<i;j++) os << A(i,j) << ", ";
 		os << A(i,i) << endl;
 	}
-    os << endl << endl;
-
-	return os.str();
-}
-
-
-		
-		
-	
-}; // end LTRMatrix
+    return os << endl << endl;
+} // end operator <<
 
 
 
-///////////////////////////////////
-// SQUARE UPPER TRIANGULAR MATRICES
-///////////////////////////////////
+
+
+/***************************************************************************************
+ *
+ *                             SQUARE UPPER TRIANGULAR MATRICES
+ *
+***************************************************************************************/
+
+
 
 /** <p>Square upper triangular matrix with indices with arbitrary base (the same in 
  *  both dimensions) and entries of type <code>S</code>. 
@@ -963,7 +958,7 @@ const S& operator()(int i, int j) const
 	
 /** Prints the symmetric square matrix of which <code>this</code> is the upper half. 
  */
-void print()
+void print() const
 {
 	cout << endl << endl
 	     << "Symmetric " << dim << " by " << dim << " matrix: "
@@ -993,7 +988,7 @@ void print()
  * smaller than relevant orders of magnitude.
  * @param test string printed to identify test.
  */
-void testEquals(const UTRMatrix<S>& A, S precision, S epsilon, string test)
+void testEquals(const UTRMatrix<S>& A, S precision, S epsilon, string test) const
 {
 	int d=A.getDimension(), baseA=A.getIndexBase();
 	if((d!=dim)||(baseA!=base)){
@@ -1093,11 +1088,11 @@ UTRMatrix<S>& operator =(const UTRMatrix<S>& B)
 /** Square root of sum of entries squared. Type S must support an absolute
  *  value <code>fabs(S& s)<S></code> mapping to Real.
  */
-Real norm()
+Real norm() const
 {
-	S** a=dptr; Real sum=0, absij;
+	Real sum=0, absij;
 	for(int i=0;i<dim;i++)
-	for(int j=i;j<dim;j++) { absij=fabs(a[i][j-i]); sum+=absij*absij; }
+	for(int j=i;j<dim;j++) { absij=fabs(dptr[i][j-i]); sum+=absij*absij; }
 	
 	return sqrt(sum);
 } // end norm
@@ -1114,17 +1109,16 @@ Real norm()
  */
 LTRMatrix<S>& transpose() const
 {
-    S** a=dptr;
 	LTRMatrix<S>& at=*(new LTRMatrix<S>(dim,base));
     for(int i=0;i<dim;i++)
-	for(int j=0;j<=i;j++) at(i+base,j+base)=a[j][i-j];
+	for(int j=0;j<=i;j++) at(i+base,j+base)=dptr[j][i-j];
 	
 	return at;
 }
 
 
 /** The matrix inverse. */
-UTRMatrix<S>& inverse()
+UTRMatrix<S>& inverse() const
 {
 	for(int i=0;i<dim;i++){
 	  if(dptr[i][0]==0.0){ 
@@ -1239,7 +1233,7 @@ UTRMatrix<S>& operator ^= (const LTRMatrix<S>& B)
 /** The upper triangular half of the product <code>c=aa'</code>, 
  *  where <code>a=this</code>.
  */
-UTRMatrix<S>& aat()
+UTRMatrix<S>& aat() const
 {
 	S** a=dptr;
 	UTRMatrix<S>& c=*(new UTRMatrix<S>(dim,base));
@@ -1263,7 +1257,7 @@ UTRMatrix<S>& aat()
 /** Matrix exponential <code>exp(A)</code>. Note <code>exp(A)</code> 
  *  is again lower triangular.
  */
-UTRMatrix<S>& exp()
+UTRMatrix<S>& exp() const
 {
     int n=2;
 	Real fn=norm(), f=4.0, g=1.0;
@@ -1300,7 +1294,7 @@ UTRMatrix<S>& exp()
  *  Terminates with error message if non positive definite detected. 
  *  Type S must support += and *, and sqrt(const S&). 0.0 must convert to type S.
  */
-LTRMatrix<S>& ltrRoot()
+LTRMatrix<S>& ltrRoot() const
 {
     LTRMatrix<S>& ltr=*(new LTRMatrix<S>(dim,base));
 	S** L=ltr.getData();
@@ -1339,7 +1333,7 @@ LTRMatrix<S>& ltrRoot()
  *  Terminates with error message if non positive definite detected. 
  *  Type S must support += and *, and sqrt(const S&). 0.0 must convert to type S.
  */
-UTRMatrix<S>& utrRoot()
+UTRMatrix<S>& utrRoot() const
 {
     UTRMatrix<S>& utr=*(new UTRMatrix<S>(dim,base));
 	S** U=utr.getData();
@@ -1379,15 +1373,15 @@ UTRMatrix<S>& utrRoot()
  *
  * <p>The row index base remains the same, columns of the root are indexed from zero.
  */
-Matrix<S>& rankReducedRoot(int r){ return rank_Reduced_Root(*this,r); }
+Matrix<S>& rankReducedRoot(int r) const { return rank_Reduced_Root(*this,r); }
 
 
 /** Matrix is interpreted as the upper half of a multinormal covariance matrix.
- *  This method prints how much variability is captured by the 5 largest
+ *  This method prints how much variability is captured by the r largest
  *  eigenvalues of C. Template parameter S is the type of the matrix entries and
  *  must be a scalar type (float, double, long double).
  */
-void analyseFactors(){ factorAnalysis(*this); }
+void analyseFactors(int r) const { factorAnalysis(*this,r); }
 
 
 /** Let C be the symmetric matrix with upper half <code>this</code>. 
@@ -1400,20 +1394,8 @@ void analyseFactors(){ factorAnalysis(*this); }
  *
  * @param message put test in context.
  */
-void testFactorization(int r, string message="")
+void testFactorization(int r, string message="") const
 { factorizationTest(*this,r,message); }
-
-
-/** String with matrix entries.
- */
-std::string toString()
-{
-	ostringstream os;
-	os << endl << "Transposed matrix:" 
-	   << endl << transpose().toString();
-	
-    return os.str();
-}
 
 
 
@@ -1421,11 +1403,27 @@ std::string toString()
 
 
 
+/** print upper triangular matrix
+ */
+template<class S>
+std::ostream& operator << (std::ostream& os, const UTRMatrix<S>& U)
+{
+	os << endl << "Transposed matrix:";
+    return os << U.transpose() << endl << endl;
+} // end operator <<
 
 
-///////////////////////
-// RECTANGULAR MATRICES
-///////////////////////
+
+
+
+
+
+/***************************************************************************************
+ *
+ *                             RECTANGULAR MATRICES
+ *
+***************************************************************************************/
+
 
 /** <p>Recangular matrix with dimensions <code>rows,cols</code> and entries of type <code>S</code>
  *  stored in row major order. Indices can have arbitrary bases a,b. This means that we use indices 
@@ -1448,7 +1446,7 @@ protected:
     int rows,       // number of rows
 	    cols,       // number of columns
 	    a,          // row indices i=a,a+1,...,a+rows-1
-	    b;          // row indices j=b,b+1,...,b+cols-1
+	    b;          // column indices j=b,b+1,...,b+cols-1
     S** dptr;       // pointer to data
 
 public:
@@ -1519,7 +1517,7 @@ const S& operator()(int i, int j) const
  * smaller than relevant orders of magnitude.
  * @param test string printed to identify test.
  */
-void testEquals(const Matrix<S>& A, S precision, S epsilon, string test)
+void testEquals(const Matrix<S>& A, S precision, S epsilon, string test) const
 {
 	int rows_A=A.getnRows(),   cols_A=A.getnCols(),
 	    a_A=A.getRowIndexBase(), b_A=A.getColIndexBase();
@@ -1662,11 +1660,11 @@ Matrix<S>& operator =(const Matrix<S>& B)
 /** Square root of sum of entries squared. Type S must support an absolute value
  * <code>fabs(S& s)</code> mapping to Real.
  */
-Real norm()
+Real norm() const
 {
-	S** A=dptr; Real sum=0, absij;
+	Real sum=0, absij;
 	for(int i=0;i<rows;i++)
-	for(int j=0;j<cols;j++) { absij=fabs(A[i][j]); sum+=absij*absij; }
+	for(int j=0;j<cols;j++) { absij=fabs(dptr[i][j]); sum+=absij*absij; }
 	
 	return sqrt(sum);
 } // end norm
@@ -1675,10 +1673,10 @@ Real norm()
 /** L2-norm of row i. Type S must have a function 
  * <code>fabs(S& s)</code> (absolute value mapping to Real).
  */
-Real rowNorm(int i)
+Real rowNorm(int i) const
 {
-	S** A=dptr; Real sum=0, absij;
-	for(int j=0;j<cols;j++) { absij=fabs(A[i][j]); sum+=absij*absij; }
+	Real sum=0, absij;
+	for(int j=0;j<cols;j++) { absij=fabs(dptr[i][j]); sum+=absij*absij; }
 	
 	return sqrt(sum);
 } // end norm
@@ -1690,8 +1688,8 @@ Real rowNorm(int i)
  */
 Real colNorm(int j)
 {
-	S** A=dptr; Real sum=0, absij;
-	for(int i=0;i<rows;i++) { absij=fabs(A[i][j]); sum+=absij*absij; }
+	Real sum=0, absij;
+	for(int i=0;i<rows;i++) { absij=fabs(dptr[i][j]); sum+=absij*absij; }
 	
 	return sqrt(sum);
 } // end norm
@@ -1744,24 +1742,26 @@ Matrix& operator *= (Real f)
 
 
 /** Multiplication of row i by scalar f.
+ *  Uses row indices relative to the base, not absolute indices.
  */
 Matrix& scaleRow(int i, S f)
 {
 	// direct data access for speed
 	S** A=dptr;
-	for(int j=0;j<cols;j++) A[i][j]*=f;
+	for(int j=0;j<cols;j++) A[i-a][j]*=f;
 		
 	return *this;
 } // end scaleRow
 
 
 /** Multiplication of column j by scalar f.
+ *  Uses column indices relative to the base, not absolute indices.
  */
 Matrix& scaleCol(int j, S f)
 {
 	// direct data access for speed
 	S** A=dptr;
-	for(int i=0;i<rows;i++) A[i][j]*=f;
+	for(int i=0;i<rows;i++) A[i][j-b]*=f;
 		
 	return *this;
 } // end scaleCol
@@ -1918,7 +1918,7 @@ Matrix& operator ^= (const Matrix<S>& c)
 /** Matrix exponential <code>exp(A)</code>. 
  *  Matrix must be square, not checked. Same index bases as A.
  */
-Matrix<S>& exp()
+Matrix<S>& exp() const
 {
 	int dim=rows; 
 	Real fn=norm(), f=4.0, g=1.0;
@@ -1953,27 +1953,32 @@ Matrix<S>& exp()
 
 } // end exp
 
-
-/** String with matrix entries.
- */
-std::string toString()
-{
-    Matrix<S>& A=*this;
-	ostringstream os;
-	os << endl << "Matrix, dimensions " << rows << "by " << cols
-	   << endl << endl;
-	for(int i=a;i<a+rows;i++){
-		
-		for(int j=b;j<b+cols-1;j++) os << A(i,j) << ", ";
-		os << A(i,b+cols-1) << endl;
-	}
-    os << endl << endl;
-
-	return os.str();
-}
 		
 	
 }; // end Matrix
+
+
+
+
+/** print rectangular matrix
+ */
+template<class S>
+std::ostream& operator << (std::ostream& os, const Matrix<S>& A)
+{
+	int rows=A.getnRows(), 
+	    cols=A.getnCols();
+	S** D=A.getData();
+	os << endl << "Rectangular " << rows << " by " << cols << " matrix:"
+	   << endl << endl;
+	for(int i=0;i<rows;i++){
+		
+	    for(int j=0;j<cols-1;j++) os << D[i][j] << ", ";
+		os << D[i][cols-1] << endl;
+	}
+    return os << endl << endl;
+} // end operator <<
+
+
 
 
 
@@ -1984,14 +1989,16 @@ std::string toString()
 ***************************************************************************************/
 
 
-/** Array of upper triangular matrices. Only the array of pointers to 
+/** Array of upper triangular matrices. Read only structure.
+ *  Only the array of pointers to 
  *  the matrices is allocated. These pointers then have to be set to 
  *  actual matrices as needed.
  */
 class UTRMatrixSequence {
 	
 	int n;                         // number of matrices
-	UTRMatrix<Real>** matrices;    // matrices[t]: pointer to matrix(t)
+	// array of pointers to const UTRMatrix: *matrix[t] is read only
+	Array1D<const UTRMatrix<Real>*> matrices;    
 	
 public:
 	
@@ -2000,24 +2007,20 @@ public:
 	 * @param m number of matrices.
 	 */
 	UTRMatrixSequence(int m) : 
-	n(m), matrices(new UTRMatrix<Real>*[m]) 
+	n(m), matrices(m) 
     {  }  
 	
-    /** Destructor. */
-	~UTRMatrixSequence(){ delete[] matrices; }
-		
+    /** Destructor. Deletes the matries pointed to. */
+	~UTRMatrixSequence(){ for(int t=0;t<n;t++) delete matrices[t]; }
+
 	
-    /** The array of pointers to the matrices.
+	/** Const reference to matrix[t].
 	 */
-    UTRMatrix<Real>** getMatrices() const { return matrices; }
-	
-	/** Reference to matrix[t].
-	 */
-    UTRMatrix<Real>& getMatrix(int t) const { return *(matrices[t]); }
+    const UTRMatrix<Real>& getMatrix(int t) const { return *(matrices[t]); }
 	
     /** Set pointer to matrix[t].
 	 */
-    void setMatrix(int t, UTRMatrix<Real>* matrix_ptr) { matrices[t]=matrix_ptr; }
+    void setMatrix(int t, const UTRMatrix<Real>& matrix) { matrices[t]=&matrix; }
 	
 }; // end UTRMatrixSequence
 
@@ -2030,8 +2033,8 @@ public:
  */
 class MatrixSequence {
 	
-	int n;                      // number of matrices
-	Matrix<Real>** matrices;    // matrices[t]: pointer to matrix(t)
+	int n;                                    // number of matrices
+	Array1D<const Matrix<Real>*> matrices;    // matrices[t]: pointer to matrix(t)
 	
 public:
 	
@@ -2040,24 +2043,20 @@ public:
 	 * @param m number of matrices.
 	 */
 	MatrixSequence(int m) : 
-	n(m), matrices(new Matrix<Real>*[m]) 
+	n(m), matrices(m) 
     {  }  
 	
-    /** Destructor. */
-	~MatrixSequence(){ delete[] matrices; }
-		
-	
-    /** The array of pointers to the matrices.
-	 */
-    Matrix<Real>** getMatrices() const { return matrices; }
+    /** Destructor. Deletes the matrices pointed to*/
+	~MatrixSequence(){ for(int t=0;t<n;t++) delete matrices[t]; }
+
 	
 	/** Reference to matrix[t].
 	 */
-    Matrix<Real>& getMatrix(int t) const { return *(matrices[t]); }
+    const Matrix<Real>& getMatrix(int t) const { return *(matrices[t]); }
 	
     /** Set pointer to matrix[t].
 	 */
-    void setMatrix(int t, Matrix<Real>* matrix_ptr) { matrices[t]=matrix_ptr; }
+    void setMatrix(int t, const Matrix<Real>& matrix) { matrices[t]=&matrix; }
 	
 }; // endMatrixSequence
 

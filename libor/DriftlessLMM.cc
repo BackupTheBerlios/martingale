@@ -36,7 +36,7 @@ using namespace Martingale;
 	 
 	 
 	 // (X_p(T_t),...,X_{n-1}(T_t)) 
-     vector<Real>& DriftlessLMM::
+     const vector<Real>& DriftlessLMM::
 	 XLvect(int t, int p) 
 	 { 
 		 XVec.setDimension(n-p);
@@ -71,11 +71,10 @@ using namespace Martingale;
 		// the deterministic drift steps
 		for(int t=0;t<n-1;t++){
 			
-			UTRMatrix<Real>& cvm_t=factorLoading->logLiborCovariationMatrix(t);
-			UTRMatrix<Real>& cvmr_t=factorLoading->logLiborCovariationMatrixRoot(t);
-			UTRMatrix<Real> *ptr_cvm_t=&cvm_t, *ptr_cvmr_t=&cvmr_t;
-			logLiborCovariationMatrices.setMatrix(t,ptr_cvm_t);
-            logLiborCovariationMatrixRoots.setMatrix(t,ptr_cvmr_t);
+			const UTRMatrix<Real>& cvm_t=factorLoading->logLiborCovariationMatrix(t);
+			const UTRMatrix<Real>& cvmr_t=factorLoading->logLiborCovariationMatrixRoot(t);
+			logLiborCovariationMatrices.setMatrix(t,cvm_t);
+            logLiborCovariationMatrixRoots.setMatrix(t,cvmr_t);
 			// deterministic drift steps
 			for(int j=t+1;j<n;j++) m(t,j)=-0.5*cvm_t(j,j);
 			
@@ -92,10 +91,10 @@ using namespace Martingale;
 	
 		
 	LiborMarketModel* DriftlessLMM::
-	sample(int n, Real delta)
+	sample(int n, int volType, int corrType)
     {
 		LiborFactorLoading* 
-		fl=LiborMarketModel::sampleFactorLoading(n,delta,LiborMarketModel::CS);
+		fl=LiborFactorLoading::sample(n,volType,corrType);
 		return new DriftlessLMM(fl);
 	}
 
@@ -105,7 +104,7 @@ using namespace Martingale;
 // WIENER INCREMENTS	
 	
 
-	void DriftlessLMM::printWienerIncrements(int t, int s)
+	void DriftlessLMM::printWienerIncrements(int t, int s)  const
     {
          // recall that Z is an upper triangular array
 		 for(int u=t;u<s;u++){
@@ -127,7 +126,7 @@ using namespace Martingale;
      {   
 		 /* The matrices needed for the time step T_t->T_{t+1}.
           */
-         UTRMatrix<Real>& R=logLiborCovariationMatrixRoots.getMatrix(t); 
+         const UTRMatrix<Real>& R=logLiborCovariationMatrixRoots.getMatrix(t); 
                     
          int q=max(t+1,p);   
          // only Libors U_j, j>=q make the step. To check the index shifts 
@@ -159,7 +158,7 @@ using namespace Martingale;
 
    
      // H_pq(T_t)
-     Real DriftlessLMM::H_pq(int p, int q, int t)
+     Real DriftlessLMM::H_pq(int p, int q, int t)  const
      {
 		 Real sum=0;
 		 for(int k=p;k<q;k++) sum+=delta[k]*H_it(k+1,t);
@@ -172,7 +171,7 @@ using namespace Martingale;
 
      
      // S_{pq}(T_t)=k(T_t,[T_p,T_q])
-     Real DriftlessLMM::swapRate(int p, int q, int t)
+     Real DriftlessLMM::swapRate(int p, int q, int t) const
      { 
          Real num=U(t,p), denom=delta[p]*H(t,p+1);
 		 for(int j=p+1;j<q;j++){ num+=U(t,j); denom+=delta[j]*H(t,j+1); }
@@ -187,7 +186,7 @@ using namespace Martingale;
      
      
      // B_{pq}(T_t)=\sum_{k=p}^{q-1}\delta_kB_{k+1}(T_t).
-     Real DriftlessLMM::B_pq(int p, int q, int t)
+     Real DriftlessLMM::B_pq(int p, int q, int t) const
      { 
          Real S=delta[p]*H(t,p+1);
 		 for(int j=p+1;j<q;j++) S+=delta[j]*H(t,j+1);
@@ -200,10 +199,11 @@ using namespace Martingale;
 	 
 
      Real DriftlessLMM::
-	 capletAggregateVolatility(int i)
+	 capletAggregateVolatility(int i) const
      { 
 		 Real T_i=T[i];
-		 UTRMatrix<Real>& R=factorLoading->logLiborCovariationMatrix(i,n,0,T_i).utrRoot();
+		 const UTRMatrix<Real>& 
+		 R=factorLoading->logLiborCovariationMatrix(i,n,0,T_i).utrRoot();
 		 vector<Real> x(n-i,i);
 		 x[i]=1;
 		 Real f=H(0,i+1); 
@@ -215,9 +215,10 @@ using namespace Martingale;
 	 
 
      Real DriftlessLMM::
-	 swaptionAggregateVolatility(int p, int q, int t)
+	 swaptionAggregateVolatility(int p, int q, int t) const
      { 
-		 UTRMatrix<Real>& Q=factorLoading->logLiborCovariationMatrix(p,n,0,T[t]).utrRoot();
+		 const UTRMatrix<Real>& 
+		 Q=factorLoading->logLiborCovariationMatrix(p,n,0,T[t]).utrRoot();
 		 vector<Real> x(n-p,p);
 		 Real denom1=H(0,p)-H(0,q),
 		      denom2=0;
@@ -233,14 +234,15 @@ using namespace Martingale;
 
 
      Real DriftlessLMM::
-	 bondAggregateVolatility(Bond* B, int t)
+	 bondAggregateVolatility(Bond* B, int t) const
      { 
          int p=B->get_p(), 
 		     q=B->get_q();
 		 Real F=B->forwardPrice();
-		 vector<Real>& b=B->get_b();
+		 const RealArray1D& b=B->get_b();
 		 		 
-		 UTRMatrix<Real>& R=factorLoading->logLiborCovariationMatrix(t,n,0,T[t]).utrRoot();
+		 const UTRMatrix<Real>& 
+		 R=factorLoading->logLiborCovariationMatrix(t,n,0,T[t]).utrRoot();
 		 vector<Real> x(n-t,t);
 			 
 		 for(int j=t;j<p;j++)  x[j]=-U(0,j)/H_i0(t);
@@ -258,19 +260,18 @@ using namespace Martingale;
 // STRING MESSAGE
     
 
-    string DriftlessLMM::toString()
+    std::ostream& DriftlessLMM::printSelf(std::ostream& os) const 
     {
 		vector<Real> vols(n); vols[0]=0;
 		for(int i=1;i<n;i++) vols[i]=vol(i); 
 
-		ostringstream os;
-		os << "\nDriftless Libor Market Model, random dynamics: " << SG->toString() << endl
+		return
+		os << "\nDriftless Libor Market Model, random dynamics: " << SG << endl
 		   << "State variables: Gaussian forward transported Libors" << endl 
 		   << "U_j=X_j(1+X_{j+1})...(1+X_{n-1})" << endl
 		   << "These are driftless, very fast exact simulation." << endl
-		   << factorLoading->toString() 
+		   << factorLoading
 		   << "\n\nLibor volatilities:\n" << vols;      
-        return os.str();
      }
 	 
              

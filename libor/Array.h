@@ -25,6 +25,7 @@ spyqqqdia@yahoo.com
 #define SUBSCRIPT_CHECK
 
 #include "TypedefsMacros.h"
+#include <cstdlib>                              // for exit()
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
@@ -181,7 +182,7 @@ public:
 	/** @param n_ number of array elements.
 	 *  @param b_ <a href="index-base">index base</a>.
 	 */
-	Array1D(int n_, int b_=0) : 
+	explicit Array1D(int n_, int b_=0) : 
 	b(b_), n(n_) 
 	{  
          dptr=new S[n];
@@ -239,7 +240,7 @@ public:
 // EUCLLIDEAN NORM, SCALING
    
     /** Euclidean norm. */     
-    Real norm()
+    Real norm() const
     {
         Real u=0;
         for(int i=0;i<n;i++) u+=dptr[i]*dptr[i];
@@ -247,7 +248,7 @@ public:
     }
 	
 	/** Multiplication by a scalar, returns scaled array. */
-	Array1D<Real>& scale(Real f)
+	Array1D& scale(S f)
     {
         for(int i=0;i<n;i++) dptr[i]*=f;
         return *this;
@@ -256,7 +257,7 @@ public:
 	/** Dot product with the array X of the same length.
 	 *  Lengths are not checked.
 	 */
-	Real dotProduct(Array1D<Real>& X)
+	S dotProduct(Array1D<S>& X) const
     {
 		Real* a=dptr;
 		Real* x=X.getData();
@@ -268,6 +269,21 @@ public:
 			 
 		   
 }; // end Array1D
+
+
+
+/** print vector
+ */
+template<class S>
+std::ostream& operator << (std::ostream& os, const Array1D<S>& v)
+{
+	int d=v.getDimension();
+    S* vdptr=v.getData();
+	os << endl << "Array1D of dimension " << d << ":" << endl;
+    for(int i=0;i<d-1;i++) os << vdptr[i] << ", ";
+    os << vdptr[d-1];
+    return os << endl << endl;
+} // end operator <<
 
 
 
@@ -384,6 +400,26 @@ public:
 				
 
 }; // end Array2D
+
+
+
+/** print rectangular matrix
+ */
+template<class S>
+std::ostream& operator << (std::ostream& os, const Array2D<S>& A)
+{
+	int rows=A.getSize(1), 
+	    cols=A.getSize(2);
+	S** D=A.getData();
+	os << endl << "Rectangular " << rows << " by " << cols << " array:"
+	   << endl << endl;
+	for(int i=0;i<rows;i++){
+		
+	    for(int j=0;j<cols-1;j++) os << D[i][j] << ", ";
+		os << D[i][cols-1] << endl;
+	}
+    return os << endl << endl;
+} // end operator <<
 
 
 

@@ -64,6 +64,9 @@ struct SwaptionData {
 
 
 /** Write swaption data to stream: p, q, strike, forward price.
+ *  We don't write the fields calibratedForwardPrice and error
+ *  since we wan to use this function to write synthetic
+ *  calibration data.
  */
 std::ostream& operator << (std::ostream& os, SwaptionData* swpn)
 {
@@ -150,9 +153,10 @@ protected:
 	std::list<SwaptionData*> swaptions;
 	
 	LiborFactorLoading* factorLoading;
-	int n;                                  // dimension of Libor process
-	Real* x;                                // x[j]=X_j(0)
-	Real* delta;                            // delta[j]=delta_j, accrual periods
+	int n;                                   // dimension of Libor process
+	// from the factorloading:
+	const RealArray1D& x;                    // x[j]=X_j(0)
+	const RealArray1D& delta;                // delta[j]=delta_j, accrual periods
 	
 	
 public:
@@ -340,7 +344,7 @@ public:
    Real capletForwardPrice(int i, Real strike)
    {
 	   Real delta_i=delta[i], 
-	        Li0=factorLoading->getInitialTermStructure()[i],            // L_i(0)
+	        Li0=factorLoading->getInitialLibors()[i],            // L_i(0)
             cSigma=capletAggregateVolatility(i),                        // aggregate volatility to expiry    
 	        Nplus=FinMath::N(FinMath::d_plus(Li0,strike,cSigma)),
 	        Nminus=FinMath::N(FinMath::d_minus(Li0,strike,cSigma)),
@@ -377,7 +381,7 @@ public:
 	   // write caplets
 	   for(int i=2;i<n;i++){
 		   
-		   Real strike = factorLoading->getInitialTermStructure()[i];  // L_i(0)
+		   Real strike = factorLoading->getInitialLibors()[i];  // L_i(0)
 		   Real forwardPrice = capletForwardPrice(i,strike);
 		   
 		   CapletData* caplet = new CapletData();
@@ -420,13 +424,7 @@ public:
    
 	
 // CALIBRATION 
-// Is done in the factorloadings which know their own parameters.
-	
 
-   /** Calibrates and returns pointer to calibrate factorloading.
-    */
-   LiborFactorLoading* calibrate(){ return factorLoading->calibrateSelf<LmmCalibrator>(this); }
-   
    
    /** Mean relative error over all caplets and swaptions.
     *  Assumes the calibrated forward prices have already been written 
@@ -520,8 +518,7 @@ private:
 		return sumSquares;
 	} // end squaredCapletError
 
-
-		   
+	
 }; // end LiborCalibrator
 
 
@@ -558,8 +555,8 @@ public:
 
      Real capletAggregateVolatility(int i)
      { 
-		 Real Ti=factorLoading->getTenorStructure()[i];
-		 UTRMatrix<Real>& R=factorLoading->logLiborCovariationMatrix(i,n,0,Ti).utrRoot();
+		 Real T_i=factorLoading->getT(i);
+		 UTRMatrix<Real>& R=factorLoading->logLiborCovariationMatrix(i,n,0,T_i).utrRoot();
 		 vector<Real> x(n-i,i);
 		 x[i]=1;
 		 Real f=H_i0(i+1);
@@ -572,7 +569,7 @@ public:
 
      Real swaptionAggregateVolatility(int p, int q)
      { 
-         Real* T=factorLoading->getTenorStructure();
+         const RealArray1D& T=factorLoading->getTenorStructure();
 		 UTRMatrix<Real>& Q=factorLoading->logLiborCovariationMatrix(p,n,0,T[p]).utrRoot();
 		 
 		 vector<Real> x(n-p,p);
@@ -599,38 +596,27 @@ public:
 // SYNTHETIC DATA GENERATION
 	 
 	 /** Writes a sample of synthetic caplet and swaption prices in 
-	  *  dimension n to files with the following nomenclature:
-	  *  <br>CapletsIn-dim(n)-DL-JR.txt<br>
-	  *  is a set of caplet prices in dimension n based on the sample 
-	  *  {@link JR_FactorLoading} and a {@link DriftlessLMM}.
-	  *  The files are written to the directory SyntheticData in the src
+	  *  dimension n to files in the directory SyntheticData in the src
 	  *  directory.
 	  *  
 	  * @param n dimension of Libor process (number of accrual intervals).
-	  * @param flType type of factorloading: LiborFactorLoading::CS,JR,CV.
+	  * @param volType type of {@link VolatilitySurface} VolSurface::JR,M,CONST.
+	  * @param corrType type of {@link Correlations} Correlations::JR,CS.
 	  */ 
-	 static void writeSyntheticDataSample(int n, int flType)
+	 static void writeSyntheticDataSample
+	 (int n, int volType=VolSurface::JR, int corrType=Correlations::CS)
      {
-		 Int_t nn(n);   // for string conversion
-		 string capletOutFile, swaptionOutFile, dim=nn.toString();
-		 LiborFactorLoading* fl;
-		 switch(flType){
-			 
-			 case LiborFactorLoading::JR : 
-				  fl=JR_FactorLoading::sample(n);
-				  capletOutFile="SyntheticData/CapletsIn-dim"+dim+"-DL-JR.txt";
-			      swaptionOutFile="SyntheticData/SwaptionsIn-dim"+dim+"-DL-JR.txt"; 
-			      break;
-			 case LiborFactorLoading::CV :
-				  fl=ConstVolLiborFactorLoading::sample(n);
-				  capletOutFile="SyntheticData/CapletsIn-dim"+dim+"-DL-CV.txt";
-			      swaptionOutFile="SyntheticData/SwaptionsIn-dim"+dim+"-DL-CV.txt"; 
-			      break;
-			 default : // Coffee-Shoenmakers
-			      fl=CS_FactorLoading::sample(n);
-			      capletOutFile="SyntheticData/CapletsIn-dim"+dim+"-DL-CS.txt";
-			      swaptionOutFile="SyntheticData/SwaptionsIn-dim"+dim+"-DL-CS.txt"; 
-		 } // end switch
+		 // string conversion
+		 Int_t nn(n);   
+		 string  vols=VolSurface::volSurfaceType(volType),        // "CONST", "JR", "M"
+		         corrs=Correlations::correlationType(corrType),   // "JR", "CS"
+		         dim=nn.toString(),
+		         capletOutFile, swaptionOutFile;
+		 
+		 LiborFactorLoading* fl=LiborFactorLoading::sample(n,volType,corrType);
+		 // called "InstrumentIn" since we'll be reading in from that
+		 capletOutFile="SyntheticData/CapletsIn-DL-dim"+dim+"-"+vols+"-"+corrs+".txt";
+	     swaptionOutFile="SyntheticData/SwaptionsIn-DL-dim"+dim+"-"+vols+"-"+corrs+".txt";
 		 
 		 LmmCalibrator* cal=new DriftlessLmmCalibrator
 		 (fl,"CapletsIn","SwaptionsIn",capletOutFile.c_str(),swaptionOutFile.c_str());
@@ -641,40 +627,15 @@ public:
 		 
 
 	 /** Writes a sample of synthetic caplet and swaption prices in 
-	  *  dimension n=20,30,40 for all three factorloading types.
+	  *  dimension n=20,30,40 for all factorloading types.
 	  */ 
 	 static void writeSyntheticDataSample()
      {
 	     for(int n=20;n<60;n+=10)
-	     for(int flType=0;flType<3;flType++)writeSyntheticDataSample(n,flType);
+	     for(int volType=0;volType<3;volType++)
+		 for(int corrType=0;corrType<2;corrType++) writeSyntheticDataSample(n,volType,corrType);
 	     cout << "\n\nDone.";
 	 }
-			 
-			 
-			 
-	/** Allocates a sample factorloading of dimension n and
-	 *  type flType (LiborFactorLoading::CS,JR,CV) reads 
-	 *  caplet and swaption prices from the infiles and writes them
-	 *  to the outfiles.
-	 */
-	static void test(int n, int flType)
-    {
-		LiborFactorLoading* fl;
-		switch(flType)
-	    {
-			case LiborFactorLoading::JR : fl = JR_FactorLoading::sample(n); 
-				                          break;
-			case LiborFactorLoading::CV : fl = ConstVolLiborFactorLoading::sample(n); 
-				                          break;
-			default                     : fl = CS_FactorLoading::sample(n);
-		}
-		
-		LmmCalibrator* cal=new DriftlessLmmCalibrator(fl);
-		cal->readCaplets();
-		cal->writeCaplets();
-		cal->readSwaptions();
-		cal->writeSwaptions();
-	}
 	
 
 	
@@ -715,8 +676,8 @@ public:
 
      Real capletAggregateVolatility(int i)
      { 
-         Real* T=factorLoading->getTenorStructure();
-		 Real volsqr=factorLoading->integral_sgi_sgj_rhoij(i,i,0,T[i]);
+         Real T_i=factorLoading->getT(i);
+		 Real volsqr=factorLoading->integral_sgi_sgj_rhoij(i,i,0,T_i);
 		 return sqrt(volsqr);
      } 
 	 
@@ -724,7 +685,7 @@ public:
 
      Real swaptionAggregateVolatility(int p, int q)
      { 
-          Real* T=factorLoading->getTenorStructure();
+          const RealArray1D& T=factorLoading->getTenorStructure();
 		  UTRMatrix<Real>& 
 		  Q=factorLoading->logLiborCovariationMatrix(p,q,0,T[p]).utrRoot();
 		  vector<Real> x_pq(q-p,p);
@@ -733,41 +694,31 @@ public:
 		  return x_pq.norm();
      } 
 
+	 
 // SYNTHETIC DATA GENERATION
 	 
 	 /** Writes a sample of synthetic caplet and swaption prices in 
-	  *  dimension n to files with the following nomenclature:
-	  *  <br>CapletsIn-dim(n)-DL-JR.txt<br>
-	  *  is a set of caplet prices in dimension n based on the sample 
-	  *  {@link JR_FactorLoading} and a {@link DriftlessLMM}.
-	  *  The files are written to the directory SyntheticData in the src
+	  *  dimension n to files in the directory SyntheticData in the src
 	  *  directory.
 	  *  
 	  * @param n dimension of Libor process (number of accrual intervals).
-	  * @param flType type of factorloading: LiborFactorLoading::CS,JR,CV.
+	  * @param volType type of {@link VolatilitySurface} VolSurface::JR,M,CONST.
+	  * @param corrType type of {@link Correlations} Correlations::JR,CS.
 	  */ 
-	 static void writeSyntheticDataSample(int n, int flType)
+	 static void writeSyntheticDataSample
+	 (int n, int volType=VolSurface::JR, int corrType=Correlations::CS)
      {
-		 Int_t nn(n);   // for string conversion
-		 string capletOutFile, swaptionOutFile, dim=nn.toString();
-		 LiborFactorLoading* fl;
-		 switch(flType){
-			 
-			 case LiborFactorLoading::JR : 
-				  fl=JR_FactorLoading::sample(n);
-				  capletOutFile="SyntheticData/CapletsIn-dim"+dim+"-PC-JR.txt";
-			      swaptionOutFile="SyntheticData/SwaptionsIn-dim"+dim+"-PC-JR.txt"; 
-			      break;
-			 case LiborFactorLoading::CV :
-				  fl=ConstVolLiborFactorLoading::sample(n);
-				  capletOutFile="SyntheticData/CapletsIn-dim"+dim+"-PC-CV.txt";
-			      swaptionOutFile="SyntheticData/SwaptionsIn-dim"+dim+"-PC-CV.txt"; 
-			      break;
-			 default : // Coffee-Shoenmakers
-			      fl=CS_FactorLoading::sample(n);
-			      capletOutFile="SyntheticData/CapletsIn-dim"+dim+"-PC-CS.txt";
-			      swaptionOutFile="SyntheticData/SwaptionsIn-dim"+dim+"-PC-CS.txt"; 
-		 } // end switch
+		 // string conversion
+		 Int_t nn(n);   
+		 string  vols=VolSurface::volSurfaceType(volType),        // "CONST", "JR", "M"
+		         corrs=Correlations::correlationType(corrType),   // "JR", "CS"
+		         dim=nn.toString(),
+		         capletOutFile, swaptionOutFile;
+		 
+		 LiborFactorLoading* fl=LiborFactorLoading::sample(n,volType,corrType);
+		 // called "InstrumentIn" since we'll be reading in from that
+		 capletOutFile="SyntheticData/CapletsIn-DL-dim"+dim+"-"+vols+"-"+corrs+".txt";
+	     swaptionOutFile="SyntheticData/SwaptionsIn-DL-dim"+dim+"-"+vols+"-"+corrs+".txt";
 		 
 		 LmmCalibrator* cal=new PredictorCorrectorLmmCalibrator
 		 (fl,"CapletsIn","SwaptionsIn",capletOutFile.c_str(),swaptionOutFile.c_str());
@@ -778,42 +729,18 @@ public:
 		 
 
 	 /** Writes a sample of synthetic caplet and swaption prices in 
-	  *  dimension n=20,30,40 for all three factorloading types.
+	  *  dimension n=20,30,40 for all factorloading types.
 	  */ 
 	 static void writeSyntheticDataSample()
      {
 	     for(int n=20;n<60;n+=10)
-	     for(int flType=0;flType<3;flType++)writeSyntheticDataSample(n,flType);
+	     for(int volType=0;volType<3;volType++)
+		 for(int corrType=0;corrType<2;corrType++) writeSyntheticDataSample(n,volType,corrType);
 	     cout << "\n\nDone.";
 	 }
 			 
-			 
-			 
-	/** Allocates a sample factorloading of dimension n and
-	 *  type flType (LiborFactorLoading::CS,JR,CV) reads 
-	 *  caplet and swaption prices from the infiles and writes them
-	 *  to the outfiles.
-	 */
-	static void test(int n, int flType)
-    {
-		LiborFactorLoading* fl;
-		switch(flType)
-	    {
-			case LiborFactorLoading::JR : fl = JR_FactorLoading::sample(n); 
-				                          break;
-			case LiborFactorLoading::CV : fl = ConstVolLiborFactorLoading::sample(n); 
-				                          break;
-			default                     : fl = CS_FactorLoading::sample(n);
-		}
-		
-		LmmCalibrator* cal=new PredictorCorrectorLmmCalibrator(fl);
-		cal->readCaplets();
-		cal->writeCaplets();
-		cal->readSwaptions();
-		cal->writeSwaptions();
-	}
 	
-	
+	 
 }; // end PredictorCorrectorLmmCalibrator
 
 
@@ -828,7 +755,7 @@ public:
 
 /** Optimizer to calibrate a {@link CV_FactorLoading}.
  *  We use a BFGS optimizer.
- */
+ *
 class CV_Optimizer : public BFGS {
 	
 protected:
@@ -840,19 +767,17 @@ public:
 	
 	/** @param n dimension (number of variables).
 	 *  @param cal the LMM calibrator.
-	 */
-	LmmOptimizer(int n, LmmCalibrator* _cal) : Optimizer(n) 
+	 *
+	CV_Optimizer(int n, LmmCalibrator* _cal) : Optimizer(n) 
 	cal(_cal),
 	factorLoading(cal->getFactorLoading())
 	{  }
 	
 	
 };
+*/
 
 
-/** Optimizer for 
-	
-	
 
 
 

@@ -47,40 +47,13 @@ using namespace Martingale;
 	factorLoading(fl)
 	{   } 
 	
-	
-	LiborFactorLoading* LiborMarketModel::
-	sampleFactorLoading(int n, Real delta=0.25, int factorLoadingType=CS)
-    {
-		LiborFactorLoading* fl=0;
-		switch(factorLoadingType){
-			
-			case CS : fl=CS_FactorLoading::sample(n,delta); break;
-			case JR : fl=JR_FactorLoading::sample(n,delta); 
-		}
-		return fl;
-	}
        
-     
-     
-//  LIBOR VOLATILITIES
-     
-
-     Real LiborMarketModel::vol(int i)
-     {
-         if(i==0) return 0.0;
-		 Real  T_i=T[i],
-		       sgsquare=factorLoading->integral_sgi_sgj_rhoij(i,i,0,T_i)/T_i;
-         return sqrt(sgsquare);
-     }
-	 
-     
-
-
+ 
 	
 // FORWARD TRANSPORTING FACTORS
 
 	 // H_0(0)
-     Real LiborMarketModel::H0()
+     Real LiborMarketModel::H0() const
      {
          Real f=1.0;
 	     for(int k=0;k<n;k++)f*=(1+x[k]);
@@ -88,7 +61,7 @@ using namespace Martingale;
      }
 	 
 	 // H_i(0)
-     Real LiborMarketModel::H_i0(int i)
+     Real LiborMarketModel::H_i0(int i) const
      {
          Real f=1.0;
 	     if(i==n) return f;
@@ -99,11 +72,11 @@ using namespace Martingale;
      
      
 	 // H_i(T_t)=B_i(T_t)/B_n(T_t)
-     Real LiborMarketModel::H_it(int i, int t)
+     Real LiborMarketModel::H_it(int i, int t) 
      { 
 		 if(i==0)return 1.0;
 
-		 vector<Real>& X_t=XLvect(t,i);         // X_t[j]=X_j(T_t), j>=i
+		 const vector<Real>& X_t=XLvect(t,i);         // X_t[j]=X_j(T_t), j>=i
 		 Real f=1.0;
          for(int j=i;j<n;j++)f*=(1.0+X_t[j]);
          return f;
@@ -112,7 +85,7 @@ using namespace Martingale;
 
 
 	 // H_t(T_t)=1/B_n(T_t)
-     Real LiborMarketModel::H_ii(int t){ return H_it(t,t); }
+     Real LiborMarketModel::H_ii(int t) { return H_it(t,t); }
 
  
 	 
@@ -121,7 +94,7 @@ using namespace Martingale;
 
 
      // B_i(0)
-     Real LiborMarketModel::B0(int i)
+     Real LiborMarketModel::B0(int i) const
      { 
          Real f=1.0;
          // accumulate 1 from time t=0 to time t=T_i                    
@@ -131,9 +104,9 @@ using namespace Martingale;
  
 
 	// B_i(T_t)
-    Real LiborMarketModel::B(int i, int t)
+    Real LiborMarketModel::B(int i, int t) 
     {     
-        vector<Real>& X_t=XLvect(t,i);         // X_t[k]=X_k(T_t), j>=i
+        const vector<Real>& X_t=XLvect(t,i);         // X_t[k]=X_k(T_t), j>=i
 		Real f=1.0; 
         // accumulate 1 forward from time t to time i
         for(int k=t;k<i;k++)f*=(1.0+X_t[k]); 
@@ -148,7 +121,7 @@ using namespace Martingale;
              
 
      // S_{pq}(T_t)=(B_p(T_t)-B_q(T_t))/B_{p,q}(T_t)
-     Real LiborMarketModel::swRate(int p, int q, int t)
+     Real LiborMarketModel::swRate(int p, int q, int t) 
      { 
         Real num,        // numerator in the swap rate definition
              denom;      // denominator
@@ -163,9 +136,9 @@ using namespace Martingale;
 
      
      // S_{pq}(T_t)=(B_p(T_t)-B_q(T_t))/B_{p,q}(T_t)
-     Real LiborMarketModel::swapRate(int p, int q, int t)
+     Real LiborMarketModel::swapRate(int p, int q, int t) 
      { 
-        vector<Real>& X_t=XLvect(t,p);         // X_t[k]=X_k(T_t), k>=p
+        const vector<Real>& X_t=XLvect(t,p);         // X_t[k]=X_k(T_t), k>=p
 		Real f=1.0+X_t[q-1], 
 		     S=delta[q-1];
         for(int k=q-2;k>=p;k--){ S+=delta[k]*f; f*=(1.0+X_t[k]); }
@@ -175,7 +148,7 @@ using namespace Martingale;
 
 
      // S_{pq}(0)
-     Real LiborMarketModel::swapRate(int p, int q)
+     Real LiborMarketModel::swapRate(int p, int q) const
      { 
         Real f=1.0+x[q-1], S=delta[q-1];
         for(int k=q-2;k>=p;k--){ S+=delta[k]*f; f*=(1.0+x[k]); }
@@ -190,7 +163,7 @@ using namespace Martingale;
                   
      
      // B_{pq}(T_t)=\sum\nolimits_{k=p}^{q-1}\delta_kB_{k+1}(T_t)
-     Real LiborMarketModel::b_pq(int p, int q, int t)
+     Real LiborMarketModel::b_pq(int p, int q, int t) 
      { 
          Real S=0.0;
          for(int k=p;k<q;k++)S+=delta[k]*B(k+1,t);
@@ -199,9 +172,9 @@ using namespace Martingale;
      
      
      // B_{pq}(T_t)=\sum\nolimits_{k=p}^{q-1}\delta_kB_{k+1}(T_t)    
-	 Real LiborMarketModel::B_pq(int p, int q, int t)
+	 Real LiborMarketModel::B_pq(int p, int q, int t) 
      { 
-         vector<Real>& X_t=XLvect(t,p);         // X_t[k]=X_k(T_i), k>=p
+         const vector<Real>& X_t=XLvect(t,p);         // X_t[k]=X_k(T_i), k>=p
 		 Real S=0.0, F=B(q,t);
          for(int k=q-1;k>=p;k--){ S+=delta[k]*F; F*=(1.0+X_t[k]); }
 
@@ -210,7 +183,7 @@ using namespace Martingale;
 
      
      // B_{pq}(0)
-     Real LiborMarketModel::B_pq(int p, int q)
+     Real LiborMarketModel::B_pq(int p, int q) const
      { 
          Real S=0.0, F=B0(q);
          for(int k=q-1;k>=p;k--){ S+=delta[k]*F; F*=(1.0+x[k]); }
@@ -220,35 +193,18 @@ using namespace Martingale;
 	 
 	 
      // H_{p,q}(T_t)=B_{pq}(T_t)/B_n(T_t)  
-	 Real LiborMarketModel::H_pq(int p, int q, int t)
+	 Real LiborMarketModel::H_pq(int p, int q, int t) 
      { 
          return B_pq(p,q,t)*H_ii(t);
      } //end H_pq
 
      
      // H_pq(0)
-     Real LiborMarketModel::H_pq(int p, int q)
+     Real LiborMarketModel::H_pq(int p, int q) const
      { 
          return B_pq(p,q)*H0();
      } //end B_pq
 
-
-
-// STRING MESSAGE
-    
- 
-    string LiborMarketModel::toString()
-    {
-		vector<Real> vols(n);
-		for(int i=0;i<n;i++) vols[i]=vol(i); 
-
-		ostringstream os;
-		os << "\nLibor Marekt Model " << endl
-		   << (factorLoading->toString()) 
-		   << "\n\nLibor volatilities:\n" << vols;
-        
-        return os.str();
-     }
              
 
 
@@ -318,15 +274,13 @@ using namespace Martingale;
 	 cashPrice() const { return forwardPrice(0)/(LMM->H0()); }
 	 
 	 
-// TO STRING
+// PRINTING 
 
-    std::string Bond::toString()
+    std::ostream& Bond::printSelf(std::ostream& os) const
     {
-         ostringstream os;
-	     os << "Bond along [T_"<<p<<",T_"<<q<<"], n="<<n<< endl
-	    	<< "Coupons: " << c.toString();
-
-	    return os.str();
+	    return 
+		os << "Bond along [T_"<<p<<",T_"<<q<<"], n="<<n<< endl
+	    	<< "Coupons: " << c;
     }
 	
 

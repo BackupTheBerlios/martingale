@@ -66,11 +66,11 @@ class LiborMarketModel {
 protected:
     
 	// initialized from the factorloading
-    int n;                      // number of forward Libors
-    RealArray1D& delta;         // delta[t]=T_{t+1}-T_t,length of compounding intervals
-    RealArray1D& T;             // tenor structure, Tc[t]=T_t
-    RealArray1D& l;             // initial Libors, l[j]=L_j(0)
-    RealArray1D& x;             // initial X-Libors x[j]=X_j(0)=delta_jL_j(0)
+    int n;                                  // number of forward Libors
+    const RealArray1D& delta;               // delta[t]=T_{t+1}-T_t,length of compounding intervals
+    const RealArray1D& T;                   // tenor structure, Tc[t]=T_t
+    const RealArray1D& l;                   // initial Libors, l[j]=L_j(0)
+    const RealArray1D& x;                   // initial X-Libors x[j]=X_j(0)=delta_jL_j(0)
     
     // volatility and correlation structure
     LiborFactorLoading* factorLoading;
@@ -91,7 +91,7 @@ public:
     
     /** The array of continuous times \f$T_j\f$.
      */
-    const RealArray1D& getTenorStructure() const { return Tc; }
+    const RealArray1D& getTenorStructure() const { return T; }
     
     
     /** The array of accrual periods \f$delta_j\f$.
@@ -177,7 +177,7 @@ public:
 
 	/** The vector \f$(X_p(T_t),...,X_{n-1}(T_t))\f$ from current path. 
       */
-     virtual vector<Real>& XLvect(int t, int p) = 0;
+     virtual const vector<Real>& XLvect(int t, int p) = 0;
 	
 
 	 /** Computes a full Libor path from time zero to the horizon.
@@ -219,7 +219,7 @@ public:
       *
       * @param i Libor index.
       */
-     virtual Real vol(int i);
+     Real vol(int i) const { return factorLoading->annualVol(i); }
 	 
      
 
@@ -231,14 +231,14 @@ public:
 	 /** \f$H_0(0)=1/B_n(0)\f$, accrual factor \f$T_0\rightarrow T_n\f$ with Libors 
       *  in state at time t=0.
       */
-     virtual Real H0();
+     virtual Real H0() const;
 	 
 	 
 	 	 
 	 /** \f$H_i(0)=B_i(0)/B_n(0)\f$, accrual factor \f$T_i\rightarrow T_n\f$ with Libors 
       *  in state at time t=0.
       */
-     virtual Real H_i0(int i);
+     virtual Real H_i0(int i) const;
      
 
     /** Accrual factor \f$H_i(T_t)=B_i(T_t)/B_n(T_t)\f$. This factor shifts
@@ -272,7 +272,7 @@ public:
      *  
      * @param i bond matures at time \f$T_i\f$.
      */
-     virtual Real B0(int i);
+     virtual Real B0(int i) const;
  
     /** The zero coupon bond \f$B_i(T_t)=B(s,T)\f$ with \f$s=T_t, T=T_i\f$. 
      *  Assumes that all Libors \f$X_k, k=t,t+1,...,n-1\f$ have been computed up 
@@ -317,7 +317,7 @@ public:
       *
       * @param p,q swap along \f$[T_p,T_q]\f$.    
 	  */ 
-     virtual Real swapRate(int p, int q);
+     virtual Real swapRate(int p, int q) const;
  
 	 
 	 
@@ -351,7 +351,7 @@ public:
 	  *
       * @param p,q annuity along \f$[T_p,T_q]\f$.
       */     
-     virtual Real B_pq(int p, int q);
+     virtual Real B_pq(int p, int q) const;
 	 
 	 
 	 
@@ -369,7 +369,7 @@ public:
 	  *
       * @param p,q annuity along \f$[T_p,T_q]\f$.
       */     
-     virtual Real H_pq(int p, int q);
+     virtual Real H_pq(int p, int q) const;
 
 
 
@@ -383,7 +383,7 @@ public:
     *
     * @param i caplet on \f$[T_i,T_{i+1}]\f$.
     */ 
-     virtual Real capletAggregateVolatility(int i)
+     virtual Real capletAggregateVolatility(int i) const
      { 
           cerr << "LiborMarketModel#capletAggregateVolatility(): " 
 		       << "not implemented in this generality, aborting.";
@@ -401,7 +401,7 @@ public:
     * @param p,q swap along on \f$[T_p,T_q]\f$.
     * @param t swaption exercise at time \f$T_t\leq T_p\f$.
     */ 
-     virtual Real swaptionAggregateVolatility(int p, int q, int t)
+     virtual Real swaptionAggregateVolatility(int p, int q, int t) const
      { 
           cerr << "LiborMarketModel#swaptionAggregateVolatility(): " 
 		       << "not implemented in this generality, aborting.";
@@ -419,24 +419,32 @@ public:
 	  * @param B the bond.
 	  * @param t aggregate volatility until time \f$T_t\f$.
 	  */
-	 virtual Real bondAggregateVolatility(Bond* B, int t)
+	 virtual Real bondAggregateVolatility(Bond* B, int t) const
      { 
           cerr << "LiborMarketModel#bondAggregateVolatility(): " 
 		       << "not implemented in this generality, aborting.";
 		  exit(1);
 		  return 0.0;
      } 
+
 	 
-// STRING MESSAGE
+// STRING MESSAGE	 
+	    
+   /** Message and fields.*/
+   virtual std::ostream& printSelf(std::ostream& os) const = 0;
     
-    
-    /** A message what type of factor loading it is, all the parameter values.
-     */
-    virtual string toString();
-             
 
 
 }; // end LiborMarketModel
+
+
+
+
+// GLOBAL INSERTION
+
+std::ostream& operator << 
+(std::ostream& os, const LiborMarketModel& lmm){ return lmm.printSelf(os); }
+
 
 
 
@@ -538,11 +546,18 @@ public:
 
     /** Message identifying the object (parameter values, etc)
      */
-    std::string toString();
+    std::ostream& printSelf(std::ostream& os) const;
 	
 
 
 }; // end Bond
+
+
+// GLOBAL INSERTION
+
+std::ostream& operator << 
+(std::ostream& os, Bond* bond){ return bond->printSelf(os); }
+
 
 
 

@@ -68,25 +68,25 @@ using namespace std;
 	
 	
 	LiborFactorLoading* LiborFactorLoading::
-	sample(int n, int volType=VolSurface::JR, int corrType=Correlation::CS)
+	sample(int n, int volType=VolSurface::JR, int corrType=Correlations::CS)
     {
 		RealArray1D deltas(n);
-		RealArray1D k(n);
+		RealArray1D c(n);        // k_j
 		RealArray1D L0(n);
         for(int i=0;i<n;i++)
-		{ deltas[i]=delta; k[i]=0.2+0.1*Random::U01(); L0[i]=0.04; }
+		{ deltas[i]=0.25; c[i]=0.2+0.1*Random::U01(); L0[i]=0.04; }
 				
 		VolSurface* vols = VolSurface::sample(volType);
 		Correlations* corrs = Correlations::sample(n,corrType);
 			
-		return new LiborFactorLoading(L0,deltas,_k,vols,corrs);
+		return new LiborFactorLoading(L0,deltas,c,vols,corrs);
 	}
 	
 	
 	
 // PRINT FIELDS
 	
-	std::ostream& LiborFactorLoading::printSelf(std::ostream& os)
+	std::ostream& LiborFactorLoading::printSelf(std::ostream& os) const
     {
 		vector<Real> L0(n,l.getData());      // initial Libors		
 		vector<Real> vols(n-1,1);            // annualized volatilities
@@ -101,9 +101,10 @@ using namespace std;
 	}
 	
 	
-	Real LiborFactorLoading::annualVol(int i)
+	Real LiborFactorLoading::annualVol(int i) const
     {
-		Real   T_i=T[i];
+		if(i==0) return 0.0;
+		Real   T_i=T[i],
 		       volSqr=integral_sgi_sgj_rhoij(i,i,0.0,T_i);
 		return sqrt(volSqr/T_i);
 	}
@@ -120,7 +121,7 @@ using namespace std;
 
    	
 	
-   UTRMatrix<Real>& LiborFactorLoading::
+   const UTRMatrix<Real>& LiborFactorLoading::
    logLiborCovariationMatrix(int p,int q, Real s, Real t) const
    {
        int size=q-p;       // matrix size
@@ -135,7 +136,7 @@ using namespace std;
    
 
    
-   UTRMatrix<Real>& LiborFactorLoading::
+   const UTRMatrix<Real>& LiborFactorLoading::
    logLiborCovariationMatrix(int t) const
    {
 	   return logLiborCovariationMatrix(t+1,n,T[t],T[t+1]);
@@ -143,14 +144,14 @@ using namespace std;
    
 
    
-   UTRMatrix<Real>& LiborFactorLoading::
+   const UTRMatrix<Real>& LiborFactorLoading::
    logLiborCovariationMatrixRoot(int t) const
    {
 	   return logLiborCovariationMatrix(t).utrRoot();
    }
 
 
-   Matrix<Real>& LiborFactorLoading::
+   const Matrix<Real>& LiborFactorLoading::
    reducedRankLogLiborCovariationMatrixRoot(int t, int r) const
    {
 	   return logLiborCovariationMatrix(t).rankReducedRoot(r);
@@ -163,19 +164,18 @@ using namespace std;
 // TEST PROGRAMS 
 		 
 
-void LiborFactorLoading::selfTest()
+void LiborFactorLoading::selfTest() const
 {
 	Real precision=0.001,       // maximum acceptable relative error in percent
 		 epsilon=0.00000000001; // zero denominator reset to epsilon
 	
-    cout << "\nLIBOR FACTORLOADING SELFTEST:" << endl << toString();
-	printFields();
+    cout << "\nLIBOR FACTORLOADING SELFTEST:" << endl << this;
 	
 	cout << "\nTesting the root L of the matrix C=logLiborCovariationMatrix(t):" << endl;
 	for(int t=0;t<n-1;t++){
 		
-		UTRMatrix<Real>& C=logLiborCovariationMatrix(t);
-		UTRMatrix<Real>& L=logLiborCovariationMatrixRoot(t);
+		const UTRMatrix<Real>& C=logLiborCovariationMatrix(t);
+		const UTRMatrix<Real>& L=logLiborCovariationMatrixRoot(t);
 		cout << "\nt = " << t << ": ";
 		C.testEquals(L.aat(),precision,epsilon,"C=L*L'");
 	}
@@ -183,7 +183,7 @@ void LiborFactorLoading::selfTest()
 } // end test
 
 
-void LiborFactorLoading::factorizationTest(int r)
+void LiborFactorLoading::factorizationTest(int r) const
 {
 	cerr << "\n\nApproximate factorization of all single time step log-Libor"
 	     << "\ncovariation matrices C(t) as C(t)= R(t)R(t)' with R(t) of rank " << r
@@ -191,10 +191,26 @@ void LiborFactorLoading::factorizationTest(int r)
 	
 	for(int t=0;t<n-2;t++){
 		
-		UTRMatrix<Real>& Ct=logLiborCovariationMatrix(t);
+		const UTRMatrix<Real>& Ct=logLiborCovariationMatrix(t);
 		Ct.testFactorization(r);
 	}
 }
+
+
+// CALIBRATION
+
+// use the first coordinates of x to set the Libor volatility scaling factors 
+// k[j] (including k[0] although its useless) then the next coordinates to set 
+// VolSurface::a,b,c,d and the follwing coordinates to set 
+// Correlations::alpha,beta,r_oo
+void LiborFactorLoading::setParameters(const RealArray1D& X)
+{
+	Real* u=X.getData();
+	for(int j=0;j<n;j++) k[j]=u[j];
+	vol->setParameters(u[n],u[n+1],u[n+2],u[n+3]);
+	corr->setParameters(u[n+4],u[n+5],u[n+6]);
+}
+	
 
 
 
@@ -203,6 +219,18 @@ void LiborFactorLoading::factorizationTest(int r)
  *                 VOL SURFACES
  *
  ******************************************************************************/
+
+
+	string VolSurface::volSurfaceType(int volType)
+    {
+         switch(volType){
+			 
+			 case VolSurface::CONST : return "CONST";
+             case VolSurface::JR : return "JR";
+			 case VolSurface::M : return "M";
+		}
+		return "  ";
+	}
 
 
 
@@ -246,15 +274,13 @@ void LiborFactorLoading::factorizationTest(int r)
 	   Real f,A,B,C,
               ctmT1=c*(t-T1),
               ctmT2=c*(t-T2),
-              T1mT2=fabs(T1-T2),
               q=ctmT1+ctmT2,                    // c(2t-ti-tj)
               ac=a*c,
-              cd=c*d,
-              bcd=b*c*d;
+              cd=c*d;
               
-       f=exp(-Beta*T1mT2)/(c*c*c);
+       f=1.0/(c*c*c);
        A=ac*cd*(exp(ctmT2)+exp(ctmT1))+c*cd*cd*t;
-       B=bcd*(exp(ctmT1)*(ctmT1-1)+exp(ctmT2)*(ctmT2-1));
+       B=b*cd*(exp(ctmT1)*(ctmT1-1)+exp(ctmT2)*(ctmT2-1));
        C=exp(q)*(ac*(ac+b*(1-q))+b*b*(0.5*(1-q)+ctmT1*ctmT2))/2;
        
        return f*(A-B+C);
@@ -266,10 +292,13 @@ void LiborFactorLoading::factorizationTest(int r)
    {
 	   switch(type){
 		   
-		   case M  : return M_VolSurface::sample();
-		   case JR : return JR_VolSurface::sample(); 
-		   default : return CONST_VolSurface::sample(); 
+		   case M     : return M_VolSurface::sample();
+		   case JR    : return JR_VolSurface::sample(); 
+		   case CONST : return CONST_VolSurface::sample(); 
 	   }
+	   cout << "\n\nVolSurface::sample(): unknown VolSurface type = " << type
+	        << ". Exiting.";
+	   exit(1);
    }
 
 
@@ -279,6 +308,19 @@ void LiborFactorLoading::factorizationTest(int r)
  *                CORRELATIONS
  *
  ******************************************************************************/
+   
+   
+   	string Correlations::correlationType(int corrType)
+    {
+         switch(corrType){
+			 
+			 case Correlations::JR : return "JR";
+             case Correlations::CS : return "CS";
+			 default :               return "Unknown-Correlations";
+		}
+		return "   ";   // makes compiler happy
+	}
+
 
     
     Correlations* Correlations::sample(int n, int type)
@@ -297,7 +339,7 @@ void LiborFactorLoading::factorizationTest(int r)
 		for(int i=0;i<n;i++) T[i+1]=T[i]+delta;
 		
 		Real beta=0.1;
-		return new JR_Corrleations(T,beta); 
+		return new JR_Correlations(T,beta); 
 	}
 	
 	
@@ -309,7 +351,7 @@ void LiborFactorLoading::factorizationTest(int r)
            
         // initialize the correlation matrix rho
         for(int i=1;i<n;i++)
-        for(int j=i;j<n;j++) rho(i,j)=b[i]/b[j];  
+        for(int j=i;j<n;j++) correlationMatrix(i,j)=b[i]/b[j];  
 	}
 	
 	

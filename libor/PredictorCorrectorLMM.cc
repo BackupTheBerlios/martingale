@@ -22,6 +22,7 @@ spyqqqdia@yahoo.com
 
 
 #include "PredictorCorrectorLMM.h"
+#include <iostream>
 
 using namespace Martingale;
 
@@ -34,7 +35,7 @@ using namespace Martingale;
  ******************************************************************************/ 
 
 // (X_p(T_t),...,X_{n-1}(T_t))\f$, 
-vector<Real>& PredictorCorrectorLMM::XLvect(int t, int p) 
+const vector<Real>& PredictorCorrectorLMM::XLvect(int t, int p)   
 { 
 	XVec.setDimension(n-p);
 	XVec.setIndexBase(p);
@@ -62,8 +63,8 @@ vector<Real>& PredictorCorrectorLMM::XLvect(int t, int p)
 		// set pointers to matrices for time step simulation
 		for(int t=0;t<n-1;t++){
 			
-			UTRMatrix<Real>* cvm_t=&(factorLoading->logLiborCovariationMatrix(t));
-			UTRMatrix<Real>* cvmr_t=&(factorLoading->logLiborCovariationMatrixRoot(t));
+			const UTRMatrix<Real> cvm_t=factorLoading->logLiborCovariationMatrix(t);
+			const UTRMatrix<Real> cvmr_t=factorLoading->logLiborCovariationMatrixRoot(t);
 			logLiborCovariationMatrices.setMatrix(t,cvm_t);
             logLiborCovariationMatrixRoots.setMatrix(t,cvmr_t);
 		}
@@ -75,10 +76,10 @@ vector<Real>& PredictorCorrectorLMM::XLvect(int t, int p)
 
 	
 	LiborMarketModel* 
-	PredictorCorrectorLMM::sample(int n, Real delta)
+	PredictorCorrectorLMM::sample(int n, int volType, int corrType)
     {
 		LiborFactorLoading* 
-		fl=LiborMarketModel::sampleFactorLoading(n,delta,LiborMarketModel::JR);
+		fl=LiborFactorLoading::sample(n,volType,corrType);
 		return new PredictorCorrectorLMM(fl);
 	}
     
@@ -89,7 +90,7 @@ vector<Real>& PredictorCorrectorLMM::XLvect(int t, int p)
 	
 
 	void PredictorCorrectorLMM::
-	printWienerIncrements(int t, int s)
+	printWienerIncrements(int t, int s) const 
     {
          // recall that Z is an upper triangular array
 		 for(int u=t;u<s;u++){
@@ -110,8 +111,8 @@ vector<Real>& PredictorCorrectorLMM::XLvect(int t, int p)
      {   
 		 /* The matrices needed for the time step T_t->T_{t+1}.
           */
-         UTRMatrix<Real>& C=logLiborCovariationMatrices.getMatrix(t); 
-         UTRMatrix<Real>& R=logLiborCovariationMatrixRoots.getMatrix(t); 
+         const UTRMatrix<Real>& C=logLiborCovariationMatrices.getMatrix(t); 
+         const UTRMatrix<Real>& R=logLiborCovariationMatrixRoots.getMatrix(t); 
                     
          int q=max(t+1,p);   
          // only Libors L_j, j>=q make the step. To check the index shifts 
@@ -163,7 +164,7 @@ vector<Real>& PredictorCorrectorLMM::XLvect(int t, int p)
 	 
 
      Real PredictorCorrectorLMM::
-     capletAggregateVolatility(int i)
+     capletAggregateVolatility(int i) const 
      { 
          Real volsqr=factorLoading->integral_sgi_sgj_rhoij(i,i,0,T[i]);
 		 return sqrt(volsqr);
@@ -171,9 +172,9 @@ vector<Real>& PredictorCorrectorLMM::XLvect(int t, int p)
 	 
 	 
      Real PredictorCorrectorLMM::
-	 swaptionAggregateVolatility(int p, int q, int t)
+	 swaptionAggregateVolatility(int p, int q, int t) const 
      { 
-          UTRMatrix<Real>& 
+          const UTRMatrix<Real>& 
 		  Q=factorLoading->logLiborCovariationMatrix(p,q,0,T[t]).utrRoot();
 		  vector<Real> x_pq(q-p,p);
 		  for(int j=p;j<q;j++) x_pq[j]=(B0(j)-B0(j+1))/B_pq(p,q);
@@ -183,23 +184,23 @@ vector<Real>& PredictorCorrectorLMM::XLvect(int t, int p)
     
      
      
-     
+ 
 // STRING MESSAGE
     
-
-    string PredictorCorrectorLMM::toString()
+    std::ostream& PredictorCorrectorLMM::printSelf(std::ostream& os) const 
     {
 		vector<Real> vols(n);
 		for(int i=0;i<n;i++) vols[i]=vol(i); 
 
-		ostringstream os;
-		os << "\nLibor Market Model, random dynamics: " << SG->toString() << endl
-		   << "Predictor corrector simulation of true Libor dynamics." << endl
-		   << factorLoading->toString() 
+		os << "\nLibor markett model: predictor-corrector type" << endl
+		   << "\nRandom dynamics: " << SG
+		   << factorLoading
 		   << "\n\nLibor volatilities:\n" << vols;
-        
-        return os.str();
+		
+		return os;
      }
+ 
+ 
 	 
              
 

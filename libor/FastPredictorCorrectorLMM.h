@@ -147,7 +147,7 @@ public:
       * @param p index of first Libor.
       * @param t discrete time.
       */
-     vector<Real>& XLvect(int t, int p);
+     const vector<Real>& XLvect(int t, int p);
 		 
 
 	
@@ -162,12 +162,13 @@ public:
     FastPredictorCorrectorLMM(LiborFactorLoading* fl);
 	
 	
-	/** Sample LMM based on {@link CS_FactorLoading}.
+	/** Sample LMM, quarterly accrual.
 	 *
 	 * @param n dimension (number of accrual intervals).
-	 * @param delta length of each accrual interval.
+	 * @param volType type of volatility surface (VolSurface::JR,M,CONST).
+	 * @param corrType type of correlations (Correlations::JR,CS).
 	 */
-	static LiborMarketModel* sample(int n, Real delta);
+	static LiborMarketModel* sample(int n, int volType, int corrType);
 
     
 
@@ -177,7 +178,7 @@ public:
 	/** Prints the matrix Z of current Wiener increments,
 	 *  method is used for testing only.
 	 */
-	void printWienerIncrements(int t, int s);
+	void printWienerIncrements(int t, int s) const;
 	
 	
 	/** <p>The effective dimension of the simulation, that is, the number of 
@@ -255,7 +256,7 @@ public:
 	*
     * @param i caplet on \f$[T_i,T_{i+1}]\f$.
     */ 
-     Real capletAggregateVolatility(int i);
+     Real capletAggregateVolatility(int i) const;
 	 
 	 
    /** <p>Analytic approximation for the aggregate swap rate volatility
@@ -266,7 +267,7 @@ public:
     * @param p,q swap along on \f$[T_p,T_q]\f$.
     * @param t swaption exercise at time \f$T_t\leq T_p\f$.
     */ 
-     Real swaptionAggregateVolatility(int p, int q, int t);
+     Real swaptionAggregateVolatility(int p, int q, int t) const;
     
      
      
@@ -274,12 +275,15 @@ public:
 // STRING MESSAGE
     
     
-    /** A message what type of factor loading it is, all the parameter values.
+    /** Message identifying the object (parameter values, etc)
      */
-    string toString();
+    std::ostream& printSelf(std::ostream& os) const;
 	 
 
 }; // end FastPredictorCorrectorLMM
+
+
+
 
 
 
