@@ -114,6 +114,9 @@ public:
 	 */
 	static VolSurface* sample(int type);
 	
+	/** "CONST", "M" or "JR", converts integer type ID to string. */
+	static string volSurfaceType(int type);
+	
 
 	
 	/** The volatility surface \f$\sigma(t,T)\f$. 
@@ -351,6 +354,9 @@ public:
 	
 	/** CS or JR. */
 	int getType() const { return corrType; }
+	
+	/** "CS" or "JR", converts integer type ID to string.*/
+	static string correlationType(int type);
 	
 	/** n: index range [1,n). */
 	int getDimension() const { return n; }

@@ -58,6 +58,22 @@ volSurfaceType()
 }
 
 
+std::string 
+VolSurface::
+volSurfaceType(int type)
+{
+     switch(type){
+			 
+		 case CONST : return "CONST";
+         case JR    : return "JR";
+		 case M     : return "M";
+	}
+	return "Unknown volatility surface";
+}
+
+
+
+
 VolSurface* 
 VolSurface::
 sample(int type)
@@ -155,7 +171,7 @@ Real
 M_VolSurface::	
 g(Real x) const { return 1+a*x*std::exp(-x/d); }
 
-//<---------- Verify integral against quasi Monte Carlo ---------->
+	
 Real 
 M_VolSurface::
 integral_sgsg(Real t, Real T1, Real T2) const     
@@ -212,7 +228,6 @@ sigma(Real t, Real T) const
 }
 
 
-//<---------- Verify integral against quasi Monte Carlo ---------->
 Real 
 JR_VolSurface::
 integral_sgsg(Real t, Real T1, Real T2) const
@@ -311,6 +326,20 @@ correlationType()
 	}
 	return "Unknown-Correlations";
 }
+
+
+string 
+Correlations::
+correlationType(int type)
+{
+     switch(type){
+			 
+		 case Correlations::JR : return "JR"; 
+         case Correlations::CS : return "CS";   
+	}
+	return "Unknown-Correlations";
+}
+
 
 
 void 

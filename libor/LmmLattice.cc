@@ -39,7 +39,7 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 template<typename LmmNode>
 std::ostream& operator << (std::ostream& os, const LmmLattice<LmmNode>& ltt)
 {
-	ltt.printSelf(os);
+	return ltt.printSelf(os);
 }
 
 
@@ -73,7 +73,7 @@ R(fl->getRho().rankReducedRoot(2))
 	}
 		
 	// check if volatilities are constant
-	if(fl->getVolSurfaceType()!=VolSurface::CONST) {
+	if(fl->getType().volType!=VolSurface::CONST) {
 			
 	   std::cout << "\n\nConstVolLmmLattice2F(): volatilities not constant."
 	             << "\nTerminating.";
@@ -261,7 +261,7 @@ R(fl->getRho().rankReducedRoot(3))
     }
 		
 	// check if volatilities are constant
-	if(fl->getVolSurfaceType()!=VolSurface::CONST) {
+	if(fl->getType().volType!=VolSurface::CONST) {
 			
 	   std::cout << "\n\nConstVolLmmLattice2F(): volatilities not constant."
 	             << "\nTerminating.";

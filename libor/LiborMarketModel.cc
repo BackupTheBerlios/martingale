@@ -34,6 +34,34 @@ spyqqqdia@yahoo.com
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
+
+/*******************************************************************************
+ *
+ *                     LiborMarketModelType
+ * 
+ ******************************************************************************/
+ 
+
+// global insertion
+std::ostream& operator << (std::ostream& os, const LiborMarketModelType& lmmType)
+{
+	std::string simulation;
+	switch(lmmType.type){
+		
+		case LiborMarketModelType::DL   :   simulation="driftless"; break;
+		case LiborMarketModelType::LFDL :   simulation="low factor driftless"; break;
+		case LiborMarketModelType::PC   :   simulation="predictor-corrector"; break;
+		default                         :   simulation="fast predictor-corrector";
+	}
+	
+	return
+	os << "\n\nLibor market model:"
+	   << "\nSimulation: " << simulation 
+	   << lmmType.flType;
+}
+
+
+
 /*******************************************************************************
  *
  *                  LIBOR MARKET MODEL
@@ -80,18 +108,16 @@ sample(int n, int lmmType, int volType, int corrType)
 
 std::string 
 LiborMarketModel::
-modelType()
+lmmType(int type)
 {
-    std::string str="\nSimulation: ";
 	switch(type){
 			 
-		 case PC   : str+="Predictor-Corrector"; break;
-         case FPC  : str+="Fast Predictor-Corrector"; break;
-		 case DL   : str+="DriftlessLMM"; break;
-	     case LFDL : str+="Low factor DriftlessLMM, 3 factors"; break;
+		 case PC   : return "PC";
+         case FPC  : return "FPC";
+		 case DL   : return "DL";
+	     case LFDL : return "LFDL";
 	}
-	str+=factorLoading->factorLoadingType();
-	return str;
+	return "Unknown_LMM_type";
 }
 	
 

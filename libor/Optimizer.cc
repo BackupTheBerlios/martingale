@@ -44,24 +44,34 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 DownhillSimplex::
 DownhillSimplex(int n, RealArray1D& x, Real delta, int steps, bool _verbose) :
 Optimizer(n),
-vertices(n+1,n), sum(n), newVertex(n), y(n+1),
+vertices(n+1), sum(n), newVertex(n), y(n+1),
 fx(0.0), min(0), max(0), max2(0), nStep(steps),
 verbose(_verbose)
 {
-    // vertices[n]=x
-	for(int j=0;j<n;j++) vertices(n,j)=x[j]; 
+    for(int i=0;i<n+1;i++) vertices[i]=new RealArray1D(n);
+	// vertices[n]=x
+	for(int j=0;j<n;j++) vertex(n,j)=x[j]; 
 	// vertices[j]=x+e_j, j<n
     for(int i=0;i<n;i++)
     for(int j=0;j<n;j++){   
 			
-		vertices(i,j)=x[j];
-        if(j==i)vertices(i,j)+=delta; 
+		vertex(i,j)=x[j];
+        if(j==i)vertex(i,j)+=delta; 
     }
       
 	// sum of all vertices
     for(int j=0;j<n;j++) sum[j]=(n+1)*x[j]+delta;       
             
 } // end constructor
+
+
+
+DownhillSimplex::
+~DownhillSimplex()
+{
+	for(int i=0;i<n+1;i++) delete vertices[i];
+}
+
 	
 	
 void 
@@ -69,7 +79,7 @@ DownhillSimplex::
 setInitialConditions()
 {
     // function values at the vertices
-    for(int i=0;i<n+1;i++) y[i]=f(vertices[i]);
+    for(int i=0;i<n+1;i++) y[i]=f(vertex(i));
     setHiLowIndices();
 }
               
@@ -98,7 +108,7 @@ DownhillSimplex::
 reflectVertex(int i, Real k)
 {       
      Real k1=(1+k)/n, k2=k1+k, w;
-     for(int j=0;j<n;j++)newVertex[j]=k1*sum[j]-k2*vertices(i,j);
+     for(int j=0;j<n;j++)newVertex[j]=k1*sum[j]-k2*vertex(i,j);
      w=f(newVertex);
      if(w<y[max])replaceWorst(w);
      return w;
@@ -111,14 +121,14 @@ contract(int i)
 {
      for(int k=0;k<n+1;k++)
      for(int j=0;j<n;j++)
-     vertices(k,j)=0.5*(vertices(i,j)+vertices(k,j));
+     vertex(k,j)=0.5*(vertex(i,j)+vertex(k,j));
         
      //update function values
-     for(int j=0;j<n;j++)if(j!=i)y[j]=f(vertices[j]);
+     for(int j=0;j<n;j++)if(j!=i)y[j]=f(vertex(j));
      setHiLowIndices();
 
      // update the barycenter
-     for(int j=0;j<n;j++)sum[j]=0.5*((n+1)*vertices(i,j)+sum[j]);
+     for(int j=0;j<n;j++)sum[j]=0.5*((n+1)*vertex(i,j)+sum[j]);
         
 }  // end contract
 	
@@ -130,9 +140,9 @@ replaceWorst(Real w)
 {
     y[max]=w;
     // update center
-    for(int j=0;j<n;j++) sum[j]=sum[j]-vertices(max,j)+newVertex[j]; 
+    for(int j=0;j<n;j++) sum[j]=sum[j]-vertex(max,j)+newVertex[j]; 
 	// copy newVertex into vertices[max]
-	for(int j=0;j<n;j++) vertices(max,j)=newVertex[j];
+	for(int j=0;j<n;j++) vertex(max,j)=newVertex[j];
     setHiLowIndices();
 }
 	
@@ -169,11 +179,11 @@ search()
           // the state before the last step
           std::cout << "\n\nDownHillSimplex::search(): function minimum: " << y[min]
 			        << "\nMinimizing vector:";
-          for(int j=0;j<n;j++) std::cout << endl << vertices(min,j);
+          for(int j=0;j<n;j++) std::cout << endl << vertex(min,j);
       }
 		
 	  RealArray1D& xvec=*(new RealArray1D(n));
-	  for(int j=0;j<n;j++) xvec[j]=vertices(min,j);
+	  for(int j=0;j<n;j++) xvec[j]=vertex(min,j);
       return xvec;
         
 } // end search
@@ -549,7 +559,7 @@ search()
              << ", nPoints = " << nPoints;
 		
    Real fx, fOpt=f(x);
-   RealArray1D& xOpt=*(new RealArray1D(x));
+   cout << "\n\nmin = " << fOpt;
 		
    while(nPoints>0){
 		
@@ -602,9 +612,10 @@ search()
 // the objective function in the example
 Real 
 ObjectiveFunction::
-function_1(int n, Real* x)
+function_1(const RealArray1D& x)
 {
-    Real u=0.0;
+    int n=x.getDimension();
+	Real u=0.0;
     for(int i=0;i<n;i++)u+=exp(-x[i]*x[i]);
     return 1/u;
 }

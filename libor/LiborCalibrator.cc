@@ -23,7 +23,7 @@ spyqqqdia@yahoo.com
 #include "LiborCalibrator.h"
 #include "TypedefsMacros.h"
 #include "FinMath.h"
-#include "LiborFactorLoading.h"
+#include "LiborMarketModel.h"
 #include "Optimizer.h"
 #include "Utils.h"
 #include <iostream>
@@ -32,8 +32,11 @@ spyqqqdia@yahoo.com
 #include <string>
 #include <cmath>
 
+#include "QuasiMonteCarlo.h"
+
 //#include <string>
 #include <math.h>
+
 
 
 MTGL_BEGIN_NAMESPACE(Martingale)
@@ -99,73 +102,169 @@ std::istream& operator >> (std::istream& is, CapletData& cplt)
  *                LmmCalibrator
  *
  *********************************************************************************/
+
+LmmCalibrator::
+LmmCalibrator
+(LiborFactorLoading* fl,
+ const char* capletsInFile="CapletsIn.txt",  const char* swaptionsInFile="SwaptionsIn.txt",
+ const char* capletsOutFile="CapletsOut.txt", const char* swaptionsOutFile="SwaptionsOut.txt"
+) :
+factorLoading(fl),
+n(fl->getDimension()),
+X0(fl->getInitialXLibors()),
+delta(fl->getDeltas()),
+U0(n),
+H0(n+1),
+Bn0(0.0),
+S_pq0(n+1,1),
+capletsIn(capletsInFile),
+swaptionsIn(swaptionsInFile),
+logFile("CalibrationLog.txt"),
+capletsOut(capletsOutFile),
+swaptionsOut(swaptionsOutFile),
+caplets(n-1,1),
+swaptions(n-1,1)
+{
+	// H_i(0)
+	H0[n]=1.0;
+	for(int i=0;i<n;i++){
+		
+	   Real f=1.0;
+	   for(int k=i;k<n;k++)f*=(1+X0[k]);
+       H0[i]=f;
+   }
+
+   // U_i(0)
+   for(int i=0;i<n;i++) U0[i]=H0[i]-H0[i+1];
+	   
+   // B_n(0)
+   Real f=1.0;
+   for(int k=0;k<n;k++) f*=(1+X0[k]);
+   Bn0=1.0/f;
+ 
+   // swap rates S_pq(0)
+   for(int p=1;p<n;p++)
+   for(int q=p+1;q<=n;q++)   
+   {
+	   
+	   	Real f=1.0+X0[q-1], S=delta[q-1];
+        for(int k=q-2;k>=p;k--){ S+=delta[k]*f; f*=(1.0+X0[k]); }
+ 
+        S_pq0(p,q)=(f-1.0)/S;
+	}
+	  	
+} // end constructor
+
+
+
+// IO
+
+void 
+LmmCalibrator::
+readCaplets()
+{ 
+	read<CapletData>(capletsIn,caplets); 
+	logFile << "Read caplets:\n\n";
+	write<CapletData>(logFile,caplets); 
 	
+}
+	
+
+void 
+LmmCalibrator::
+readSwaptions()
+{ 
+	read<SwaptionData>(swaptionsIn,swaptions);
+	logFile << "\n\n\nRead swaptions:\n\n";
+	write<SwaptionData>(logFile,swaptions); 
+}
+
+
+void 
+LmmCalibrator::
+recordCapletCalibration()
+{
+   for(int i=1;i<n;i++){
+		   
+	   // Caplet(i), price under current factorloaing parameters
+	   Real strike = factorLoading->getInitialLibors()[i];  // L_i(0)
+	   Real calPrice = capletForwardPrice(i,strike);	   
+		   
+	   CapletData* caplet = caplets[i];
+	   caplet->calibratedForwardPrice=calPrice;
+	   Real price=caplet->forwardPrice,
+	        error=100.0*abs(price-calPrice)/price;
+	   caplet->error=error;
+   }
+}
+	
+	
+void 
+LmmCalibrator::
+writeCaplets()
+{ 
+	capletsOut << "i   strike    forwardPrice    calibratedForwardPrice    error(%)\n\n";
+	recordCapletCalibration();
+	write<CapletData>(capletsOut,caplets); 
+}
+	
+	
+void 
+LmmCalibrator::
+writeSwaptions()
+{ 
+	capletsOut << "p   q   strike    forwardPrice    calibratedForwardPrice    error(%)\n\n";
+	write<SwaptionData>(swaptionsOut,swaptions); 
+}
+
+
+
+// CORRELATIONS
+
+Real
+LmmCalibrator::
+rho(int i, int j){ return factorLoading->getRho()(i,j); }
 	
 // ACCRUAL FACTORS, BONDS, SWAP RATES, .. AT TIME ZERO
-	
-/** H_0(0) */
+
 Real 
 LmmCalibrator::
-H0()
-{
-    Real f=1.0;
-	for(int k=0;k<n;k++)f*=(1+x[k]);
-	return f;
-}
+L_i0(int i){ return factorLoading->getInitialLibors()[i]; } 
 
 
 /** H_i(0) */
 Real 
 LmmCalibrator::
-H_i0(int i)
-{
-    Real f=1.0;
-	if(i==n) return f;
-		
-	for(int k=i;k<n;k++)f*=(1+x[k]);
-	return f;
+H_i0(int i){  return H0[i];  }     // H_i=B_i/B_n  
+
+
+/** H_{pq}(0) */
+Real 
+LmmCalibrator::
+H_pq0(int p, int q)
+{  
+	Real sum=0;
+	for(int k=p;k<q;k++) sum+=delta[k]*H0[k+1];
+	return sum;
 }
-     
+
 
 /** B_i(0) */
 Real 
 LmmCalibrator::
-B0(int i)
-{ 
-    Real f=1.0;
-     // accumulate 1 from time t=0 to time t=T_i                    
-     for(int j=0;j<i;j++)f*=(1.0+x[j]); 
-     return 1.0/f;                                 // B_i(0)=1/f  
-}   
- 
+B_i0(int i){  return H0[i]*Bn0;  }     // H_i=B_i/B_n 
+
+
+/** B_{pq}(0)=H_{pq}(0)*B_n(0) */
+Real 
+LmmCalibrator::
+B_pq0(int p, int q){  return H_pq0(p,q)*Bn0; }
+
 
 /** S_{pq}(0) */
 Real 
 LmmCalibrator::
-swapRate(int p, int q)
-{
-	Real f=1.0+x[q-1], S=delta[q-1];
-    for(int k=q-2;k>=p;k--){ S+=delta[k]*f; f*=(1.0+x[k]); }
- 
-    return (f-1.0)/S;
-} 
-
-
-/** B_{pq}(0) */
-Real 
-LmmCalibrator::
-B_pq(int p, int q)
-{ 
-    Real S=0.0, F=B0(q);
-    for(int k=q-1;k>=p;k--){ S+=delta[k]*F; F*=(1.0+x[k]); }
-    return S;
-} 
-	 
-
-/** H_pq(0) */
-Real 
-LmmCalibrator::
-H_pq(int p, int q){ return B_pq(p,q)*H0(); } 
+swapRate(int p, int q){ return S_pq0(p,q); }
 
 
 
@@ -194,7 +293,7 @@ swaptionForwardPrice(int i, Real strike, Real Sigma)
 	Real S_pq=swapRate(i,n),                                                                                
          Nplus=FinMath::N(FinMath::d_plus(S_pq,strike,Sigma)),
          Nminus=FinMath::N(FinMath::d_minus(S_pq,strike,Sigma)),
-         f=H_pq(i,n);                                                // forward B_{i,n}(0)
+         f=H_pq0(i,n);                                                // forward B_{i,n}(0)
   
     return f*(S_pq*Nplus-strike*Nminus);  
 } 
@@ -245,123 +344,13 @@ meanRelativeCalibrationError()
 	    SwaptionData* currentSwaption=swaptions[i];
 		sum+=abs(currentSwaption->error);
 
-        CapletData* currentCaplet=caplets[i];
-		sum+=abs(currentCaplet->error);
+        //CapletData* currentCaplet=caplets[i];
+		//sum+=abs(currentCaplet->error);
 	}
 		
 	return sum/(2*(n-1));
 } // end meanRelativeCalibrationError
    	
-
-Real 
-LmmCalibrator::
-objectiveFunction(Real* x)
-{
-// cerr << "\n\n\nparameter vector for objective function:" << endl;
-// for(int i=n;i<n+7;i++) cerr << "x[i] = " << x[i] << endl;
-	factorLoading->setParameters(x);		
-	return objectiveFunction();
-}
-	
-
-
-Real 
-LmmCalibrator::
-calibrate(int nVals)
-{
-	readCaplets();
-	//computeCapletMatrices();
-	readSwaptions();
-cerr << "\n\nRead data";
-	//computeSwaptionMatrices();
-	// initial guess for parameter values
-	RealArray1D u(n+7);
-			
-    // initial guess for caplet vol scaling factors k[i]
-	// iterator is pointer to pointer to CapletData
-    for(int i=1;i<n;i++){				
-		
-		CapletData* currentCaplet=caplets[i];
-		Real T_i=factorLoading->getT(i),
-		     L_i0=x[i]/delta[i],
-		     forwardPrice=currentCaplet->forwardPrice,
-		     strike=currentCaplet->strike;
-		
-		// the blackImpliedAggregateCallVolatility solves the blackScholesFunction.
-		// the capletForwardPrice multiplies this function with delta_i*H_i0(i+1)
-		// we must devide by this to isolate the blackScholesFunction
-		Real price=forwardPrice/(delta[i]*H_i0(i+1));
-
-		Real vol=FinMath::blackImpliedAggregateCallVolatility(L_i0,strike,price);
-			
-		VolSurface* volSurface=factorLoading->getVolSurface();
-		Real int_sgsg=volSurface->integral_sgsg(0.0,T_i,T_i,T_i);
-	
-		u[i]=vol/sqrt(int_sgsg);
-	}
-	
-		
-	// now set a,b,c,d; alpha,beta,r_oo depending on the type of correlations
-	// and volatilities
-	switch(factorLoading->getVolSurfaceType()){
-			
-		case VolSurface::JR :
-		u[n]=0.1; u[n+1]=0.7; u[n+2]=2.0; u[n+3]=0.3; break;
-			
-		case VolSurface::M :
-		u[n]=1.0; u[n+1]=1.0; u[n+2]=1.0; u[n+3]=1.5; break;
-			
-		default : u[n]=1.0; u[n+1]=1.0; u[n+2]=1.0; u[n+3]=1.0;
-	}
-		
-	switch(factorLoading->getCorrelationType()){
-		
-		case Correlations::JR :	
-		u[n+4]=0.2; u[n+5]=1.0; u[n+6]=1.0; break;
-			
-		case Correlations::CS :
-		u[n+4]=1.5; u[n+5]=0.05; u[n+6]=0.2; break;
-			
-		default : u[n+4]=1.0; u[n+5]=1.0; u[n+6]=1.0; 
-	}	
-	
-// print initialization parameters
-for(int i=1;i<n;i++) cerr << "\nk["<<i<<"] = " << u[i];
-cerr << "\na = " << u[n]
-	 << "\nb = " << u[n+1]	
-	 << "\nc = " << u[n+2]
-     << "\nd = " << u[n+3]
-	 << "\nalpha = " << u[n+4]	
-	 << "\nbeta = " << u[n+5]
-	 << "\nr_oo = " << u[n+6];
-
-	RealArray1D du(n+7);
-	for(int i=0;i<n+7;i++) du[i]=0.01;
-		 		 
-	SobolLiborCalibrationOptimizer optimizer(n+7,this,u,nVals,du);
-	const RealArray1D& w=optimizer.search();
-	
-	writeCaplets();
-	writeSwaptions();
-	
-	Real meanError=meanRelativeCalibrationError();
-
-	// report optimal parmeters
-	std::cout << "\n\n\n\nOptimal parameters: " << endl << endl;
-	for(int i=1;i<n;i++) std::cout << "\nk["<<i<<"] = " << w[i];
-	std::cout << "\n\n\na = " << w[n]
-	          << "\nb = " << w[n+1]
-	          << "\nc = " << w[n+2]
-	          << "\nd = " << w[n+3]
-	          << "\nalpha = " << w[n+4]
-	          << "\nbeta = " << w[n+5]
-	          << "\nr_oo = " << w[n+6]
-	          << "\n\n\nMean relative calibration error: "
-	          << meanError;
-	
-    return meanError;
-		
-} // end calibrate
 
 
 
@@ -371,6 +360,27 @@ cerr << "\na = " << u[n]
  *              StandardLMM-Calibrator
  *
  *********************************************************************************/
+
+
+
+void 
+StandardLmmCalibrator::
+writeCapletImpliedSigmas()
+{
+    for(int i=1;i<n;i++){	
+		
+		CapletData* currentCaplet=caplets[i];
+		Real L_i0=X0[i]/delta[i],
+		     forwardPrice=currentCaplet->forwardPrice,
+		     strike=currentCaplet->strike;
+		
+		// the blackImpliedAggregateCallVolatility solves the blackScholesFunction.
+		// the capletForwardPrice multiplies this function with delta_i*H_i0(i+1)
+		// we must divide by this to isolate the blackScholesFunction
+		Real price=forwardPrice/(delta[i]*H_i0(i+1));
+		capletImpliedSigma[i]=FinMath::blackImpliedAggregateCallVolatility(L_i0,strike,price); 
+    }
+}
 
 
 
@@ -387,123 +397,58 @@ writeCovariationMatrix(int p, int q)
 }
 
 
-void 
-StandardLmmCalibrator::
-writeCovariationMatrixRoot(int p, int q)
-{	
-    UTRRealMatrix& A=cvMatrix;
-	UTRRealMatrix& U=cvRoot;
-	
-	int m=q-1;                        // (m,m) lower left matrix corner
-  
-	// computation of Uij by reverse induction starting from i,j=n descending to i=j=p
-	// get U_ij from relation row_i(U) dot row_j(U) = A_ij, j>=i, at that point all
-	// U_rs with r>=i,s>=j (and not both equal) are already computed.
-    for(int i=m;i>=p;i--)
-    for(int j=m;j>=i;j--) {                      // j>=i
-    
-        // r_i(U).r_j(U)-U_ijU_jj
-		Real sum=0.0;  
-        for(int k=j+1;k<m;k++) sum += U(i,k)*U(j,k);   
-
-   		Real Aij=A(i,j), R=Aij-sum;              // R-U_ijU_jj=A_ij-r_i(U).r_j(U)=0    
-        if(j>i) U(i,j)=R/U(j,j);             // U[j][0]=U[j][j-j]=U_jj              
-        else if(R>0) U(j,j)=sqrt(R);
-        else{ cerr << "\n\nwriteCovariationMatrixRoot(): Matrix not positive definite:" 
-			       << "\np = "<< p << ", q = " << q
-                   << ", A["<<j<<"]["<<j<<"]-S="<< R 
-			       << "\nTerminating.";
-               exit(1); 
-        } // end else
-    } //end for i
-} // end writeCovariationMatrixRoot
-
-
-
-Real 
-StandardLmmCalibrator::
-capletForwardPrice(int i, Real strike)
-{
-	// wasteful to set both vols, but used only in data writing
-	writeAggregateVolatilities(i,capletVol,swaptionVol);
-	return LmmCalibrator::capletForwardPrice(i,strike,capletVol);
-}
-
-
-Real 
-StandardLmmCalibrator::
-swaptionForwardPrice(int i, Real strike)
-{
-	// wasteful to set both vols, but used only in data writing
-	writeAggregateVolatilities(i,capletVol,swaptionVol);
-	return LmmCalibrator::swaptionForwardPrice(i,strike,swaptionVol);
-}
-
-
 
 Real
 StandardLmmCalibrator::
 objectiveFunction()
-{ 	
+{
 	Real strike, marketPrice, calibratedPrice, error=0.0, diff;
-	// loop through Caplet(i) and Swaption(i,n)
+	// loop through Swaption(i,n), caplets matched exactly later
 	for(int i=1;i<n;i++){ 
-		
-		// set Sigma = capletVol, SwaptionVol 
-		// from current parameters of the factor loading
-		writeAggregateVolatilities(i,capletVol,swaptionVol); 
-		
-		CapletData* theCaplet=caplets[i];
-		// read in
-		marketPrice=theCaplet->forwardPrice; 
-		strike=theCaplet->strike;
-		// compute from current parameters of the factor loading
-		calibratedPrice=LmmCalibrator::capletForwardPrice(i,strike,capletVol); 
-		
-		diff=calibratedPrice-marketPrice;
-		error+=diff*diff;
-		
-		// write the information into the caplet
-		(theCaplet->calibratedForwardPrice)=calibratedPrice;
-		(theCaplet->error)=100*diff/marketPrice;
-//		theCaplet->setCalibratedForwardPrice(calibratedPrice);
-//		theCaplet->setError(100*diff/marketPrice);
 		
 		SwaptionData* theSwaption=swaptions[i];
 		marketPrice=theSwaption->forwardPrice; 
 		strike=theSwaption->strike;
-		calibratedPrice=LmmCalibrator::swaptionForwardPrice(i,strike,swaptionVol); 
-
+		calibratedPrice=swaptionForwardPrice(i,strike); 
 		diff=calibratedPrice-marketPrice;
 		error+=diff*diff;
 		
 		// write the information into the swaption
 		(theSwaption->calibratedForwardPrice)=calibratedPrice;
 		(theSwaption->error)=100*diff/marketPrice;
-//		theSwaption->setCalibratedForwardPrice(calibratedPrice);
-//		theSwaption->setError(100*diff/marketPrice);
 	}
 	return error;
 } // end objectiveFunction()
 		
- 
 
 
-// Norm of the product Q'x of the vector x=x(p,n) with the transpose of the 
-// matrix Q=cvRoot(p,n). Here x=x[i], Q=Q(i,j) with indices p<=i<=j<n.
+Real 
+StandardLmmCalibrator::
+objectiveFunction(const RealArray1D& x)
+{
+	factorLoading->setParameters(x);    // volsurface, correlations
+	setScalingFactors();
+	return objectiveFunction();
+}
+
+
+
+
+// Square root of xCx' with C=cvMatrix, x the field x, indices j,k=i,...,n-1.
 Real
 StandardLmmCalibrator::	
-norm_Qtx(int p)
+root_xCx(int i)
 {
-	UTRRealMatrix& Q=cvRoot;
-	Real s=0.0;
-	for(int i=p;i<n;i++){
-		
-		Real Qtx_i=0.0;                                   // [Q'x]_i
-		for(int j=p;j<=i;j++) Qtx_i+=Q(j,i)*x[j];
-		s+=Qtx_i*Qtx_i;
-	}
-    return sqrt(s);
+	UTRRealMatrix& C=cvMatrix;
+//cerr << C;
+	Real s=0.0, d=0.0;
+	// use symmetry -- C only has the upper half of the covariance matrix.
+	// diagonal:
+	for(int j=i;j<n;j++) d+=x[j]*C(j,j)*x[j]; 
+	// above diagonal
+	for(int j=i;j<n;j++)
+	for(int k=j+1;k<n;k++) s+=x[j]*C(j,k)*x[k];
+    return sqrt(d+2*s);
 }
 
 
@@ -512,7 +457,8 @@ norm_Qtx(int p)
 // SYNTHETIC DATA GENERATION
 void 
 StandardLmmCalibrator::
-writeSyntheticDataSample(int n, int volType=VolSurface::JR, int corrType=Correlations::CS)
+writeSyntheticDataSample
+(int n, int volType=VolSurface::JR, int corrType=Correlations::CS)
 {
 	 // string conversion
 	 Int_t nn(n);   
@@ -533,6 +479,18 @@ writeSyntheticDataSample(int n, int volType=VolSurface::JR, int corrType=Correla
 	 (fl,"CapletsIn","SwaptionsIn",capletOutFile.c_str(),swaptionOutFile.c_str());
 	 
 	 cal->writeSyntheticData();
+	 delete cal;
+		
+	 // called "InstrumentIn" since we'll be reading in from that
+	 capletOutFile="SyntheticData/CapletsIn-PC-dim"+dim+"-"+vols+"-"+corrs+".txt";
+     swaptionOutFile="SyntheticData/SwaptionsIn-PC-dim"+dim+"-"+vols+"-"+corrs+".txt";
+	 
+	 cal=new PredictorCorrectorLmmCalibrator
+	 (fl,"CapletsIn","SwaptionsIn",capletOutFile.c_str(),swaptionOutFile.c_str());
+	 
+	 cal->writeSyntheticData();
+	
+	 
 		
 } // end writeSyntheticDataSample
 		 
@@ -551,18 +509,127 @@ writeSyntheticDataSample()
 	
 void 
 StandardLmmCalibrator::
-testCalibration(int nVals)
+testCalibration
+(int nVals, int dim, 
+ int dataLmmType, int dataVolType, int dataCorrType,
+ int lmmType, int volType, int corrType)
 {
-	int n=50;
-	const char *CapletsIn="CapletsIn-DL-dim50-JR-CS.txt",
-	           *SwaptionsIn="SwaptionsIn-DL-dim50-JR-CS.txt";
-		
-	LiborFactorLoading* 
-	fl=LiborFactorLoading::sample(n,VolSurface::M,Correlations::JR);
-		
-	LmmCalibrator* cal=new DriftlessLmmCalibrator(fl,CapletsIn,SwaptionsIn);
-	cal->calibrate(nVals);
+	if(!((dim==20)||(dim==30)||(dim==40)||(dim==50))) dim=20; 
+	// string conversion
+	 Int_t Dim(dim);   
+	 string  lmm, lmm_c,                                // "DL", "PC"
+	         vols,  vols_c,                             // "CONST", "JR", "M"
+	         corrs, corrs_c,                            // "JR", "CS"
+	         dim_str=Dim.toString(),
+	         capletInFile, swaptionInFile;
+		    
+	 // what the data came from
+	 lmm=LiborMarketModel::lmmType(dataLmmType);
+	 vols=VolSurface::volSurfaceType(dataVolType);
+	 corrs=Correlations::correlationType(dataCorrType);
+	
+	 // what we calibrate
+	 lmm_c=LiborMarketModel::lmmType(lmmType);
+	 vols_c=VolSurface::volSurfaceType(volType);
+	 corrs_c=Correlations::correlationType(corrType);
+
+	 // the data files
+	 capletInFile="SyntheticData/CapletsIn-"+lmm+"-dim"+dim_str+"-"+vols+"-"+corrs+".txt";
+     swaptionInFile="SyntheticData/SwaptionsIn-"+lmm+"-dim"+dim_str+"-"+vols+"-"+corrs+".txt";
+	 
+	
+	 LiborFactorLoading* fl=LiborFactorLoading::sample(dim,volType,corrType);
+
+	 LmmCalibrator* cal;
+	 switch(lmmType){
+		 
+		 case LiborMarketModel::PC  : 
+			       cal=new PredictorCorrectorLmmCalibrator
+		           (fl,capletInFile.c_str(),swaptionInFile.c_str(),"CapletsOut.txt","SwaptionsOut.txt");
+		           std::cout << "\n\n\nCalibrating predictor-corrector LMM:"
+		                     << "\nVolSurface: " << vols_c
+		                     << "\nCorrelations: " << corrs_c
+		                     << "\nDimension: " << dim
+		                     << "\nto data "+capletInFile+", "+swaptionInFile;
+		           break;
+		 // default calibration to driftless LMM
+		 default : cal=new DriftlessLmmCalibrator
+		           (fl,capletInFile.c_str(),swaptionInFile.c_str(),"CapletsOut.txt","SwaptionsOut.txt");
+		           std::cout << "\n\n\nCalibrating driftless LMM:"
+		                     << "\nVolSurface: " << vols_c
+		                     << "\nCorrelations: " << corrs_c
+		                     << "\nDimension: " << dim
+		                     << "\nto data "+capletInFile+", "+swaptionInFile;
+	 }
+	 cal->calibrate(nVals);
 }
+
+
+
+LiborFactorLoading* 
+StandardLmmCalibrator::
+calibrate(int nVals)
+{
+	readCaplets();
+	readSwaptions();
+	writeCapletImpliedSigmas();
+
+	RealArray1D u(7);					
+	// now set a,b,c,d; alpha,beta,r_oo depending on the type of correlations
+	// and volatilities
+	switch(factorLoading->getType().volType){
+			
+		case VolSurface::JR :
+		u[0]=0.1; u[1]=0.7; u[2]=2.0; u[3]=0.3; break;
+			
+		case VolSurface::M :
+		u[0]=1.0; u[1]=1.0; u[2]=1.0; u[3]=1.5; break;
+			
+		default : u[0]=1.0; u[1]=1.0; u[2]=1.0; u[3]=1.0;
+	}
+		
+	switch(factorLoading->getType().corrType){
+		
+		case Correlations::JR :	
+		u[4]=1.0; u[5]=0.2; u[6]=1.0; break;
+			
+		case Correlations::CS :
+		u[4]=1.5; u[5]=0.05; u[6]=0.2; break;
+			
+		default : u[4]=1.0; u[5]=1.0; u[6]=1.0; 
+	}	
+
+
+
+	RealArray1D du(7);
+	for(int i=0;i<7;i++) du[i]=0.02;
+				 		 
+	SobolLiborCalibrationOptimizer optimizer(this,u,nVals,du);
+	const RealArray1D& w=optimizer.search();
+	
+	writeCaplets();
+	writeSwaptions();
+	
+	Real meanError=meanRelativeCalibrationError();
+
+	// report optimal parmeters
+	std::cout << "\n\n\n\nOptimal parameters: " << endl << endl;
+	std::cout << "\n\n\na = " << w[0]
+	          << "\nb = " << w[1]
+	          << "\nc = " << w[2]
+	          << "\nd = " << w[3]
+	          << "\nalpha = " << w[4]
+	
+	          << "\nbeta = " << w[5]
+	          << "\nr_oo = " << w[6]
+	          << "\n\n\nMean relative calibration error: "
+	          << meanError;
+	
+    return factorLoading;
+		
+} // end calibrate
+
+
 
 
 
@@ -574,42 +641,98 @@ testCalibration(int nVals)
  *********************************************************************************/
 
 
-// CAPLET AND SWAPTION AGGREGATE VOLS
+// CAPLET AND SWAPTION FORWARD PRICES
+
+Real 
+DriftlessLmmCalibrator::
+capletForwardPrice(int i, Real strike)
+{
+	// get the matrix R for both Caplet(i) and Swaption(i,n)
+	writeCovariationMatrix(i,n);
+	
+	// Caplet(p), the vector x (book 6.8.2)
+	x[i]=1.0;
+	for(int j=i+1;j<n;j++) x[j]=-U0[j]/H0[i+1];
+	
+    // caplet volatility = sqrt(xCx')
+	Real Sigma=root_xCx(i);
+	return LmmCalibrator::capletForwardPrice(i,strike,Sigma);
+}
+
+
+Real 
+DriftlessLmmCalibrator::
+swaptionForwardPrice(int i, Real strike)
+{
+	// get the matrix R for both Caplet(i) and Swaption(i,n)
+	writeCovariationMatrix(i,n);
+	
+	// Swaption(p,n), the vector x (book 6.8.3)
+    const RealArray1D& T=factorLoading->getTenorStructure();
+	Real denom1=H0[i]-1.0,                                      // 1.0=H_n(0)
+	     denom2=0.0;
+	for(int j=i;j<n;j++) denom2+=delta[j]*H0[j+1];
+		
+	x[i]=U0[i]/denom1;		 
+	for(int j=i+1;j<n;j++) x[j]=U0[j]/denom1-(T[j]-T[i])*U0[j]/denom2;
+	 		 
+	// swaption volatility = sqrt(xCx')
+    Real Sigma=root_xCx(i);
+	return LmmCalibrator::swaptionForwardPrice(i,strike,Sigma);
+}
+
+
 
 void 
 DriftlessLmmCalibrator::
-writeAggregateVolatilities(int p, Real& cpltVol, Real& swpnVol)
-{
-    const RealArray1D& T=factorLoading->getTenorStructure();
-	// get the matrix R for both Caplet(i) and Swaption(i,n)
-	writeCovariationMatrix(p,n);
-    writeCovariationMatrixRoot(p,n);       // matrix Q indices p<=i<=j<n
-	
-	// Caplet(p), the vector x (book 6.8.2)
-	x[p]=1;
-	Real f=H_i0(p+1);
-	for(int j=p+1;j<n;j++){ Real Uj0=H_i0(j)-H_i0(j+1); x[j]=-Uj0/f; }
-	
-    // caplet volatility
-	cpltVol=norm_Qtx(p);
+setScalingFactors()
+{	
+	RealArray1D& c=factorLoading->getScalingFactors();
+	// recursive computation starting from i=n-1, book, 6.11.3
+    for(int i=n-1;i>0;i--){	
+			
+		Real T_i=factorLoading->getT(i);				
+		// the B_{jk}, book, 6.11.1, upper half only
+	    UTRRealMatrix B(n-1,i);
+	    for(int j=i;j<n;j++)
+	    for(int k=j;k<n;k++){ 
+			
+			Real T_j=factorLoading->getT(j),
+			     T_k=factorLoading->getT(k);
+			B(j,k)=factorLoading->getVolSurface()->integral_sgsg(0.0,T_i,T_j,T_k);
+		}
 		
-	// Swaption(p,n), the vector x (book 6.8.3)
-	 Real denom1=H_i0(p)-H_i0(n),
-	      denom2=0;
-	 for(int j=p;j<n;j++) denom2+=delta[j]*H_i0(j+1);
+		// the x_j=c_jG_j, j>i, at time t=0, book, 6.11.3
+	    RealVector cG(n,i);                                    // so it exists for i=n-1, although superfluous
+	    for(int j=i+1;j<n;j++) cG[j]=-c[j]*U0[j]/H0[i+1];
 		
-	 Real Up0=H_i0(p)-H_i0(p+1); x[p]=Up0/denom1;		 
-	 for(int j=p+1;j<n;j++){
-			 
-		 Real Uj0=H_i0(j)-H_i0(j+1);
-	     x[j]=Uj0/denom1-(T[j]-T[p])*Uj0/denom2;
-	 }		 
-
-	 // swaption volatility
-     swpnVol=norm_Qtx(p);
-	 
-} // end setAggregateVolatilities
- 
+		// coefficients u,v,w of quadratic equation for k_i, book 6.11.3
+		Real uu,vv,ww, diag;               
+		uu=B(i,i);
+		vv=0.0;
+		for(int k=i+1;k<n;k++) vv+=cG[k]*rho(i,k)*B(i,k);
+			
+		ww=0.0; diag=0.0;
+		// diagonal + 2*upper half
+		for(int j=i+1;j<n;j++) diag+=cG[j]*cG[j]*B(j,j);
+		for(int j=i+1;j<n;j++)
+		for(int k=j+1;k<n;k++) ww+=cG[j]*cG[k]*rho(j,k)*B(j,k);
+			
+		ww*=2.0; ww+=diag;
+		
+		Real  SigmaSquare=capletImpliedSigma[i]*capletImpliedSigma[i],
+		      q=vv*vv-uu*(ww-SigmaSquare);
+		c[i]=(-vv+sqrt(q))/uu;
+//cerr << "\n\nSigmaSquare = " << SigmaSquare << ", c["<<i<<"] = " << c[i];
+		if(c[i]<0.0){
+			
+			cout << "\n\nDriftlessLmmCalibrator::setScalingFactors():"
+			     << "\nCaplet prices force negative scaling factor c["<<i<<"]. Terminating.";
+			exit(1);
+		}
+	} // end for i
+} // setScalingFactors
+		
 
 // READ-WRITE TEST
 
@@ -636,6 +759,23 @@ testIO()
 	cal->write<SwaptionData>(std::cout,cal->getSwaptions()); 
 	cal->writeSwaptions();
 }
+
+
+	
+void 
+DriftlessLmmCalibrator::
+testCalibration(int nVals)
+{
+	int n=50;
+	const char *CapletsIn="CapletsIn-DL-dim50-JR-CS.txt",
+	           *SwaptionsIn="SwaptionsIn-DL-dim50-JR-CS.txt";
+		
+	LiborFactorLoading* 
+	fl=LiborFactorLoading::sample(n,VolSurface::M,Correlations::JR);
+		
+	LmmCalibrator* cal=new DriftlessLmmCalibrator(fl,CapletsIn,SwaptionsIn);
+	cal->calibrate(nVals);
+}
 	
 	
 
@@ -646,28 +786,70 @@ testIO()
  *********************************************************************************/
 
 
+// CAPLET AND SWAPTION FORWARD PRICES
 
-// CAPLET AND SWAPTION AGGREGATE VOLS
+Real 
+PredictorCorrectorLmmCalibrator::
+capletForwardPrice(int i, Real strike)
+{
+    Real T_i=factorLoading->getT(i), Sigma;
+
+	// Caplet aggregate volatility
+	Sigma=sqrt(factorLoading->integral_sgi_sgj_rhoij(i,i,0,T_i));
+	return LmmCalibrator::capletForwardPrice(i,strike,Sigma);
+}
+
+
+Real 
+PredictorCorrectorLmmCalibrator::
+swaptionForwardPrice(int i, Real strike)
+{
+	// get the matrix R for both Caplet(i) and Swaption(i,n)
+	writeCovariationMatrix(i,n);
+	
+	// Swaption(i,n), vector x, book 6.7
+	for(int j=i+1;j<n;j++) x[j]=(B_i0(j)-B_i0(j+1))/B_pq0(i,n);
+	 		 
+	// swaption volatility = sqrt(xCx')
+    Real Sigma=root_xCx(i);
+	return LmmCalibrator::swaptionForwardPrice(i,strike,Sigma);
+}
+
+
 
 void 
 PredictorCorrectorLmmCalibrator::
-writeAggregateVolatilities(int p, Real& cpltVol, Real& swpnVol)
-{
-    Real T_p=factorLoading->getT(p);
-	// get the matrix R for both Caplet(i) and Swaption(i,n)
-	writeCovariationMatrix(p,n);
-    writeCovariationMatrixRoot(p,n);       // matrix Q indices p<=i<=j<n
+setScalingFactors()
+{	
+    RealArray1D& c=factorLoading->getScalingFactors();
+	for(int i=1;i<n;i++){	
+		
+		Real T_i=factorLoading->getT(i);
+        VolSurface* volSurface=factorLoading->getVolSurface();
+		Real int_sgsg=volSurface->integral_sgsg(0.0,T_i,T_i,T_i);
 	
-	// Caplet(p)
-	cpltVol=factorLoading->integral_sgi_sgj_rhoij(p,p,0,T_p);
-    cpltVol=sqrt(cpltVol);
-	
-	// Swaption(p,n)
-	for(int j=p+1;j<n;j++) x[j]=(B0(j)-B0(j+1))/B_pq(p,n);
-    // swaption volatility
-    swpnVol=norm_Qtx(p);
+		// impliedSigma=k_i^2*int_sgsg
+		c[i]=capletImpliedSigma[i]/sqrt(int_sgsg);
+	} // end for i
+} // writeInitialScalingFactors
 
-} // end setAggregateVolatilities
+
+	
+void 
+PredictorCorrectorLmmCalibrator::
+testCalibration(int nVals)
+{
+	int n=50;
+	const char *CapletsIn="CapletsIn-DL-dim50-JR-CS.txt",
+	           *SwaptionsIn="SwaptionsIn-DL-dim50-JR-CS.txt";
+		
+	LiborFactorLoading* 
+	fl=LiborFactorLoading::sample(n,VolSurface::M,Correlations::JR);
+		
+	LmmCalibrator* cal=new PredictorCorrectorLmmCalibrator(fl,CapletsIn,SwaptionsIn);
+	cal->calibrate(nVals);
+}
+
  
 
 /**********************************************************************************
@@ -679,32 +861,37 @@ writeAggregateVolatilities(int p, Real& cpltVol, Real& swpnVol)
 
 bool 
 SobolLiborCalibrationOptimizer::
-isInDomain(Real* x)
+isInDomain(const RealArray1D& x) const
 {
-	Real alpha=0.5, beta=0.5, r_oo=0.5, sum;
-	for(int i=0;i<n;i++) if(x[i]<0.02) return false;
+	Real a=x[0], b=x[1], c=x[2], d=x[3],
+	     alpha=x[4], beta=x[5], r_oo=x[6],
+	     sum;
+
+	bool is_In=true;
+	
+	// volsurface a,b,c,d
+	switch(cal->getFactorLoading()->getType().volType){
 			
-	switch(cal->getFactorLoading()->getCorrelationType()){
-			
-		case Correlations::CS : 
-				
-		    alpha=x[n+4]; beta=x[n+5]; r_oo=x[n+6];     // book, 6.11.1 
-		    sum=alpha/6+beta/3+log(r_oo);
-		    if((alpha<beta)||(beta<0.0)||(r_oo<0.0)||sum>0.0) return false;
-			
-		case Correlations::JR : 
-				
-		    beta=x[n+4]; 
-		    if(beta<0.0) return false;
+		case VolSurface::M  :   is_In=is_In&&((a>0)&&(d>0.05));  break; // book, 6.11.1 
+		case VolSurface::JR :   is_In=is_In&&(d*c+b>0.0); 
 	}
-	return true;
+	
+	// correlations alpha, beta, rho
+	switch(cal->getFactorLoading()->getType().corrType){
+			
+		case Correlations::CS : sum=alpha/6+beta/3+log(r_oo);
+		is_In=is_In&&((alpha>5*beta)&&(beta>0.0)&&(r_oo>0.05)&&(r_oo<0.99)&&(sum<0.0)); break;
+		case Correlations::JR : is_In=is_In&&((beta>0.01)&&(beta<0.9)); 
+	}
+	return is_In;
 }
 	
 
 Real 
 SobolLiborCalibrationOptimizer::
-f(Real* x){ return cal->objectiveFunction(x); }
-	
+f(const RealArray1D& x){ return cal->objectiveFunction(x); }
+
+
 
 			
 

@@ -41,6 +41,38 @@ extern Real exp(Real);
 
 
 
+
+/*******************************************************************************
+ *
+ *                     LiborFactorLoadingType
+ * 
+ ******************************************************************************/
+ 
+ /** Integer and string IDs of the Volsurface and Correlations of a
+  *  LiborFactorLoading.
+  */
+ struct LiborFactorLoadingType{
+	  
+	  const int volType;
+	  const int corrType;
+	 
+	  /** @param volSurface VolSurface::CONST,JR,M.
+	   *  @param correlations Correlations::JR,CS.
+	   */
+	  LiborFactorLoadingType(int volSurface, int correlations) :
+	  volType(volSurface), corrType(correlations) {    }                                                                         
+	  
+      std::string volSurfaceType() const { return VolSurface::volSurfaceType(volType); }
+	  std::string correlationType() const { return Correlations::correlationType(corrType); }
+	  
+	  friend std::ostream& operator << (std::ostream&, const LiborFactorLoadingType&);
+};
+
+// global insertion
+std::ostream& operator << (std::ostream& os, const LiborFactorLoadingType& flType);
+
+
+
 /*******************************************************************************
  *
  *                     LiborFactorLoading
@@ -49,10 +81,11 @@ extern Real exp(Real);
 
 
 /** <p>{@link FactorLoading} for the log-Libors \f$Y_i(t)=log(L_i(t))\f$
- *  of a Libor Market Model. Volatilities \f$\sigma_j(t)=k_j\sigma(t,T_j)\f$
- *  provided by the {@link VolSurface} member \f$\sigma(t,T)\f$. The factor loading
- *  contains the vector k of volatility scaling factors. Log-Libor correlations
- *  \f$\rho_{ij}\f$ provided by the {@link Correlations} member.
+ *  of a Libor Market Model. Volatilities \f$\sigma_j(t)=k_j\sigma(t,T_j)\f$ 
+ *  based on a volatility surface \f$\sigma(t,T)\f$ provided by the class 
+ *  {@link VolSurface}. The factor loading contains the vector k
+ *   of volatility scaling factors (book, 6.11.1, k=c). Log-Libor correlations
+ *  \f$\rho_{ij}\f$ provided by the class {@link Correlations}.
  * 
  *  <p><a name="CVpqtT"></a>With \f$t\leq T\f$ continuous times, set
  *  \f$cv_{ij}(u)=\sigma_i(u)\sigma_j(u)\rho_{ij}=\nu_i(u)\cdot\nu_j(u)\f$
@@ -89,6 +122,8 @@ class LiborFactorLoading {
 
 protected:
 	
+	LiborFactorLoadingType flType;
+	
     int n;                     // dimension of Y	
     
     RealArray1D delta;         // delta[j]=T[j+1]-T[j]
@@ -106,7 +141,9 @@ public:
     
 // ACCESSORS
 	
-	std::string factorLoadingType();
+	/** Type object, contains integer and string IDs of the VolSurface
+	 *  and Correlations. */
+	const LiborFactorLoadingType& getType() const { return flType; }
     
     /** Number <code>n</code> of forward Libors including \f$L_0(t)\f$.
      */
@@ -131,20 +168,16 @@ public:
      */
     const RealArray1D& getInitialXLibors() const { return x; }
 	
+	/** The scaling factor \f$k[i]=c_i\f$. See book, 6.11.1.
+	 */
+	RealArray1D& getScalingFactors(){ return k; }
+	
 	/** The instantaneous log-Libor correlations.
 	 */
 	const UTRRealMatrix& getRho() const;
 	
-	/** Type flag for the volatility surface: VolSurface::JR,M,CONST.
-	 */
-	int getVolSurfaceType() const;
-	
 	/** The {@link VolSurface} of the factor loading.*/
 	VolSurface* getVolSurface() { return vol; }
-	
-	/** Type flag for the volatility surface: VolSurface::JR,M,CONST.
-	 */
-	int getCorrelationType() const;
 	
 	/** The {@link Correlations} of the factor loading.*/
 	Correlations* getCorrelations() { return corr; }
@@ -171,10 +204,10 @@ public:
 // SET THE PARAMETERS (CALIBRATION)
 	
    /** Set the parameters of the factorloading from the vector X.
-    *  The first coordinates of u populate the scaling factors k,
-	*  the rest goes to VolSurface and Correlations.
+    *  The first 4 coordinates populate the VolSurface
+	*  the rest goes to the Correlations. Index base of u must be zero.
 	*/
-   void setParameters(Real* u);
+   void setParameters(const RealArray1D& u);
 	
    
 	

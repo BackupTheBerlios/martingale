@@ -35,7 +35,20 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 
+/*******************************************************************************
+ *
+ *                     LiborFactorLoadingType
+ * 
+ ******************************************************************************/
 
+
+// global insertion
+std::ostream& operator << (std::ostream& os, const LiborFactorLoadingType& flType)
+{
+	return
+	os << "\nLibor factor loading: VolSurface: " << flType.volSurfaceType() 
+	   << ", Correlations: " << flType.correlationType();
+}
 
 /*******************************************************************************
  *
@@ -48,33 +61,12 @@ const UTRRealMatrix&
 LiborFactorLoading::
 getRho() const { return corr->getCorrelationMatrix(); }
 
-
-int 
-LiborFactorLoading::
-getVolSurfaceType() const { return vol->getType(); }
-
-
-int 
-LiborFactorLoading::
-getCorrelationType() const { return corr->getType(); }
-
-
-
-std::string
-LiborFactorLoading::
-factorLoadingType()
-{
-	return
-	"\nVolatility surface: "+(vol->volSurfaceType())+
-	"\nCorrelations: "+(corr->correlationType());
-}
-
-
  
 LiborFactorLoading::
 LiborFactorLoading
 (const RealArray1D& L0, const RealArray1D& deltas, const RealArray1D& _k,
 VolSurface* vols, Correlations* corrs) :
+flType(vols->getType(),corrs->getType()),
 n(L0.getDimension()), 
 delta(deltas), T(n+1), l(L0), x(n), k(_k),
 vol(vols), corr(corrs), rho(*corrs)
@@ -250,11 +242,10 @@ factorizationTest(int r) const
 // Correlations::alpha,beta,r_oo
 void 
 LiborFactorLoading::
-setParameters(Real* u)
+setParameters(const RealArray1D& u)
 {
-	for(int j=0;j<n;j++) k[j]=u[j];
-	vol->setParameters(u[n],u[n+1],u[n+2],u[n+3]);
-	corr->setParameters(u[n+4],u[n+5],u[n+6]);
+	vol->setParameters(u[0],u[1],u[2],u[3]);
+	corr->setParameters(u[4],u[5],u[6]);
 }
 	
 

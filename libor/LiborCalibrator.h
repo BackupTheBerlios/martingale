@@ -64,20 +64,21 @@ protected:
 	
 public:
 	
-	/** n+7 is the number of parameters for a factor loading.
+	/** 7 parameters for volsurface and correlations.
 	 *
-	 *  @param n dimension (number of variables).
 	 *  @param cal the LMM calibrator.
 	 */
 	SobolLiborCalibrationOptimizer
-	(int n, LmmCalibrator* _cal, const RealArray1D& x0, int nVals, const RealArray1D& delta) : 
-	SobolSearch(n,x0,nVals,delta,true),
+	(LmmCalibrator* _cal, const RealArray1D& x0, int nVals, const RealArray1D& delta) : 
+	SobolSearch(7,x0,nVals,delta,true),
 	cal(_cal)
 	{    }
 	
-	bool isInDomain(Real* x);
+	bool isInDomain(const RealArray1D& x) const;
 	
-	Real f(Real* x);
+	Real f(const RealArray1D& x);
+	
+	const RealArray1D& ssearch();
 	
 }; // end SobolLiborCalibrationOptimizer
 				
@@ -176,14 +177,21 @@ protected:
 	LiborFactorLoading* factorLoading;
 	int n;                                   // dimension of Libor process
 	// from the factorloading:
-	const RealArray1D& x;                    // x[j]=X_j(0)
+	const RealArray1D& X0;                   // X0[j]=X_j(0)
 	const RealArray1D& delta;                // delta[j]=delta_j, accrual periods
-
+	 
+	// caching some quantities
+	RealVector U0;                           // U0[j]=U_j(0)
+	RealVector H0;                           // H0[j]=H_j(0) 
+	Real Bn0;                                // B_n(0)
+	UTRRealMatrix S_pq0;                     // swaprates S_pq(0) 
+	
 	// reading data
 	ifstream capletsIn;
 	ifstream swaptionsIn;
 	
 	// writing synthetic data, calibration results
+	ofstream logFile;
 	ofstream capletsOut;	
 	ofstream swaptionsOut;
 	
@@ -197,22 +205,8 @@ public:
 	
 	LmmCalibrator
 	(LiborFactorLoading* fl,
-	 const char* capletsInFile="CapletsIn.txt",  
-	 const char* swaptionsInFile="SwaptionsIn.txt",
-	 const char* capletsOutFile="CapletsOut.txt",
-	 const char* swaptionsOutFile="SwaptionsOut.txt"
-	 ) :
-	factorLoading(fl),
-	n(fl->getDimension()),
-	x(fl->getInitialXLibors()),
-	delta(fl->getDeltas()),
-	capletsIn(capletsInFile),
-	swaptionsIn(swaptionsInFile),
-	capletsOut(capletsOutFile),
-	swaptionsOut(swaptionsOutFile),
-	caplets(n-1,1),
-	swaptions(n-1,1)
-    {  	}
+	 const char* capletsInFile="CapletsIn.txt",  const char* swaptionsInFile="SwaptionsIn.txt",
+	 const char* capletsOutFile="CapletsOut.txt", const char* swaptionsOutFile="SwaptionsOut.txt");
 	
 // ACCESSORS
 	
@@ -252,51 +246,43 @@ public:
     } // end write
 	
 	
-	void readCaplets(){ read<CapletData>(capletsIn,caplets); }
-	void readSwaptions(){ read<SwaptionData>(swaptionsIn,swaptions); }
-	
+	void readCaplets();
+	void readSwaptions();
 	
 	/** Writes caplets from list. 
 	 */
-	void writeCaplets()
-	{ 
-		capletsOut << "i   strike    forwardPrice    calibratedForwardPrice    error"
-		           << endl << endl;
-		write<CapletData>(capletsOut,caplets); 
-	}
-	
+	void writeCaplets();
 	
 	/** Writes swaptions from list. 
 	 */
-	void writeSwaptions()
-	{ 
-		capletsOut << "p   q   strike    forwardPrice    calibratedForwardPrice    error"
-		           << endl << endl;
-		write<SwaptionData>(swaptionsOut,swaptions); 
-	}
-
+	void writeSwaptions();
+	
+	
+// CORRELATIONS
+	
+	/** The current correlations \f$\rho_{ij}\f$. */
+	Real rho(int i, int j);
 	
 // ACCRUAL FACTORS, BONDS, SWAP RATES, .. AT TIME ZERO
 	
-	
-	 /** H_0(0) */
-     Real H0();
+	/** Libor L_i(0) */
+    Real L_i0(int i);
 	 
-	 /** H_i(0) */
-     Real H_i0(int i);
+	/** H_i(0) */
+    Real H_i0(int i);
      
-     /** B_i(0) */
-     Real B0(int i);
-
-     /** S_{pq}(0) */
-     Real swapRate(int p, int q);
+    /** B_i(0) */
+    Real B_i0(int i);
+	
+	/** H_pq(0)=B_pq(0)/B_n(0) */
+	Real H_pq0(int p, int q);
+	
+	/** H_pq(0)=B_pq(0)/B_n(0) */
+	Real B_pq0(int p, int q);
+	
+    /** S_{pq}(0) */
+    Real swapRate(int p, int q);
      
-     /** B_{pq}(0) */
-     Real B_pq(int p, int q);
-	      
-     /** H_pq(0) */
-     Real H_pq(int p, int q);
-
 	
 // CAPLET AND SWAPTION PRICES
 
@@ -360,33 +346,42 @@ public:
     */
    virtual Real objectiveFunction() = 0;
    
-   			
    
+   	   	
+    /** The objective function as a function of the parameter values x
+	 *  applied to the factor loading.
+     */
+   virtual Real objectiveFunction(const RealArray1D& x) = 0;
+   
+
 	
 // CALIBRATION 
 
    
    /** Mean relative pricing error over all caplets and swaptions.
     *  Assumes the calibrated forward prices and relative errors have already 
-	*  been written into the caplets and swaptions data objects. 
+	*  been written into the caplet and swaption data objects. 
     */
    Real meanRelativeCalibrationError();
    
-   
-   	
-   /** The objective function as a function of the parameter values x
-	*  applied to the factor loading.
-    */
-   Real objectiveFunction(Real* x);
-	
+
      
    /** Calibrates the factor loading with nVals evaluations of the objective function
-	*  (sum squared error over all caplets and swaptions which have been read) and prints
+	*  (sum squared error over all caplets and coterminal swaptions) and prints
 	*  the result to the files "CapletsOut.txt", "SwaptionsOut.txt".
     *
-	*  @return the means squared error.
+	*  @return the calibrated factor loading.
 	*/
-   Real calibrate(int nVals);	
+   virtual LiborFactorLoading* calibrate(int nVals) = 0;
+   
+   
+private:
+
+	/** Compute the caplet forward prices under the current
+	 *  parameters of the factorloading and write these together with
+	 *  the calibration errors into the CapletData objects.
+	 */
+	void recordCapletCalibration();
    
 	
 }; // end LiborCalibrator
@@ -424,9 +419,9 @@ class StandardLmmCalibrator : public LmmCalibrator {
 	
 protected:
 	
+	RealVector capletImpliedSigma;           // implied caplet volatility to expiration Sigma_i(0,T_i)
 	
 	UTRRealMatrix cvMatrix;                  // workspace for covariation matrices
-	UTRRealMatrix cvRoot;                    // workspace for upper triangular pseudo square roots thereof
 	
 	Real capletVol, swaptionVol;             // current aggregate volatities (cache)
 	RealVector x;                            // cache, vector x for caplet and swaption aggregate vols
@@ -442,15 +437,31 @@ public:
 	 const char* swaptionsOutFile="SwaptionsOut.txt"
 	) :	
     LmmCalibrator(fl,capletsInFile,swaptionsInFile,capletsOutFile,swaptionsOutFile),
+	capletImpliedSigma(fl->getDimension()-1,1),
 	cvMatrix(fl->getDimension()), 
-	cvRoot(fl->getDimension()), 
 	x(fl->getDimension())
     {    }
+
 	
 	
 // THE OBJECTIVE FUNCTION
 	
-	Real objectiveFunction();
+	   	
+     /** The objective function as a function of the parameter values x
+	  *  applied to the factor loading.
+      */
+     virtual Real objectiveFunction(const RealArray1D& x);
+	
+	
+	 Real objectiveFunction();
+	
+	
+ 	 /** From the current parameters for the volatility surface and correlations
+      *  set the scaling factors of the factor loading \f$k[j]=c_j\f$ to the values
+      *  which reproduce the caplet prices exactly. See book, 6.11.3.
+      */
+     virtual void setScalingFactors() = 0;
+	
 	
 	
 
@@ -458,15 +469,15 @@ public:
 
    /** Caplet on\f$[T_i,T_{i+1}]\f$.
     *  Forward price computed from current parameters of the
-	*  factor loading.
+	*  factorloading.
 	*/
-   Real capletForwardPrice(int i, Real strike);
+   virtual Real capletForwardPrice(int i, Real strike) = 0;
    
    /** Swaption on\f$[T_i,T_n]\f$, expires at \f$T_i\f$.
     *  Forward price computed from current parameters of the
-	*  factor loading.
+	*  factorloading.
 	*/
-   Real swaptionForwardPrice(int i, Real strike);
+   virtual Real swaptionForwardPrice(int i, Real strike) = 0;
 
 
 	
@@ -490,12 +501,28 @@ public:
 	 static void writeSyntheticDataSample();
 	 
 	
-	/** Test in dimension 50. Calibrates DriftlessLMM to synthetic data 
-	 *  produced by PredictorCorrectorLMM.
+	/** Tests calibration on the synthetic data in the directory SyntheticData.
+	 *  This directory contains synthetic caplet and swaption prices in dimensions
+	 *  20,30,40,50 (number of Libor accrual intervals). These data have been produced 
+	 *  using the sample LMMs returned by the method
+	 * {@link LiborMarketModel#sample(int,int,int,int)}. Following up how these are
+	 * constructed one can determine what parameters are used in each case.
+	 * We don't check that the parameters have legal values. Please make sure they do.
 	 *
-	 * @param nVals number of evaluations of the objective function.
+	 * @param nVals number of evaluations of the objective function (suggested:500).
+	 * @param dim dimension of the LMM, number of accrual periods = 20,30,40,50.
+	 * @param dataLmmType type of LMM that produced the data (LiborFactorLoading::DL,PC).
+	 * @param dataVolSurfaceType type of VolSurface that produced the data (VolSurface::CONST,M,JR).
+	 * @param dataCorrelationType type of Correlations that produced the data (Correlations::CS,JR).
+	 * @param lmmType type of LMM to be calibrated: (LiborFactorLoading::DL,PC).
+	 * @param volSurfaceType type of VolSurface to be calibrated (VolSurface::CONST,M,JR).
+	 * @param correlationType type of Correlations to be calibrated (Correlations::CS,JR).
 	 */
-	static void testCalibration(int nVals);
+	static void testCalibration
+	(int nVals, int dim, 
+	 int dataLmmType, int dataVolSurfaceType, int dataCorrelationType,
+	 int lmmType, int volSurfaceType, int correlationType
+	 );
 	
    
    /** Writes the log-Libor covariation matrix CV with indices
@@ -505,34 +532,37 @@ public:
    void writeCovariationMatrix(int p, int q);
    
    
-   /** <p>Writes the upper triangular pseudo square root of the
-    *  {@link writeCovariationMatrix(int p, int q)} into the field
-	* cvRoot with the same subscripts i,j=p,...,q-1; i<=j.
-	* 
-	* <p>This matrix is needed to compute the aggregate volatilities
-	* to expiry of both caplets and swaptions and these are needed to compute
-	* the analytic approximations for caplet and swaption prices as functions
-	* of the current parameters (state) of the factor loading. 
-	* See book, 6.8.3, 6.8.2 (DriftlessLMM) and 6.7 (PredictorCorrectorLMM).
-	* This is needed in {@link objectiveFunction} to estimate the approximation
-	* error under the current factor loading parameters.
+   /** Calibrates the factor loading with nVals evaluations of the objective function
+	*  (sum squared error over all caplets and swaptions which have been read) and prints
+	*  the result to the files "CapletsOut.txt", "SwaptionsOut.txt".
+    *
+	*  @return the calibrated factorLoading
 	*/
-   void writeCovariationMatrixRoot(int p, int q);	
-
-	
-
+   LiborFactorLoading* calibrate(int nVals);
+   
+  
 protected:
 
-     /** Writes the aggregate volatilities (book 6.8.2, 6.8.3) of the caplet Cplt(i)
-	  *  and coterminal swaption Swpn(i,n) into the variables cpltVol, swpnVol.
+
+	 /** The squareroot \f$\sqrt{xCx'=(Cx,x)\f$ where $C$ is the covariation 
+	  *  matrix in the field cvMatrix with indices j,k=i,...,n-1 and x is the vector
+	  *  in the field x indexed as x[j], j=i,...,n-1. This quantity is used to 
+	  *  compute caplet and swaption aggregate volatilities and the fields
+	  *  cvMatrix and x are then set approproately. See book 6.6, 6.7,
+	  *  6.8.2, 6.8.3. Note that we don't take the detour \f$\Sigma=||R'x||\f$
+	  *  using a pseudo square root of the covariation matrix C.
 	  */
-     virtual void writeAggregateVolatilities(int i, Real& cpltVol, Real& swpnVol) = 0;
-	 
-	 /** Norm of the product Q'x of the vector x=x(p,n) with the transpose of the 
-      *  matrix Q=cvRoot(p,n). Here x=x[i], Q=Q(i,j) with indices p<=i<=j<n.
-	  *  Used in all volatility computations (book, 6.7, 6.8.2, 6.8.3).
+     Real root_xCx(int i);
+
+
+private:
+
+      
+	 /** Computes the aggregate caplet volatilities \f$\ol\Sigma_i(0,T_i)\f$ to expiry
+	  *  implied by the Black caplet formula from the caplet market prices and writes 
+	  *  them into the vector capletImpliedSigma.
 	  */
-     Real norm_Qtx(int p);
+	 void writeCapletImpliedSigmas();
 	 
 	
 
@@ -556,22 +586,37 @@ class DriftlessLmmCalibrator : public StandardLmmCalibrator {
 	
 public:
 		
-	DriftlessLmmCalibrator
-	(LiborFactorLoading* fl,
-	 const char* capletsInFile="CapletsIn.txt", 
-	 const char* swaptionsInFile="SwaptionsIn.txt", 
-	 const char* capletsOutFile="CapletsOut.txt", 	 
-	 const char* swaptionsOutFile="SwaptionsOut.txt"
-	) :	
-    StandardLmmCalibrator(fl,capletsInFile,swaptionsInFile,capletsOutFile,swaptionsOutFile)
-    {    }
+	 DriftlessLmmCalibrator
+	 (LiborFactorLoading* fl,
+	  const char* capletsInFile="CapletsIn.txt", 
+	  const char* swaptionsInFile="SwaptionsIn.txt", 
+	  const char* capletsOutFile="CapletsOut.txt", 	 
+	  const char* swaptionsOutFile="SwaptionsOut.txt"
+	 ) :	
+     StandardLmmCalibrator(fl,capletsInFile,swaptionsInFile,capletsOutFile,swaptionsOutFile)
+     {    }
 	
 
-     /** Writes the aggregate volatilities (book 6.8.2, 6.8.3) of the caplet Cplt(i)
-	  *  and coterminal swaption Swpn(i,n) into the variables cpltVol, swpnVol.
-	  *  Note that these use the same matrix R for a driftless LMM!
+// CAPLET AND SWAPTION PRICES
+
+     /** Caplet on\f$[T_i,T_{i+1}]\f$.
+      *  Forward price computed from current parameters of the
+  	  *  factorloading.
 	  */
-     void writeAggregateVolatilities(int i, Real& cpltVol, Real& swpnVol);
+     Real capletForwardPrice(int i, Real strike);
+   
+     /** Swaption on\f$[T_i,T_n]\f$, expires at \f$T_i\f$.
+      *  Forward price computed from current parameters of the
+	  *  factorloading.
+	  */
+     Real swaptionForwardPrice(int i, Real strike);
+
+	 
+ 	 /** From the current parameters for the volatility surface and correlations
+      *  set the scaling factors of the factor loading \f$k[j]=c_j\f$ to the values
+	  *  which reproduce the caplet prices exactly. See book, 6.11.3.
+	  */
+     void setScalingFactors();
 	
    
      /** Reads caplets and swaptions in dimension 50 from the files "CapletsIn-dim50-DL-JR-CS.txt"
@@ -579,6 +624,14 @@ public:
 	  *  "CapletsOut.txt" and "SwaptionsOut.txt".
 	  */
      static void testIO();
+	 
+	
+	/** Test in dimension 50. Calibrates DriftlessLMM to synthetic data 
+	 *  produced by PredictorCorrectorLMM.
+	 *
+	 * @param nVals number of evaluations of the objective function.
+	 */
+	static void testCalibration(int nVals);
 
 
 }; // end DriftlessLmmCalibrator
@@ -611,14 +664,33 @@ public:
     StandardLmmCalibrator(fl,capletsInFile,swaptionsInFile,capletsOutFile,swaptionsOutFile)
     {    }
 
-	
-	
-     /** Writes the aggregate volatilities (book 6.8.2, 6.8.3) of the caplet Cplt(i)
-	  *  and coterminal swaption Swpn(i,n) into the variables cpltVol, swpnVol.
-	  *  The caplet volatility is trivial and exact in a PredictorCorrectorLMM.
+		
+     /** Caplet on\f$[T_i,T_{i+1}]\f$.
+      *  Forward price computed from current parameters of the
+  	  *  factorloading.
 	  */
-     void writeAggregateVolatilities(int i, Real& cpltVol, Real& swpnVol);
+     Real capletForwardPrice(int i, Real strike);
+   
+     /** Swaption on\f$[T_i,T_n]\f$, expires at \f$T_i\f$.
+      *  Forward price computed from current parameters of the
+	  *  factorloading.
+	  */
+     Real swaptionForwardPrice(int i, Real strike);
 
+	
+ 	 /** From the current parameters for the volatility surface and correlations
+      *  set the scaling factors of the factor loading \f$k[j]=c_j\f$ to the values
+	  *  which reproduce the caplet prices exactly. See book, 6.11.3.
+	  */
+     void setScalingFactors();
+	
+	
+	/** Test in dimension 50. Calibrates PredictorCorrectorLMM to synthetic data 
+	 *  produced by PredictorCorrectorLMM.
+	 *
+	 * @param nVals number of evaluations of the objective function.
+	 */
+	static void testCalibration(int nVals);
 
 	 
 }; // end PredictorCorrectorLmmCalibrator

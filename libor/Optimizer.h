@@ -74,12 +74,9 @@ protected:
 
 
 public:
-	
-	/** The objective function which is minimized. */
-	virtual Real f(Real* x) = 0;
-	
-	/** The objective function with alternative argument type. */
-	Real f(RealArray1D& x){ return f(x.getData()); }
+		
+	/** The objective function. */
+	virtual Real f(const RealArray1D& x) = 0;
     
     
     /** <p>Search for vector x minimizing the function f(x).
@@ -113,8 +110,8 @@ public:
 class DownhillSimplex : public Optimizer {
     
   
-   RealArray2D vertices;         // the rows vertices[i], i=0,...,n, are the 
-                                   // vertices of the simplex
+   Array1D<RealArray1D*> vertices;         // vertices[i], i=0,...,n, are the 
+                                           // vertices of the simplex
    RealArray1D sum;              // sum of all vertices
    RealArray1D newVertex;        // next vertex
    RealArray1D y;                // function values at the vertices
@@ -133,6 +130,9 @@ class DownhillSimplex : public Optimizer {
     
 public:
 
+   RealArray1D& vertex(int i){ return *(vertices[i]); }
+   Real& vertex(int i, int j){ return (*(vertices[i]))[j]; }
+
 // CONSTRUCTOR
     
     /** @param x starting point (initial simplex built around it).
@@ -140,6 +140,8 @@ public:
      *  @param steps number of steps.
      */
     DownhillSimplex(int n, RealArray1D& x, Real delta, int steps, bool _verbose);
+   
+    ~DownhillSimplex();
 	
 	
     /** Initializes the vertices of the intial simplex with the function values.
@@ -213,13 +215,13 @@ private:
  */
 class ConcreteDownhillSimplex : public DownhillSimplex {
 	
-	 Real (*of)(int n, Real* x);   // pointer to the objective function
+	 Real (*of)(const RealArray1D& x);   // pointer to the objective function
 	
 public:
 	
 	 /** @param _of pointer to objective function. */
 	 ConcreteDownhillSimplex
-	 (Real (*_of)(int n, Real* x), int n, RealArray1D& x, Real delta, int steps, bool verbose) :
+	 (Real (*_of)(const RealArray1D&), int n, RealArray1D& x, Real delta, int steps, bool verbose) :
      DownhillSimplex(n,x,delta,steps,verbose),
 	 of(_of)
      {  
@@ -227,7 +229,7 @@ public:
 		 setInitialConditions();
      }
 	 
-	 Real f(Real* x){ return (*of)(n,x); }
+	 Real f(const RealArray1D& x){ return (*of)(x); }
 
 }; 
 
@@ -483,14 +485,14 @@ private:
  */
 class ConcreteBFGS : public BFGS {
 	
-	 Real (*of)(int n, Real* x);   // pointer to the objective function
+	 Real (*of)(const RealArray1D& x);   // pointer to the objective function
 	
 public:
 	
 	 /** @param _of pointer to objective function. 
 	  */
 	 ConcreteBFGS
-	 (Real (*_of)(int n, Real* x), int n, RealArray1D& x, int nVals, 
+	 (Real (*_of)(const RealArray1D&), int n, RealArray1D& x, int nVals, 
       Real stepmax, RealArray1D& h, int nRestarts=3, bool verbose=false) :
      BFGS(n,x,nVals,stepmax,h,nRestarts,verbose),
 	 of(_of)
@@ -499,7 +501,7 @@ public:
 		 setInitialConditions();
 	 }
 	 
-	 Real f(Real* x){ return (*of)(n,x); }
+	 Real f(const RealArray1D& x){ return (*of)(x); }
 
 }; 
 
@@ -547,7 +549,7 @@ public:
 	/** Wether or not the vector u is in the search domain.
 	 *  This is the default implementation (true, unconstrained search).
 	 */
-	virtual bool isInDomain(RealArray1D& u) const { return true; }
+	virtual bool isInDomain(const RealArray1D& u) const { return true; }
 	
 	const RealArray1D& search();
 	
@@ -561,20 +563,20 @@ public:
  */
 class ConcreteSobolSearch : public SobolSearch {
 	
-	 Real (*of)(int n, Real* x);   // pointer to the objective function
+	 Real (*of)(const RealArray1D&);   // pointer to the objective function
 	
 public:
 	
 	 /** @param _of pointer to objective function. 
 	  */
 	 ConcreteSobolSearch
-	 (Real (*_of)(int n, Real* x), int n, RealArray1D& x, 
+	 (Real (*_of)(const RealArray1D&), int n, RealArray1D& x, 
 	  int nVals, RealArray1D delta, bool verbose=false) :
      SobolSearch(n,x,nVals,delta,verbose),
 	 of(_of)
      {    }
 	 
-	 Real f(Real* x){ return (*of)(n,x); }
+	 Real f(const RealArray1D& x){ return (*of)(x); }
 
 };     
 		
@@ -586,7 +588,7 @@ public:
 /** Some examples of objective functions. */
 namespace ObjectiveFunction {
 	
-	Real function_1(int n, Real* x);
+	Real function_1(const RealArray1D&);
 	
 } // end namespace
 

@@ -1,3 +1,4 @@
+
 /* WARANTY NOTICE AND COPYRIGHT
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -30,12 +31,14 @@ spyqqqdia@yahoo.com
 // #include "TestProbability.h"
 // #include "TestLMM.h"
 // #include "TestOptimizers.h"
- #include "LatticeOption.h"
+// #include "LatticeOption.h"
 // #include "TestFormulas.h"
 // #include "Examples.h"
 // #include "DirichletProblem.h"
 // #include "VolatilityAndCorrelation.h"
-// #include "LiborCalibrator.h"
+ #include "LiborCalibrator.h"
+ #include "LiborMarketModel.h"
+ 
 
 
 using namespace Martingale;
@@ -51,9 +54,9 @@ int main()
  *
 *******************************************************************************/
 	
-	// testDownhillSimplex(5,500);
+	// testDownhillSimplex(5,5000);
 	// testBFGS(5,500);
-	// testSobolSearch(50,500000);
+	// testSobolSearch(50,5000);
 	
 	
 /*******************************************************************************
@@ -109,9 +112,9 @@ int main()
 	
 	
 	// anomalies in high dimensions (n>=70) for all but DriftlessLMM,
-	     int lmmType=LiborMarketModel::DL;  // DL, LFDL, PC, FPC
-	     int volType=VolSurface::M;        // JR, M, CONST
-         int corrType=Correlations::CS;     // JR, CS
+	    // int lmmType=LiborMarketModel::DL;  // DL, LFDL, PC, FPC
+	    // int volType=VolSurface::M;        // JR, M, CONST
+        // int corrType=Correlations::CS;     // JR, CS
 	// testCapletPrice(lmmType,volType,corrType); 
 	// testSwaptionPrice(lmmType,volType,corrType);
 	// testCallOnBondPrice(lmmType,volType,corrType);
@@ -127,13 +130,24 @@ int main()
  *
 *******************************************************************************/
 
-    // test the calibrator for the driftless LMM on a 
-	// constant volatility LiborFactorLoading
-	// DriftlessLmmCalibrator::testIO();
-    // DriftlessLmmCalibrator::testCalibration(200);
-	// DriftlessLmmCalibrator::writeSyntheticDataSample();
+    // DriftlessLmmCalibrator::testIO();
 	
-	// PredictorCorrectorLmmCalibrator::writeSyntheticDataSample();
+    // Write the synthetic data in the directory SyntheticData
+	// StandardLmmCalibrator::writeSyntheticDataSample();
+
+	int nVals=500,                               // number of evaluations of the objective function
+	    n=50,                                    // 20,30,40,50 dimension in which we calibrate
+	    dataLmmType=LiborMarketModel::PC,        // type of LMM the data came from: DL,PC
+		dataVolType=VolSurface::M,              // type of VolSurface used in the generation of data: CONST,JR,M
+		dataCorrType=Correlations::JR,           // type of correlations used in the generation of data: JR,CS
+		lmmType=LiborMarketModel::PC,            // type of LMM which will be calibrated: PC,DL
+		volType=VolSurface::JR,                   // type of VolSurface which will be calibrated: CONST,JR,M
+		corrType=Correlations::CS;               // type of correlations which will be calibrated: JR,CS
+		
+     StandardLmmCalibrator::testCalibration
+	 (nVals,n,dataLmmType,dataVolType,dataCorrType,lmmType,volType,corrType);
+
+
 	
 	
 /*******************************************************************************
@@ -144,7 +158,7 @@ int main()
 	
 	
 	 
-	  LatticeSwaption3F::test(15,19,30);
+	 // LatticeSwaption3F::test(15,19,30);
      // ConstVolLmmLattice2F::test(50);
 	 
 	 

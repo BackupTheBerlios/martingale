@@ -46,8 +46,45 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 // we are using
+struct LiborFactorLoadingType;
 class LiborFactorLoading;
 class Bond;  // defined below
+
+
+
+/*******************************************************************************
+ *
+ *                     LiborMarektModelType
+ * 
+ ******************************************************************************/
+ 
+ /** Type of simulation (driftless, low factor driftless, predictor-corrector, 
+  *  fast predictor-corrector) and LiborFactorLoadingType.
+  */
+ struct LiborMarketModelType{
+	  
+	  /** DL (driftless), LFDL (low factor drifless)
+	   *  PC (predictor-corrector), FPC (fast predictor-corrector).
+	   */
+	  static const int DL=0, LFDL=1, PC=2, FPC=3;
+	 
+	  /** type flag: DL, LFDL, PC, FPC. */
+	  const int type;
+	 
+	  /** Type of factor loading. */
+	  const LiborFactorLoadingType& flType;
+	 
+	  /** @param type DL, LFDL, PC, FPC
+	   *  @param correlations Correlations::JR,CS.
+	   */
+	  LiborMarketModelType(int lmmType, const LiborFactorLoadingType& lflType) :
+	  type(lmmType), flType(lflType) {    }                                                                         
+	  
+	  friend std::ostream& operator << (std::ostream&, const LiborMarketModelType& lmmType);
+};
+
+// global insertion
+std::ostream& operator << (std::ostream& os, const LiborMarketModelType& lmmType);
 
 
 
@@ -108,6 +145,9 @@ public:
 	/** Type of Libor path simulation.
 	 */
 	std::string modelType();
+	
+	/** "DL", "LFDL", "PC", "FPC", converts integer ID to string. */
+	static std::string lmmType(int type);
 	
 
     /** The number n of accrual periods.
