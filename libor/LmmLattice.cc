@@ -278,7 +278,7 @@ LmmLattice::
 test(int r, int n)
 {
     Timer watch; watch.start();
-	LmmLattice* lattice = sample(r,n,n,3,true);
+	LmmLattice* lattice = sample(r,n,n,1,true);
 	lattice->rescaleVols();
 	lattice->selfTest();
 	delete lattice;

@@ -124,7 +124,7 @@ int main()
 	
 	// Libor derivatives in the driftless LMM with constant volatilities, 
 	// includes lattice pricing
-    // Test_LMM::testLiborDerivative();
+     Test_LMM::testLiborDerivative();
 	
 	
 

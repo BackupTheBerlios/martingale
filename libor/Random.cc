@@ -1,22 +1,71 @@
 /* WARANTY NOTICE AND COPYRIGHTThis program is free software; you can redistribute it and/ormodify it under the terms of the GNU General Public Licenseas published by the Free Software Foundation; either version 2of the License, or (at your option) any later version.This program is distributed in the hope that it will be useful,but WITHOUT ANY WARRANTY; without even the implied warranty ofMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See theGNU General Public License for more details.You should have received a copy of the GNU General Public Licensealong with this program; if not, write to the Free SoftwareFoundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.Copyright (C) Michael J. Meyermatmjm@mindspring.comspyqqqdia@yahoo.com*/
 
 
-#include <math.h>
-#include <boost/random/mersenne_twister.hpp>
-#include <boost/random/uniform_01.hpp>
-#include <boost/random/uniform_int.hpp>
+
 #include "Random.h"
 #include "Utils.h"
+#include <cmath>
 
+using std::erf;
 
 MTGL_BEGIN_NAMESPACE(Martingale)
+MTGL_BEGIN_NAMESPACE(Random)
+
+// static initialization
+unsigned long MersenneTwister::mag01[2]={0x0, MATRIX_A};
+		
+MersenneTwister::
+MersenneTwister(ulong seed=4357) : mt(new ulong[MT_N]), mti(MT_N+1)
+{
+    // state vector intialization
+    for (int i=0;i<MT_N;i++) {
+		
+        mt[i] = seed & 0xffff0000;
+        seed = 69069 * seed + 1;
+        mt[i] |= (seed & 0xffff0000) >> 16;
+        seed = 69069 * seed + 1;
+    }
+    mti = MT_N;
+}
 
 
-// Mersenne twister mt19937 based uniform random number generator
-boost::uniform_01<boost::mt19937,Real> uniform01(*(new boost::mt19937()));
-   
-// random draw from {1,-1} 
-int Random::sign()
+Real 
+MersenneTwister::
+u01()
+{
+    unsigned long y;
+
+    if (mti >= MT_N) { /* generate N words at one time */
+        int kk;
+
+        for (kk=0;kk<MT_D;kk++) {
+            y = (mt[kk]&UPPER_MASK)|(mt[kk+1]&LOWER_MASK);
+            mt[kk] = mt[kk+MT_M] ^ (y >> 1) ^ mag01[y & 0x1];
+        }
+        for (;kk<MT_N-1;kk++) {
+            y = (mt[kk]&UPPER_MASK)|(mt[kk+1]&LOWER_MASK);
+            mt[kk] = mt[kk+MT_D] ^ (y >> 1) ^ mag01[y & 0x1];
+        }
+        y = (mt[MT_N-1]&UPPER_MASK)|(mt[0]&LOWER_MASK);
+        mt[MT_N-1] = mt[MT_M-1] ^ (y >> 1) ^ mag01[y & 0x1];
+
+        mti = 0;
+    }
+  
+    y = mt[mti++];
+    y ^= TEMPERING_SHIFT_U(y);
+    y ^= TEMPERING_SHIFT_S(y) & TEMPERING_MASK_B;
+    y ^= TEMPERING_SHIFT_T(y) & TEMPERING_MASK_C;
+    y ^= TEMPERING_SHIFT_L(y);
+
+	/* reals: (0,1)-interval */
+    return ( ((double)y + 1.0) * 2.3283064359965952e-10 ); 
+    /* return y; for integer generation */
+} 
+
+
+int 
+sign()
 { 
      static int S1=0,S2=0,S3=0;           // state saved accross function calls
 	 int next=(S3*S2+19*S1+22)%331;       // next random integer
@@ -25,12 +74,14 @@ int Random::sign()
 } //end Sign
 	
    
-//  cumulative normal distribution function 
-Real Random::N(Real x){ return 0.5*(1.0+erf(x/sqrt(2.0))); }
+
+Real 
+N(Real x){ return 0.5*(1.0+erf(x/sqrt(2.0))); }
 	
 
-//  inverse normal cumulative distribution function 
-Real Random::nInverse(Real x)
+
+Real 
+nInverse(Real x)
 {
     //const Real SQRT_TWO_PI=2.5066282746310;
     
@@ -107,36 +158,23 @@ Real Random::nInverse(Real x)
 } // end nInverse
   
 
+MersenneTwister MT19937;
 
-// simple uniform random number generator 
-Real Random::U01()
-{    
-    static int R1=0,R2=0,R3=0;           // state saved accross function calls
-    int next; Real f=1/331.0;
-      
-    for(int i=0;i<3;i++)
-    {
-        next=(R3*R2+19*R1+22)%331;        // next random integer
-        R1=R2; R2=R3; R3=next;            // move state of the random integer sequence,
-    }                                     // repeat three times to decorrelate adjacent U's
-                                          // keep history three steps deep
-    return f*(R3+f*(R2+f*R1));            // compute current U(n)
-} //end U
+Real 
+U01(){ return MT19937.u01(); } 
 
+
+int 
+Uint(int n){ return (int) (n*U01()); }
    
 
-// random integers in [0,n)
-int Random::Uint(int n)
-{
-	return (int) n*U01();
-}
+Real 
+sTN(){ return nInverse(U01()); }
+
+ 
 
 
-// standard normal deviate 
-Real Random::sTN(){ return nInverse(uniform01()); }
-
-
-
+MTGL_END_NAMESPACE(Random)
 MTGL_END_NAMESPACE(Martingale)
 
 

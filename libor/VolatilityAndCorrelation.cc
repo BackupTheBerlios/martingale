@@ -214,8 +214,8 @@ VolSurface*
 M_VolSurface::
 sample()
 { 
-	Real _a=1.5, _d=2.0; 
-	return new M_VolSurface(_a,0.0,0.0,_d); 
+	Real a_=1.5, d_=2.0; 
+	return new M_VolSurface(a_,0.0,0.0,d_); 
 }
 
    
@@ -255,8 +255,8 @@ VolSurface*
 JR_VolSurface::
 sample()
 { 
-	Real _a=-0.05, _b=0.5, _c=1.5, _d=0.15; 
-	return new JR_VolSurface(_a,_b,_c,_d); 
+	Real a_=-0.05, b_=0.5, c_=1.5, d_=0.15; 
+	return new JR_VolSurface(a_,b_,c_,d_); 
 }
 
 
@@ -293,9 +293,9 @@ printSelf(ostream& os) const
 
 
 Correlations::
-Correlations(int _n, Real _alpha, Real _beta, Real _r_oo, int correlationType) : 
-n(_n), corrType(correlationType),
-alpha(_alpha), beta(_beta), r_oo(_r_oo), 
+Correlations(int n_, Real alpha_, Real beta_, Real r_oo_, int correlationType) : 
+n(n_), corrType(correlationType),
+alpha(alpha_), beta(beta_), r_oo(r_oo_), 
 correlationMatrix(n-1,1) 
 {   }
 
@@ -347,9 +347,9 @@ correlationType(int type)
 
 void 
 Correlations::
-setParameters(Real _alpha, Real _beta, Real _r_oo)
+setParameters(Real alpha_, Real beta_, Real r_oo_)
 { 
-	alpha=_alpha; beta=_beta; r_oo=_r_oo; 
+	alpha=alpha_; beta=beta_; r_oo=r_oo_; 
     setCorrelations();
 }
 
@@ -358,8 +358,8 @@ setParameters(Real _alpha, Real _beta, Real _r_oo)
 // JR_Correlations
 
 JR_Correlations::
-JR_Correlations(const RealArray1D& _T, Real beta) : 
-Correlations(_T.getDimension()-1,0.0,beta,0.0,JR), T(_T) 	
+JR_Correlations(const RealArray1D& T_, Real beta) : 
+Correlations(T_.getDimension()-1,0.0,beta,0.0,JR), T(T_) 	
 { 
 	setCorrelations(); 
 }
@@ -400,8 +400,8 @@ printSelf(ostream& os) const
 
 // CS_Correlations
 CS_Correlations::
-CS_Correlations(int _n, Real _alpha, Real _beta, Real _r_oo) : 
-Correlations(_n,_alpha,_beta,_r_oo,CS) 	
+CS_Correlations(int n_, Real alpha_, Real beta_, Real r_oo_) : 
+Correlations(n_,alpha_,beta_,r_oo_,CS) 	
 { 
 	setCorrelations(); 
 }

@@ -388,6 +388,23 @@ as template parameters and not accessed via the interface base. To no avail howe
 </ul>
 
 
+<h3>9-18-03:</h3>
+
+Removed reliance on Boost::random by incorporating the MT19937 Mersenne Twister
+into the namespace Random. Code taken from 
+ <a href="http://www.math.keio.ac.jp/~nisimura/random/real2/mt19932-2.c">
+A C-program for MT19937</a> by Makoto
+<a href="http://www.math.keio.ac.jp/matumoto/emt.html">Matsumoto</a>
+and Takuji Nishimura and rewritten to C++.
+
+
+<h3>9-21-03:</h3>
+
+Fixed up the doxygen doc comments.
+Turned off QMC pricing if the effective dimension exceeds SOBOL_MAX_DIM.
+Makefile is operational and produces doxygen docs.
+
+
 
 </body>
 </html>

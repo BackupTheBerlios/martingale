@@ -161,9 +161,14 @@ getDefaultLattice()
 {
 	LiborFactorLoading* fl = LMM->getFactorLoading();
 	// time steps per accrual interval: 
-	int steps=1;                               
-	// lattice built up to time T_t, total time steps: t*nSteps
-	while(t*steps+t<LATTICE_MAX_STEPS) steps++;
+	int steps=6;                               
+	// lattice built up to time T_t, total time steps: t*steps
+	while(t*steps+t>LATTICE_MAX_STEPS) steps--;
+	if(steps<=0){
+	    cout << "\n\nLiborDerivative::getDefaultLattice():"
+	         << "\nToo many time steps, aborting.";	
+		exit(1);
+	}
 	bool verbose = false;
 	int r=2;   // number of factors
 	return new LmmLattice(r,fl,t,steps,verbose);
@@ -262,7 +267,7 @@ testPrice(int N)
       // QMC dynamics
 	  LMM->switchToQMC();
 	  
-	  if(hasMonteCarlo_){
+	  if(hasMonteCarlo_&&(effectiveDimension()<=SOBOL_MAX_DIM)){
 		  
           mcPrice=monteCarloForwardPrice(N);
           cout << "Quasi Monte Carlo: " << mcPrice;
@@ -273,7 +278,7 @@ testPrice(int N)
 		   
 	  LMM->restartSobolGenerator();
 	  
-	  if(hasControlVariate_){
+	  if(hasControlVariate_&&(effectiveDimension()<=SOBOL_MAX_DIM)){
 		  
 	      cvmcPrice=controlledMonteCarloForwardPrice(N);		   
 		  cout << "Quasi Monte Carlo with control variate: " << cvmcPrice;
