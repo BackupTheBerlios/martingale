@@ -25,6 +25,7 @@ spyqqqdia@yahoo.com
 
 
 #include <complex>
+#include "TypedefsMacros.h"
 #include "Matrices.h"
 #include "Utils.h"
 #include "Random.h"
@@ -51,14 +52,14 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 void testMatrixInverse()
 {
 	int n=6;
-	UTRMatrix<Real> U(n);
+	UTRRealMatrix U(n);
 	for(int i=0;i<n;i++)
 	for(int j=i;j<n;j++) U(i,j)=1+Random::U01();
 	
-    UTRMatrix<Real> I(n); for(int i=0;i<n;i++) I(i,i)=1.0;
+    UTRRealMatrix I(n); for(int i=0;i<n;i++) I(i,i)=1.0;
 		
-	UTRMatrix<Real>& Uinv=U.inverse();
-	UTRMatrix<Real> Uinv1(Uinv);
+	UTRRealMatrix& Uinv=U.inverse();
+	UTRRealMatrix Uinv1(Uinv);
 	
 	Uinv*=U;
 	U*=Uinv1;
@@ -84,29 +85,29 @@ void testMatrixInverse()
 void testMatrixMultiply()
 {
     Real x[3][3]={{2,1,3},{0,2,-1},{1,-1,3}};
-	Matrix<Real> X(x), X1=X;
+	RealMatrix X(x), X1=X;
 		
 	Real u[3][3]={{1,2,-1},{0,-1,3,},{0,0,2}};
-	UTRMatrix<Real> U(u), U1=U;
+	UTRRealMatrix U(u), U1=U;
 		
     Real l[3][3]={{1,0,0},{2,-1,0},{-1,3,2}};
-	LTRMatrix<Real> L(l), L1=L;
+	LTRRealMatrix L(l), L1=L;
 		
 	// X^U hand computed
 	Real xwu[3][3]={{1,8,6},{5,-5,-2},{-4,10,6}};
-	Matrix<Real> XwedgeU(xwu);
+	RealMatrix XwedgeU(xwu);
 		
      // X*U hand computed
 	Real xsu[3][3]={{2,3,7},{0,-2,4},{1,3,2}};
-	Matrix<Real> XstarU(xsu);
+	RealMatrix XstarU(xsu);
 		
     // U^L hand computed
 	Real uwl[3][3]={{1,0,3},{0,1,3},{0,0,4}};
-	UTRMatrix<Real> UwedgeL(uwl);
+	UTRRealMatrix UwedgeL(uwl);
 		
     // L^U hand computed = (U^L)'
 	Real lwu[3][3]={{1,0,0},{0,1,0},{3,3,4}};
-	LTRMatrix<Real> LwedgeU(lwu);
+	LTRRealMatrix LwedgeU(lwu);
 		
 	Real precision=0.001,       // maximum acceptable relative error in percent
 		 epsilon=0.00000000001; // zero denominator reset to epsilon
@@ -230,15 +231,15 @@ void testMatrixExponentials()
 	
 		if(type==0){
 
-	        UTRMatrix<Real> A(dim), B(dim);
+	        UTRRealMatrix A(dim), B(dim);
 	        for(int i=0;i<dim;i++)
 	        for(int j=i;j<dim;j++){
 		
 		        A(i,j)=r*Random::U01(); 
 		        B(i,j)=-A(i,j);
 	        }
-		    UTRMatrix<Real> E(A.exp()), E1(E);
-	        UTRMatrix<Real> F(B.exp());
+		    UTRRealMatrix E(A.exp()), E1(E);
+	        UTRRealMatrix F(B.exp());
 		    std::cout << endl << endl << "Norm of A : " << A.norm()
 			                  << endl << "Norm of exp(A): " << E.norm();
 		    E*=F; std::cout << endl << "exp(A)exp(-A): ";  reportMatrixElements(E.getData(),dim,0);
@@ -248,15 +249,15 @@ void testMatrixExponentials()
 			
 		if(type==1){
 
-	        LTRMatrix<Real> A(dim), B(dim);
+	        LTRRealMatrix A(dim), B(dim);
 	        for(int i=0;i<dim;i++)
 	        for(int j=0;j<=i;j++){
 		
 		        A(i,j)=r*Random::U01(); 
 		        B(i,j)=-A(i,j);
 	        }
-		    LTRMatrix<Real> E(A.exp()), E1(E);
-	        LTRMatrix<Real> F(B.exp());
+		    LTRRealMatrix E(A.exp()), E1(E);
+	        LTRRealMatrix F(B.exp());
 		    std::cout << endl << endl << "Norm of A : " << A.norm() 
 			                  << endl << "Norm of exp(A): " << E.norm();        
 		    E*=F; std::cout << endl << "exp(A)exp(-A):";  reportMatrixElements(E.getData(),dim,1);
@@ -265,15 +266,15 @@ void testMatrixExponentials()
 			
 		if(type==2){
 
-	        Matrix<Real> A(dim), B(dim);
+	        RealMatrix A(dim), B(dim);
 	        for(int i=0;i<dim;i++)
 	        for(int j=0;j<dim;j++){
 		
 		        A(i,j)=r*Random::U01(); 
 		        B(i,j)=-A(i,j);
 	        }
-		    Matrix<Real> E(A.exp()), E1(E);
-	        Matrix<Real> F(B.exp());
+		    RealMatrix E(A.exp()), E1(E);
+	        RealMatrix F(B.exp());
 		    std::cout << endl << endl << "Norm of A : " << A.norm()
 			                  << endl << "Norm of exp(A): " << E.norm();
 		    E*=F; std::cout << endl << "exp(A)exp(-A):";   reportMatrixElements(E.getData(),dim,2);
@@ -309,8 +310,8 @@ void testComplexExponential()
 		 std::cout << "Enter a: "; cin>>a;
 		 std::cout << "Enter b: "; cin>>b;	 
 		 Real Z[2][2]={{a,b},{-b,a}};
-		 Matrix<Real> A(Z);
-		 Matrix<Real> E(A.exp());
+		 RealMatrix A(Z);
+		 RealMatrix E(A.exp());
 		 
 		 std::complex<Real> z(a,b), e=exp(z);
 

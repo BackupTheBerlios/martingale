@@ -24,7 +24,7 @@ spyqqqdia@yahoo.com
 #define martingale_testprobability_h
 
 
-
+#include "TypedefsMacros.h"
 //#include "Matrices.h"
 //#include "Utils.h"
 #include "Random.h"
@@ -56,7 +56,7 @@ void testSTNCovarianceMatrix(int d, int N)
     StandardNormalVector Z(d);
 	Timer watch;
     watch.start();
-	UTRMatrix<Real> cvm=Z.covarianceMatrix(N,"Standard normal covariance matrix");
+	UTRRealMatrix cvm=Z.covarianceMatrix(N,"Standard normal covariance matrix");
 	
 	// get the largest and smallest diagonal element and the largest and smallest 
 	// off diagonal element

@@ -25,7 +25,7 @@ spyqqqdia@yahoo.com
 #include "Random.h"
 #include "StochasticProcess.h"
 #include "FactorLoading.h"
-using Martingale;
+using namespace Martingale;
 
 
 
@@ -48,7 +48,7 @@ void
 ScalarBrownianMotion::
 timeStep(int t){ path[t+1]=path[t]+sqrtdt*Z[t]; }
 		
-}
+
 
 
 VectorBrownianMotion::
@@ -75,7 +75,7 @@ timeStep(int t)
 {	
 	RealVector& Xt=currentPath(t);
 	RealVector& XT=currentPath(t+1);
-	for(int i=0;i<dim;i++) XT[i]=Xt[i]+sqrtdt*Z[t][i]; 
+	for(int i=0;i<dim;i++) XT[i]=Xt[i]+sqrtdt*Z(t,i); 
 }
 	
 
@@ -150,7 +150,7 @@ timeStep(int t)
     for(int i=0;i<dim;i++){
 			
 	    X[i]=Xt[i];
-	    for(int j=i;j<dim;j++) X[i]+=R(i,j)*Z[t][j];
+	    for(int j=i;j<dim;j++) X[i]+=R(i,j)*Z(t,j);
     }
 } // end timeStep
 			

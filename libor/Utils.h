@@ -23,12 +23,6 @@ spyqqqdia@yahoo.com
 #ifndef martingale_utils_h
 #define martingale_utils_h
 
-/*
- * Utils.h
- *
- * Created on February 3, 2003, 12:00 PM
- */
-
 
 #include <string>
 #include <sstream>
@@ -101,68 +95,6 @@ typedef Type_t<double> Double_t;
 typedef Type_t<long double> LongDouble_t;
 typedef Type_t<Real> Real_t;
 
-
-
-/** print vector
- */
-template<class S>
-std::ostream& operator << (std::ostream& os, const vector<S>& v)
-{
-	int d=v.getDimension();
-    S* vdptr=v.getData();
-	os << endl << "vector of dimension " << d << ":" << endl;
-    for(int i=0;i<d-1;i++) os << vdptr[i] << ", ";
-    os << vdptr[d-1];
-    return os << endl << endl;
-} // end operator <<
-
-
-
-/** print lower triangular matrix
- */
-template<class S>
-std::ostream& operator << (std::ostream& os, const LTRMatrix<S>& A)
-{
-	int dim=A.getDimension(), b=A.getIndexBase();
-	os << endl << "Lower triangular matrix, dimension " << dim << ":" 
-	   << endl << endl;
-	for(int i=b;i<dim+b;i++){
-		
-		for(int j=b;j<i;j++) os << A(i,j) << ", ";
-		os << A(i,i) << endl;
-	}
-    return os << endl << endl;
-} // end operator <<
-
-
-/** print upper triangular matrix
- */
-template<class S>
-std::ostream& operator << (std::ostream& os, const UTRMatrix<S>& U)
-{
-	os << endl << "Transposed matrix:";
-    return os << U.transpose() << endl << endl;
-} // end operator <<
-
-
-/** print rectangular matrix
- */
-template<class S>
-std::ostream& operator << (std::ostream& os, const Matrix<S>& A)
-{
-	int rows=A.getnRows(), 
-	    cols=A.getnCols();
-	S** D=A.getData();
-	os << endl << "Rectangular " << rows << " by " << cols << " matrix:"
-	   << endl << endl;
-	for(int i=0;i<rows;i++){
-		
-	    for(int j=0;j<cols-1;j++) os << D[i][j] << ", ";
-		os << D[i][cols-1] << endl;
-	}
-    return os << endl << endl;
-} // end operator <<
-	
 
 
 

@@ -408,8 +408,8 @@ public:
 
 // GLOBAL INSERTION
 
-std::ostream& operator << 
-(std::ostream& os, const LiborMarketModel& lmm){ return lmm.printSelf(os); }
+std::ostream& operator << (std::ostream& os, const LiborMarketModel& lmm);
+
 
 
 
@@ -520,9 +520,7 @@ public:
 
 
 // GLOBAL INSERTION
-
-std::ostream& operator << 
-(std::ostream& os, Bond* bond){ return bond->printSelf(os); }
+std::ostream& operator << (std::ostream& os, const Bond& bond);
 
 
 

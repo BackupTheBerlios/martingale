@@ -25,6 +25,7 @@ spyqqqdia@yahoo.com
 
 
 #include "RandomVariables.h"
+#include "Random.h"
 using namespace Martingale;
 
 
@@ -35,17 +36,17 @@ using namespace Martingale;
 *******************************************************************************/
 
 
-	RealVector StandardNormalVector::nextValue() 
-	{
-	     int d=getDimension();
-		 RealVector X(d);
-	     for(int i=0;i<d;i++) X[i]=Random::sTN();
-         return X;
-    }
+RealVector 
+StandardNormalVector::
+nextValue() 
+{
+     int d=getDimension();
+	 RealVector X(d);
+     for(int i=0;i<d;i++) X[i]=Random::sTN();
+        return X;
+}
 
 
-
- 
 
 /*******************************************************************************    
     
@@ -53,13 +54,16 @@ using namespace Martingale;
 	
 *******************************************************************************/
 
-	// sample - control variate pair
-	RealVector StandardNormalVariable::nextValue() 
-	{
-		RealVector v(2);
-		v[0]=Random::sTN(); v[1]=v[0];
-		return v;
-    }
+
+// sample - control variate pair
+RealVector 
+StandardNormalVariable::
+nextValue() 
+{
+	RealVector v(2);
+	v[0]=Random::sTN(); v[1]=v[0];
+	return v;
+}
 
 
 /*******************************************************************************    
@@ -68,14 +72,20 @@ using namespace Martingale;
 	
 *******************************************************************************/
 
+
+Real 
+EmpiricalRandomVariable::	
+nextValue() { return dataSet[Random::Uint(sampleSize)]; }
  
- 
-	void EmpiricalRandomVariable::test(int n)
-    {
-		Real* data_set=new Real[n];
-		for(int i=0;i<n;i++) data_set[i]=i;
+	
+void 
+EmpiricalRandomVariable::
+test(int n)
+{
+	Real* data_set=new Real[n];
+	for(int i=0;i<n;i++) data_set[i]=i;
 			
-		EmpiricalRandomVariable X(data_set,n);
-		for(int j=0;j<200;j++) cout << X.nextValue() << ", ";
-	}
+	EmpiricalRandomVariable X(data_set,n);
+	for(int j=0;j<200;j++) std::cout << X.nextValue() << ", ";
+}
    

@@ -24,7 +24,7 @@ spyqqqdia@yahoo.com
 #define martingale_testformulas_h
 
 
-
+#include "TypedefsMacros.h"
 //#include "Matrices.h"
 //#include "Utils.h"
 #include "Random.h"

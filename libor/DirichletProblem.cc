@@ -57,8 +57,8 @@ solution(const RealVector& x, int nPath=50000, bool reportHits=false)
 	}
 		
 	if(reportHits) 
-	cout << "\nDirichletProblem::solution: " << 100.0*c/nPath 
-		 << "% of paths hit the boundary.";
+	std::cout << "\nDirichletProblem::solution: " << 100.0*c/nPath 
+		      << "% of paths hit the boundary.";
 	return sum/nPath;
 } // end solution
 	
@@ -81,7 +81,7 @@ void
 DirichletProblemExample::	
 runExample(int d, int T)
 {
-	cout << "\n\nSolution f(x) of the Dirichlet problem on the unit ball"
+	std::cout << "\n\nSolution f(x) of the Dirichlet problem on the unit ball"
 	     << "\nfor the boundary function h(x_1,x_2,...,x_d)=x_1+x_2+...+x_d"
 	     << "\nat the point x_1=x_2=...=x_d=0.75."
 	     << "\nDimension  d = " << d;

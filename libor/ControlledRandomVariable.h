@@ -27,15 +27,11 @@ spyqqqdia@yahoo.com
 #ifndef martingale_controlled_randomvariable_h    
 #define martingale_controlled_randomvariable_h 
 
-
+#include "TypedefsMacros.h"
 #include "RandomObject.h"
+#include "Matrices.h"
 
 MTGL_BEGIN_NAMESPACE(Martingale)
-
-
-
-// forward declaration
-class RealVector;           // Matrices.h
 
 
 

@@ -147,10 +147,7 @@ public:
 
 
 // GLOBAL INSERTION
-
-std::ostream& operator << 
-(std::ostream& os, const StochasticGenerator& sg) { return sg.printSelf(os); }
-
+std::ostream& operator << (std::ostream& os, const StochasticGenerator& sg);
 
 
 /*********************************************************************************

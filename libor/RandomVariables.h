@@ -21,17 +21,17 @@ spyqqqdia@yahoo.com
 */
 
 
-// the entire implementation is in the header
 
 
 #ifndef martingale_randomvariables_h    
 #define martingale_randomvariables_h 
 
-#include "Random.h"
+#include "TypedefsMacros.h"
 #include "ControlledRandomVariable.h"
 
 
 MTGL_BEGIN_NAMESPACE(Martingale)
+
 
 /*! \file RandomVariables.h
  *  A collection of random variables
@@ -141,7 +141,7 @@ public:
     /** <p>Sampling from the distribution of X, 
      *  Samples from the underlying data set with replacement.</p>
      */
-    Real nextValue() { return dataSet[Random::Uint(sampleSize)]; }
+    Real nextValue();
 	
 	
 // TEST PROGRAM

@@ -28,9 +28,7 @@ spyqqqdia@yahoo.com
  */
  
 
-#include <string>
-#include <iostream>
-#include <cstdlib>
+
 #include "Derivatives.h"
 #include "FinMath.h"
 #include "RandomObject.h"
@@ -39,6 +37,12 @@ spyqqqdia@yahoo.com
 #include "FastPredictorCorrectorLMM.h"
 #include "DriftlessLMM.h"
 #include "LowFactorDriftlessLMM.h"
+#include "LiborMarketModel.h"          // Bond
+#include <math.h>
+#include <cmath>
+#include <algorithm>
+//#include <string>
+#include <iostream>
 
 using namespace Martingale;
 
@@ -61,7 +65,7 @@ Real
 Derivative::
 controlVariateMean() 
 {
-      cout << "Derivative.controlVariateMean():"
+      std::cout << "Derivative.controlVariateMean():"
 		   << endl << "no control variate implemented, aborting.";
       exit(0);
       return 0.0;    // keeps the compiler happy
@@ -73,7 +77,7 @@ RealVector
 Derivative::
 nextControlledForwardPayoff() 
 {
-     cout << "Derivative.nextControlledForwardPayoff():"
+     std::cout << "Derivative.nextControlledForwardPayoff():"
 		  << endl << "no control variate implemented, aborting.";
      exit(0);
 	 // keep the compiler happy
@@ -91,7 +95,7 @@ Real
 Derivative::
 analyticForwardPrice() 
 {
-     cout << endl 
+     std::cout << endl 
           << "Derivative.analyticForwardPrice():" << endl
           << "no analytic price implemented, aborting.";
      exit(0);
@@ -173,7 +177,7 @@ testPrice()
 	      epsilon=0.00000001;   // replacement for zero denominator in relError
          
 	 // correlation with control variate
-     cout << *this << endl
+     std::cout << *this << endl
 	      << LMM << endl
 	      << endl << "Effective dimension of the simulation = " 
 	      << effectiveDimension()
@@ -185,7 +189,7 @@ testPrice()
       mcprice=monteCarloForwardPrice(nPath);
 	  cvmcprice=controlledMonteCarloForwardPrice(nPath);
 
-      cout << "\nForward prices, " << nPath << " paths:" << endl
+      std::cout << "\nForward prices, " << nPath << " paths:" << endl
 		   << "Analytic: " << aprice << endl
 		   << "Monte Carlo: " << mcprice << " , relative error: " 
 		   << relativeError(aprice,mcprice,epsilon) << "%" << endl
@@ -201,7 +205,7 @@ testPrice()
 	  LMM->restartSobolGenerator();
 	  cvmcprice=controlledMonteCarloForwardPrice(nPath);
  
-      cout << "Quasi Monte Carlo, relative error: " 
+      std::cout << "Quasi Monte Carlo, relative error: " 
 		   << relativeError(aprice,mcprice,epsilon) << "%" << endl
 		   << "Quasi Monte Carlo with control variate, relative error: " 
 		   << relativeError(aprice,cvmcprice,epsilon) << "%"
@@ -257,7 +261,7 @@ setLMM(LiborMarketModel* lmm)
 
 Caplet::
 Caplet(int k, Real strike, LiborMarketModel* lmm) :
-LiborDerivative(lmm,min<int>(k+1,lmm->getDimension()-1)),               // Libors needed until time t=min(k+1,n-1)
+LiborDerivative(lmm,min(k+1,lmm->getDimension()-1)),               // Libors needed until time t=min(k+1,n-1)
 i(k), 
 kappa(strike),
 delta_i((lmm->getDeltas())[i])
@@ -285,7 +289,7 @@ nextForwardPayoff()
 	LMM->newPath(horizon,i);                      // needed Libors L_j, j>=i.
 	Real X_iT_i,h,f;
     X_iT_i=LMM->XL(i,i);                          // Libor X_i(T_i)
-    h=max<Real>(X_iT_i-delta_i*kappa,0.0);        // payoff at time T_{i+1}
+    h=max(X_iT_i-delta_i*kappa,0.0);        // payoff at time T_{i+1}
     f=LMM->H_ii(i+1);                             // H_{i+1}(T_{i+1}) accrual T_{i+1}->T_n at time T_{i+1}
      // move this from time T_{i+1} to time T_n
     return f*h;	
@@ -305,7 +309,7 @@ nextControlledForwardPayoff()
 	LMM->newPath(horizon,i);            // needed Libors L_j, j>=i
 		 
     Real X_iT_i=LMM->XL(i,i),                        // Libor X_i(T_i)
-		 h=max<Real>(X_iT_i-delta_i*kappa,0.0),      // payoff at time T_{i+1}
+		 h=max(X_iT_i-delta_i*kappa,0.0),      // payoff at time T_{i+1}
          f=LMM->H_ii(i+1);                           // H_{i+1}(T_{i+1}), accrual T_{i+1}->T_n at time T_{i+1}      
         
     RealVector v(2); 
@@ -546,7 +550,10 @@ analyticForwardPrice() const
 std::ostream& 
 BondCall::
 printSelf(std::ostream& os) const
-{  return os << "Call on bond B with strike K =: " << K << endl << "Bond B:" << B << endl; }
+{  
+   os << "Call on bond B with strike K =: " << K << endl;
+   return B->printSelf(os);                                         // linkage problems with os << *B
+}
 
 
 

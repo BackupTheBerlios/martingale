@@ -23,6 +23,7 @@ spyqqqdia@yahoo.com
 #ifndef martingale_testoptimizers_h    
 #define martingale_testoptimizers_h
 
+#include "TypedefsMacros.h"
 #include "Optimizer.h"
 
 
@@ -50,7 +51,7 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 	 void testDownhillSimplex(int n, int steps)
      {
          Array1D<Real> x(n);
-         for(int i=0;i<n;i++)x[i]=1.6+i*0.6;
+         for(int i=0;i<n;i++)x[i]=1.6+(i%2)*0.6;
          
          Real delta=0.3;
          bool verbose=true;
@@ -85,7 +86,7 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 	 void testBFGS(int n, int nVals)
      {
          RealArray1D x(n), h(n);
-         for(int i=0;i<n;i++){ x[i]=1.6+i*0.6; h[i]=0.1; }
+         for(int i=0;i<n;i++){ x[i]=1.6+(i%2)*0.6; h[i]=0.1; }
          
          Real stepmax=0.3;
 		 int nRestarts=5;
@@ -95,7 +96,39 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 		 (&(ObjectiveFunction::function_1),n,x,nVals,stepmax,h,nRestarts,verbose);          
          optimizer->search();
 		 
-     } // end test     	
+     } // end test  
+	 
+	
+
+/*******************************************************************************    
+    
+              TEST OF SobolSearch
+	
+*******************************************************************************/
+
+	 /** Test program in dimension n. Very nasty test function 
+	  *  \f[f(x)=1\bigg/\sum\nolimits_jexp(-x_j^2)\f]
+      *  consists of three very narrow valleys intersecting at right angles. 
+	  *  The optimizer must crawl along each valley minimizing each variable separately. 
+	  *  Takes a huge number of steps. Minimum is assumed at the origin.
+	  *
+	  * @param n dimension.
+	  * @param nVals number of function evaluations.
+      */
+	 void testSobolSearch(int n, int nVals)
+     {
+         Array1D<Real> x(n), delta(n);
+         for(int i=0;i<n;i++){ x[i]=1.6+(i%2)*0.6; delta[i]=0.5; }
+         
+         bool verbose=true;
+			 			 
+         Optimizer* optimizer=new ConcreteSobolSearch
+		 (&(ObjectiveFunction::function_1),n,x,nVals,delta,verbose);         
+         optimizer->search();
+		 
+     } // end test          
+
+
 	     
 	
 MTGL_END_NAMESPACE(Martingale)

@@ -66,14 +66,39 @@ sample(int type)
 	   case JR    : return JR_VolSurface::sample(); 
 	   case CONST : return CONST_VolSurface::sample(); 
    }
-   cout << "\n\nVolSurface::sample(): unknown VolSurface type = " << type
+   std::cout << "\n\nVolSurface::sample(): unknown VolSurface type = " << type
         << ". Exiting.";
    exit(1);
 }
 
 
+// GLOBAL INSERTION
+
+std::ostream& operator << 
+(std::ostream& os, const VolSurface& vols){ return vols.printSelf(os); }
+
+
 
 // M_VolSurface
+
+Real 
+M_VolSurface::
+F(Real D, Real s) const { return D*std::exp(s/D); }  
+    
+
+Real 
+M_VolSurface::
+G(Real D, Real s) const { return D*std::exp(s/D)*(s-D); }   
+
+
+Real 
+M_VolSurface::	
+H(Real D, Real s) const { return D*std::exp(s/D)*((s-D)*(s-D)+D*D); }  
+         
+
+Real 
+M_VolSurface::	
+g(Real x) const { return 1+a*x*std::exp(-x/d); }
 
 //<---------- Verify integral against quasi Monte Carlo ---------->
 Real 
@@ -82,7 +107,7 @@ integral_sgsg(Real t, Real T1, Real T2) const
 {
    	Real R,f,f1,f2,D1,D2,D12;
     
-    f=a*exp(-1/d); f1=f/T1; f2=f/T2;       
+    f=a*std::exp(-1/d); f1=f/T1; f2=f/T2;       
 	D1=d*T1; D2=d*T2; D12=D1*D2/(D1+D2);
   
     R=t;
@@ -123,6 +148,15 @@ sample()
      
 // JR_VolSurface
 
+Real 
+JR_VolSurface::
+sigma(Real t, Real T) const 
+{ 
+   Real s=(T-t);
+   return d+(a+b*s)*std::exp(-c*s);
+}
+
+
 //<---------- Verify integral against quasi Monte Carlo ---------->
 Real 
 JR_VolSurface::
@@ -136,9 +170,9 @@ integral_sgsg(Real t, Real T1, Real T2) const
         cd=c*d;
               
    f=1.0/(c*c*c);
-   A=ac*cd*(exp(ctmT2)+exp(ctmT1))+c*cd*cd*t;
-   B=b*cd*(exp(ctmT1)*(ctmT1-1)+exp(ctmT2)*(ctmT2-1));
-   C=exp(q)*(ac*(ac+b*(1-q))+b*b*(0.5*(1-q)+ctmT1*ctmT2))/2;
+   A=ac*cd*(std::exp(ctmT2)+std::exp(ctmT1))+c*cd*cd*t;
+   B=b*cd*(std::exp(ctmT1)*(ctmT1-1)+std::exp(ctmT2)*(ctmT2-1));
+   C=std::exp(q)*(ac*(ac+b*(1-q))+b*b*(0.5*(1-q)+ctmT1*ctmT2))/2;
        
    return f*(A-B+C);
 } // end integral_sgsg
@@ -225,13 +259,18 @@ correlationType(int corrType)
 	return "   ";   // makes compiler happy
 }
 
+// GLOBAL INSERTION
+
+std::ostream& operator << 
+(std::ostream& os, const Correlations& vols){ return vols.printSelf(os); }
+
 
 
 // JR_Correlations
 
 JR_Correlations::
 JR_Correlations(const RealArray1D& _T, Real beta) : 
-Correlations(_T.getDimension(),0.0,beta,0.0,JR), T(_T) 	
+Correlations(_T.getDimension()-1,0.0,beta,0.0,JR), T(_T) 	
 { 
 	setCorrelations(); 
 }
@@ -243,7 +282,7 @@ setCorrelations()
 {
     for(int i=1;i<n;i++)
     for(int j=i;j<n;j++) 
-	   correlationMatrix(i,j)=exp(beta*(T[i]-T[j])); 
+	   correlationMatrix(i,j)=std::exp(beta*(T[i]-T[j])); 
 }
 
 
@@ -278,7 +317,7 @@ setCorrelations()
 {
      RealArray1D b(n-1,1); 
      for(int i=1;i<n;i++)
-     { Real x=((Real)i)/(n-1); b[i]=exp(-f(x)); }
+     { Real x=((Real)i)/(n-1); b[i]=std::exp(-f(x)); }
            
      // initialize the correlation matrix rho
      for(int i=1;i<n;i++)
@@ -343,8 +382,9 @@ vol(vols), corr(corrs), rho(*corrs)
 	}
 		
 	if(n!=corrs->getDimension()){
-	    cout << "\n\nLiborfactorLoading(): Libors-Correlations dimensions don't match."
-	        << "\nTerminating.";
+	    std::cout << "\n\nLiborfactorLoading(): Libors-Correlations dimensions don't match."
+		          << "Libors n = " << n << ", correlations n = " << corrs->getDimension()
+	              << "\nTerminating.";
 	    exit(1);
 	}
 
@@ -466,7 +506,7 @@ selfTest() const
 	Real precision=0.001,       // maximum acceptable relative error in percent
 		 epsilon=0.00000000001; // zero denominator reset to epsilon
 	
-    cout << "\nLIBOR FACTORLOADING SELFTEST:" << endl << this;
+    std::cout << "\nLIBOR FACTORLOADING SELFTEST:" << endl << this;
 	
 	cout << "\nTesting the root L of the matrix C=logLiborCovariationMatrix(t):" << endl;
 	for(int t=0;t<n-1;t++){
@@ -512,5 +552,17 @@ setParameters(const RealArray1D& X)
 	corr->setParameters(u[n+4],u[n+5],u[n+6]);
 }
 	
+
+// Global Insertion
+
+std::ostream& operator << 
+(std::ostream& os, const LiborFactorLoading& vols){ return vols.printSelf(os); }
+
+
+
+
+
+
+
 
 

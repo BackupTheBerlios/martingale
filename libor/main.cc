@@ -20,6 +20,7 @@ spyqqqdia@yahoo.com
 
 */
 
+
 /* Created by Anjuta version 0.1.9 */
 /*	This file will not be overwritten */
 
@@ -28,11 +29,12 @@ spyqqqdia@yahoo.com
 // #include "TestMatrix.h"
 // #include "TestProbability.h"
 // #include "TestLMM.h"
-// #include "LiborTree2F.h"
-# include "LmmLatticeEuropeanOption.h"
+// #include "TestOptimizers.h"
+// #include "LatticeOption.h"
 // #include "TestFormula.h"
 // #include "Examples.h"
 // #include "DirichletProblem.h"
+#include "LiborCalibrator.h"
 
 
 using namespace Martingale;
@@ -41,6 +43,18 @@ using namespace Martingale;
  */
 int main()
 {
+	
+/*******************************************************************************
+ *
+ *                        OPTIMIZATION
+ *
+*******************************************************************************/
+	
+	// testDownhillSimplex(5,500);
+	// testBFGS(5,500);
+	// testSobolSearch(5,500);
+	
+	
 /*******************************************************************************
  *
  *                        RANDOM NUMBERS, VARIABLES, VECTORS
@@ -92,18 +106,43 @@ int main()
 	
 /*******************************************************************************
  *
- *                        LMM TREE
+ *                        LIBOR CALIBRATION
  *
 *******************************************************************************/
-	
-	 // LiborTree2F::test(50);
-	 LatticeSwaption::test(30,30,50);
 
+    // test the calibrator for the driftless LMM on a 
+	// constant volatility LiborFactorLoading
+    // DriftlessLmmCalibrator::test(20,LiborFactorLoading::CV);
+	 DriftlessLmmCalibrator::writeSyntheticDataSample();
+	
+	// PredictorCorrectorLmmCalibrator::writeSyntheticDataSample();
 	
 	
 /*******************************************************************************
  *
- *                       Sobol
+ *                        LMM LATTICES
+ *
+*******************************************************************************/
+	
+	
+	 
+	 // LatticeSwaption3F::test(15,17,30);
+     // ConstVolLmmLattice2F::test(50);
+	 
+	 
+	
+/*******************************************************************************
+ *
+ *                 LATTICES FOR ASSET BASKETS
+ *
+*******************************************************************************/
+	 
+	 // BasketLattice3F::test(5,50);
+	
+	
+/*******************************************************************************
+ *
+ *                       SOBOL
  *
 *******************************************************************************/
 	
@@ -142,4 +181,3 @@ int main()
      
 	return 0;
 }
-

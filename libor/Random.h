@@ -3,13 +3,7 @@
 #ifndef martingale_random_h    
 #define martingale_random_h
 
-#include <math.h>
-#include <boost/random/mersenne_twister.hpp>
-#include <boost/random/uniform_01.hpp>
-#include <boost/random/uniform_int.hpp>
 #include "TypedefsMacros.h"
-#include "Utils.h"
-
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 MTGL_BEGIN_NAMESPACE(Random)

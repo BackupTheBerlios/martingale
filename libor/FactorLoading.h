@@ -26,14 +26,15 @@ spyqqqdia@yahoo.com
 #ifndef martingale_factorloading_h    
 #define martingale_factorloading_h
 
-#include <iostream>
+#include "TypedefsMacros.h"
+#include "Matrices.h"
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 
-// forward declarations
-class UTRRealMatrix;        // Matrices.h
+// we are using
+class std::ostream;
 
 
 
@@ -170,9 +171,7 @@ public:
 
 
 // GLOBAL INSERTION
-
-std::ostream& operator << 
-(std::ostream& os, const FactorLoading& fl){ return fl.printSelf(os); }
+std::ostream& operator << (std::ostream& os, const FactorLoading& fl);
 
 
 
@@ -188,8 +187,8 @@ std::ostream& operator <<
  */
 class ConstantFactorLoading : public FactorLoading {
 	
-   UTRRealMatrix& corr;    // the correlations rho_ij
-   Real* sg;                 // the volatilities sigma_i
+   UTRRealMatrix corr;          // the correlations rho_ij
+   RealVector sg;               // the volatilities sigma_i
 	
 public:
 	
@@ -197,7 +196,7 @@ public:
 	 *  @param vols constant volatilities \f$\sigma_i\f$.
 	 *  @param rho  constant instantaneous correlations \f$\rho_{ij}\f$.of \f$dY_i\f$..
 	 */
-	ConstantFactorLoading(int dim, Real* vols, UTRRealMatrix& rho) :
+	ConstantFactorLoading(int dim, const RealVector& vols, const UTRRealMatrix& rho) :
 	FactorLoading(dim), corr(rho), sg(vols) {  }
 
 // CORRELATIONS, VOLATILITIES, LOG-COVARIATION INTEGRALS
@@ -233,14 +232,14 @@ public:
    /** Upper triangular root of the matrix of instantaneous correlations,
     *  Cholesky factorization.
     */
-   UTRRealMatrix correlationMatrixRoot();
+   const UTRRealMatrix& correlationMatrixRoot();
    
    
    /** Rank r approximate pseudo square root of the matrix of instantaneous correlations.
     *  See book, Appendix A.1. This is used to run a low factor approximation to a dynamics
     *  based on this factor loading.
     */
-   UTRRealMatrix correlationMatrixRankReducedRoot(int r);
+   const RealMatrix& correlationMatrixRankReducedRoot(int r);
    
    
    /** String containing a message indicating what type of factor loading

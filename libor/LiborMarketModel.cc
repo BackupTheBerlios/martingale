@@ -236,8 +236,8 @@ Real
 LiborMarketModel::	 
 capletAggregateVolatility(int i) const
 { 
-    cout << "LiborMarketModel#capletAggregateVolatility(): " 
-         << "not implemented in this generality, aborting.";
+    std::cout << "LiborMarketModel#capletAggregateVolatility(): " 
+              << "not implemented in this generality, aborting.";
     exit(1);
     return 0.0;
 } 
@@ -247,7 +247,7 @@ Real
 LiborMarketModel::
 swaptionAggregateVolatility(int p, int q, int t) const
 { 
-    cout << "LiborMarketModel#swaptionAggregateVolatility(): " 
+    std::cout << "LiborMarketModel#swaptionAggregateVolatility(): " 
          << "not implemented in this generality, aborting.";
     exit(1);
     return 0.0;
@@ -263,6 +263,14 @@ bondAggregateVolatility(Bond* B, int t) const
 	 exit(1);
 	 return 0.0;
 } 
+
+
+
+// GLOBAL INSERTION
+
+std::ostream& operator << 
+(std::ostream& os, const LiborMarketModel& lmm){ return lmm.printSelf(os); }
+
 
 
 
@@ -353,6 +361,14 @@ printSelf(std::ostream& os) const
 	os << "Bond along [T_"<<p<<",T_"<<q<<"], n="<<n<< endl
 	   << "Coupons: " << c;
 }
+
+
+// GLOBAL INSERTION
+std::ostream& operator << 
+(std::ostream& os, const Bond& bond){ return bond.printSelf(os); }
+
+
+
 	
 
 

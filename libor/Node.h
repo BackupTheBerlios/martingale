@@ -24,15 +24,15 @@ spyqqqdia@yahoo.com
 #ifndef martingale_node_h    
 #define martingale_node_h
 
-#include <math.h>
+#include "TypedefsMacros.h"
+#include "Matrices.h"
 #include <list>
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
-// forward declarations
+// we are using
 class LiborFactorLoading;             // LiborFactorLoading.h
-class RealArray1D;                    // Array.h
 
 
 /*! \file Node.h
@@ -128,7 +128,7 @@ public:
 	void setPi(Real x){ pi=x; }
 	
 	/** List of edges */
-	std::list<Edge>& getEdges() const { return edges; }
+	std::list<Edge>& getEdges() { return edges; }
 	
 	
 // CONSTRUCTOR
@@ -194,7 +194,7 @@ public:
 
     /** Returns t such that the node lives in the accrual interval \f$(T_{t-1},T_t]\f$.
 	 */
-	int get_t()
+	int get_t() const
     {
 		if(s%nSteps==0) return s/nSteps;
 		return s/nSteps+1;

@@ -44,7 +44,6 @@ nextValue()
 
 RandomVariable* 
 ControlledRandomVariable::
-ControlledVariable::
 controlled(){ return new ControlledVariable(this); }
 		
 
@@ -67,11 +66,11 @@ void
 ControlledRandomVariable::
 controlVariateMeanTest(int N)
 {
-     cout << "\nTesting control variate mean:\n";
+     std::cout << "\nTesting control variate mean:\n";
       // analytic control variate mean
-     cout << "analytic: " << getControlVariateMean() << endl;
+     std::cout << "analytic: " << getControlVariateMean() << endl;
       // Monte Carlo control variate mean
-     cout << "Monte Carlo: " << RandomVector::expectation(N)[1] << endl;
+     std::cout << "Monte Carlo: " << RandomVector::expectation(N)[1] << endl;
          
 } // end controlVariateMeanTest
      

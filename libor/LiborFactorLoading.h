@@ -147,12 +147,7 @@ public:
 
 
 // GLOBAL INSERTION
-
-std::ostream& operator << 
-(std::ostream& os, const VolSurface& vols){ return vols.printSelf(os); }
-	
-
-
+std::ostream& operator << (std::ostream& os, const VolSurface& vols);
 
 
 
@@ -177,11 +172,7 @@ public:
    /** Volatility surface 
     *  \$[\sigma(t,T)=d+(a+b(T-t)\,e^{-c(T-t)})\f$.
     */
-   Real sigma(Real t, Real T) const 
-   { 
-	   Real s=(T-t);
-       return d+(a+b*s)*exp(-c*s);
-   }
+   Real sigma(Real t, Real T) const;
 
   
    /** See {@link VolatilitySurface#integral_sgsg}.
@@ -243,19 +234,19 @@ private:
 
 // Exponential Integrals
     
-    // int exp(s/D)ds 
-    Real F(Real D, Real s) const { return D*exp(s/D); }  
+    // integral of exp(s/D)ds 
+    Real F(Real D, Real s) const;
     
-    // int s*exp(s/D)ds
-    Real G(Real D, Real s) const { return D*exp(s/D)*(s-D); }   
+    // integral of  s*exp(s/D)ds
+    Real G(Real D, Real s) const;
 
-    // int s^2*exp(s/D)ds 
-    Real H(Real D, Real s) const { return D*exp(s/D)*((s-D)*(s-D)+D*D); }  
+    // integral of  s^2*exp(s/D)ds 
+    Real H(Real D, Real s) const;
          
     /** The function g(x) defining the volatilities <code>sigma_j</code> 
      *  as \f$\sigma_j(t)=c_jg(1-t/T_j)\f$. See book, 6.11.1
      */
-    Real g(Real x) const { return 1+a*x*exp(-x/d); }
+    Real g(Real x) const;
     
 		
 		
@@ -392,10 +383,7 @@ public:
 
 
 // GLOBAL INSERTION
-
-std::ostream& operator << 
-(std::ostream& os, const Correlations& corrs){ return corrs.printSelf(os); }
-
+std::ostream& operator << (std::ostream& os, const Correlations& vols);
 
 
 
@@ -743,17 +731,12 @@ sample(int n, int volType=VolSurface::JR, int corrType=Correlations::CS);
 std::ostream& printSelf(std::ostream& os) const;
    
 
-   
 }; // end LiborFactorLoading
 
 
 
 // GLOBAL INSERTION
-
-std::ostream& operator << 
-(std::ostream& os, const LiborFactorLoading& fl){ return fl.printSelf(os); }
-
-
+std::ostream& operator << (std::ostream& os, const LiborFactorLoading& vols);
 
 
 

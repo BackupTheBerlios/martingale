@@ -57,16 +57,16 @@ R(fl->getRho().rankReducedRoot(2))
 	const RealArray1D& deltas=fl->getDeltas();
 	for(int j=0;j<n;j++) if(deltas[j]!=delta) {
 			
-	   cout << "\n\nConstVolLmmLattice2F(): Libor accrual periods not constant."
-	        << "\nTerminating.";
+	   std::cout << "\n\nConstVolLmmLattice2F(): Libor accrual periods not constant."
+	             << "\nTerminating.";
 	   exit(1);
 	}
 		
 	// check if volatilities are constant
 	if(fl->getVolSurfaceType()!=VolSurface::CONST) {
 			
-	   cout << "\n\nConstVolLmmLattice2F(): volatilties not constant."
-	        << "\nTerminating.";
+	   std::cout << "\n\nConstVolLmmLattice2F(): volatilties not constant."
+	             << "\nTerminating.";
 	   exit(1);
     }
 		
@@ -94,9 +94,9 @@ void
 ConstVolLmmLattice2F::
 testFactorization() const
 {
-	cout << "\n\nRelative errors of the approximate rank 2 factorization"
-	     << "\nrho=RR' (rank(R)=2) of the correlation matrix rho"
-	     << "\n(trace norm): " << endl << endl;
+	std::cout << "\n\nRelative errors of the approximate rank 2 factorization"
+	          << "\nrho=RR' (rank(R)=2) of the correlation matrix rho"
+	          << "\n(trace norm): " << endl << endl;
   
 	factorLoading->getRho().testFactorization(2);
 
@@ -108,7 +108,7 @@ void
 ConstVolLmmLattice2F::
 buildLattice(int m)
 {
-	cout << "\n\n\nBuilding lattice until time step s = " << m << endl << endl;
+	std::cout << "\n\n\nBuilding lattice until time step s = " << m << endl << endl;
 		  
 	std::list<LmmNode2F*>& nodes_0=*(nodeList[0]);               // list of nodes at time t
 		
@@ -193,7 +193,7 @@ setStateVariables(LmmNode2F* node)
 	for(int j=t;j<n;j++) V[j]+=log(U0[j])+mu(s,j);
 				 
 	// move from log(U_j) to U_j
-	for(int j=t;j<n;j++) V[j]=exp(V[j]);    // now V=U
+	for(int j=t;j<n;j++) V[j]=std::exp(V[j]);    // now V=U
 				 
 	// write the  H_n=1, H_j=U_j+H_{j+1}, j=t,...,n-1, 
 	RealArray1D& H=node->getH();
@@ -243,16 +243,16 @@ R(fl->getRho().rankReducedRoot(3))
 	const RealArray1D& deltas=fl->getDeltas();
 	for(int j=0;j<n;j++) if(deltas[j]!=delta) {
 			
-	   cout << "\n\nConstVolLmmLattice2F(): Libor accrual periods not constant."
-	        << "\nTerminating.";
+	   std::cout << "\n\nConstVolLmmLattice2F(): Libor accrual periods not constant."
+	             << "\nTerminating.";
 	   exit(0);
     }
 		
 	// check if volatilities are constant
 	if(fl->getVolSurfaceType()!=VolSurface::CONST) {
 			
-	   cout << "\n\nConstVolLmmLattice2F(): volatilties not constant."
-	        << "\nTerminating.";
+	   std::cout << "\n\nConstVolLmmLattice2F(): volatilties not constant."
+	             << "\nTerminating.";
 	   exit(1);
     }
 
@@ -385,7 +385,7 @@ setStateVariables(LmmNode3F* node)
 	 for(int j=t;j<n;j++) V[j]+=log(U0[j])+mu(s,j);
 				 
 	 // move from log(U_j) to U_j
-	 for(int j=t;j<n;j++) V[j]=exp(V[j]);    // now V=U
+	 for(int j=t;j<n;j++) V[j]=std::exp(V[j]);    // now V=U
 				 
 	 // write the  H_n=1, H_j=U_j+H_{j+1}, j=t,...,n-1, 
 	 RealArray1D& H=node->getH();

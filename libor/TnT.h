@@ -23,6 +23,7 @@ spyqqqdia@yahoo.com
 #ifndef martingale_tnt_h    
 #define martingale_tnt_h
 
+#include "TypedefsMacros.h"
 #include "tnt/tnt_array1d.h"
 #include "tnt/tnt_array2d.h"
 #include "jama/jama_eig.h"
@@ -67,10 +68,10 @@ public:
 		int dim=C.getDimension();
         JAMA::Eigenvalue<Real>* eigval=eigenDecomposition(C);
 		// eigenvalues sorted ascending
-		Array1D<Real> l(dim);
+		TNT::Array1D<Real> l(dim);
 		eigval->getRealEigenvalues(l);
 		// corresponding eigenvectors
-		Array2D<Real> U(dim,dim);
+		TNT::Array2D<Real> U(dim,dim);
 		eigval->getV(U);
 	
 		Matrix<Real>& root=*(new Matrix<Real>(dim,r,0,0));
@@ -120,7 +121,7 @@ public:
 		int dim=C.getDimension();
         JAMA::Eigenvalue<Real>* eigval=eigenDecomposition(C);
 		// eigenvalues sorted ascending
-		Array1D<Real> l(dim);
+		TNT::Array1D<Real> l(dim);
 		eigval->getRealEigenvalues(l);
 		
 		Real traceNorm=l[0];

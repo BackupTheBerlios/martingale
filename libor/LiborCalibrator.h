@@ -637,7 +637,7 @@ public:
 	     for(int n=20;n<60;n+=10)
 	     for(int volType=0;volType<3;volType++)
 		 for(int corrType=0;corrType<2;corrType++) writeSyntheticDataSample(n,volType,corrType);
-	     cout << "\n\nDone.";
+	     std::cout << "\n\nDone.";
 	 }
 	
 
@@ -739,7 +739,7 @@ public:
 	     for(int n=20;n<60;n+=10)
 	     for(int volType=0;volType<3;volType++)
 		 for(int corrType=0;corrType<2;corrType++) writeSyntheticDataSample(n,volType,corrType);
-	     cout << "\n\nDone.";
+	     std::cout << "\n\nDone.";
 	 }
 			 
 	

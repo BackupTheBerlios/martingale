@@ -165,9 +165,9 @@ search()
       if(verbose){
             
           // the state before the last step
-          cout << "\n\nDownHillSimplex::search(): function minimum: " << y[min]
-			   << "\nMinimizing vector:";
-          for(int j=0;j<n;j++) cout << endl << vertices(min,j);
+          std::cout << "\n\nDownHillSimplex::search(): function minimum: " << y[min]
+			        << "\nMinimizing vector:";
+          for(int j=0;j<n;j++) std::cout << endl << vertices(min,j);
       }
 		
 	  RealArray1D& xvec=*(new RealArray1D(n));
@@ -253,7 +253,7 @@ search()
        if(fVals>nVals){
                 
 			if(verbose)
-            cout << "\n\nBFGS.search(): number of function evaluations exhausted.";
+            std::cout << "\n\nBFGS.search(): number of function evaluations exhausted.";
             break;
         }
 
@@ -261,7 +261,7 @@ search()
         if(gradientIsZero()){
                 
             if(verbose)
-            cout << "\n\nBFGS.search(): zero gradient, fVals=" << fVals;
+            std::cout << "\n\nBFGS.search(): zero gradient, fVals=" << fVals;
             break;
         }
 
@@ -270,11 +270,11 @@ search()
 				
             if(restarts<nRestarts){ 
 					
-	     		if(verbose)cout << "\n\nBFGS.search(): restarting";
+	     		if(verbose) std::cout << "\n\nBFGS.search(): restarting";
 				resetHessian(); restarts++; 
 			}else{
 				
-                if(verbose)cout << "\n\nBFGS.search(): no movement in x, fVals=" << fVals;
+                if(verbose) std::cout << "\n\nBFGS.search(): no movement in x, fVals=" << fVals;
                 break;
 			} // end if
          } // endif
@@ -284,9 +284,9 @@ search()
 	if(verbose){
             
        // the state before the last step
-       cout << "\n\nBFGS::search(): function minimum: " << fx
-	        << "\nMinimizing vector:";
-       for(int j=0;j<n;j++) cout << endl << x[j];
+       std::cout << "\n\nBFGS::search(): function minimum: " << fx
+	             << "\nMinimizing vector:";
+       for(int j=0;j<n;j++) std::cout << endl << x[j];
     }
 		
     return x;
@@ -465,7 +465,7 @@ lineSearch()
     if(dNorm>stepmax)d.scale(stepmax/dNorm);
         
     Real k=grad.dotProduct(d);   // slope     
-    if(k>=0) cout << "\n\nBFGS.lineSearch(): no descent, roundoff errors.";
+    if(k>=0) std::cout << "\n\nBFGS.lineSearch(): no descent, roundoff errors.";
         
     Real t_min=EPSX/rs,     // terminate if t<t_min
          t1=1.0,            // current line parameter t 
@@ -543,8 +543,8 @@ SobolSearch::
 search()
 {		
    if(verbose)
-   cout << "\n\nSobolSearch::search(): dimension = " << n
-        << ", nPoints = " << nPoints;
+   std::cout << "\n\nSobolSearch::search(): dimension = " << n
+             << ", nPoints = " << nPoints;
 		
    Real fx, fOpt=f(x);
    RealArray1D& xOpt=*(new RealArray1D(x));
@@ -568,7 +568,7 @@ search()
 			if(fx<fOpt){
 					
 				fOpt=fx; xOpt=x;
-				if(verbose) cout << "\nmin = " << fx;
+				if(verbose) std::cout << "\nmin = " << fx;
 			}
 		} // end for k
 		nPoints/=2;
@@ -581,9 +581,9 @@ search()
 	if(verbose){
             
         // the state before the last step
-        cout << "\n\nFunction minimum: " << fx
-		     << "\nMinimizing vector:";
-        for(int j=0;j<n;j++) cout << endl << x[j];
+        std::cout << "\n\nFunction minimum: " << fx
+		          << "\nMinimizing vector:";
+        for(int j=0;j<n;j++) std::cout << endl << x[j];
     }
 		
 	return xOpt;

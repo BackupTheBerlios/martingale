@@ -24,7 +24,7 @@ spyqqqdia@yahoo.com
 #include "Lattice.h"
 #include "Matrices.h"
 #include "Utils.h"
-#include <string>
+//#include <string>
 #include <iostream>
 #include <math.h>
 using namespace Martingale;
@@ -91,7 +91,7 @@ void
 BasketLattice2F::
 testFactorization() const
 {
-	cout << "\n\nRelative errors of the approximate rank 2 factorization"
+	std::cout << "\n\nRelative errors of the approximate rank 2 factorization"
 	     << "\nrho=RR' (rank(R)=2) of the correlation matrix rho"
 	     << "\n(trace norm): " << endl << endl;
   
@@ -104,7 +104,7 @@ testFactorization() const
 void BasketLattice2F::
 buildLattice()
 {
-	cout << "\n\n\nBuilding lattice until time step s = " << T << endl << endl;
+	std::cout << "\n\n\nBuilding lattice until time step s = " << T << endl << endl;
 	
 	// list of nodes at time s=0
 	std::list<BasketNode2F*>& nodes_0=getNodeList(0);              
@@ -163,7 +163,7 @@ buildLattice()
 			   } // end for k,l
 		} // end for theNode
 
-        cout << "\nTime step s = " << s << ", total nodes = " << nodes;
+        std::cout << "\nTime step s = " << s << ", total nodes = " << nodes;
 		
 	} // end for s
 } // end buildLattice
@@ -270,7 +270,7 @@ void
 BasketLattice3F::
 testFactorization() const
 {
-	cout << "\n\nRelative errors of the approximate rank 3 factorization"
+	std::cout << "\n\nRelative errors of the approximate rank 3 factorization"
 	     << "\nrho=RR' (rank(R)=3) of the correlation matrix rho"
 	     << "\n(trace norm): " << endl << endl;
   
@@ -283,7 +283,7 @@ testFactorization() const
 void BasketLattice3F::
 buildLattice()
 {
-	cout << "\n\n\nBuilding lattice until time step s = " << T << endl << endl;
+	std::cout << "\n\n\nBuilding lattice until time step s = " << T << endl << endl;
 	
 	// list of nodes at time s=0
 	std::list<BasketNode3F*>& nodes_0=getNodeList(0);            
@@ -345,7 +345,7 @@ buildLattice()
 			   } // end for p,q,r
 		} // end for theNode
 
-		cout << "\nTime step s = " << s << ", total nodes = " << nodes;
+		std::cout << "\nTime step s = " << s << ", total nodes = " << nodes;
 		
 	} // end for s
 } // end buildLattice

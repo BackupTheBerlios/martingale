@@ -101,7 +101,7 @@ Hpq(int p, int q) const
 		exit(0);
 	}
 		
-	Real* delta=factorLoading->getDeltas();
+	const RealArray1D& delta=factorLoading->getDeltas();
 	Real sum=0.0;
 	for(int j=p;j<q;j++) sum+=delta[j]*H[j+1];
 			
@@ -113,9 +113,9 @@ void
 LmmNode::
 printState() const
 {
-     cout << "\n\n Diagnostic: node at time step s = " << s
-	      << "\nVector H: " << H
-	      << "\nPrice pi = " << pi;
+     std::cout << "\n\n Diagnostic: node at time step s = " << s
+	           << "\nVector H: " << H
+	           << "\nPrice pi = " << pi;
 }
 
 
@@ -130,9 +130,9 @@ void
 BasketNode::
 printState() const
 {
-     cout << "\n\n Diagnostic: node at time step s = " << s
-	      << "\nVector S: " << S
-	      << "\nPrice pi = " << pi;
+     std::cout << "\n\n Diagnostic: node at time step s = " << s
+	           << "\nVector S: " << S
+	           << "\nPrice pi = " << pi;
 }
 	
 

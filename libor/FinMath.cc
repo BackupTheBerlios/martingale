@@ -23,7 +23,7 @@ spyqqqdia@yahoo.com
 
 
 #include "FinMath.h"
-#include <math.h>
+#include <cmath>
 #include <iostream>
 using namespace Martingale;
 

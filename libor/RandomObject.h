@@ -23,6 +23,7 @@ spyqqqdia@yahoo.com
 #ifndef martingale_randomobject_h    
 #define martingale_randomobject_h
 
+#include "TypedefsMacros.h"
 #include "Matrices.h"
 #include "Utils.h"
 #include "Random.h"  
@@ -494,7 +495,7 @@ typedef RandomObject<> RandomVariable;
 
 /** Default random vectors (based on ScalarType Real).
  */
-typedef RandomObject< vector<Real> > RandomVector;
+typedef RandomObject< RealVector > RandomVector;
   
 
 

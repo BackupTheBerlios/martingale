@@ -23,6 +23,7 @@ spyqqqdia@yahoo.com
 #ifndef martingale_examples_h    
 #define martingale_examples_h
 
+#include "TypedefsMacros.h"
 #include "Matrices.h"
 #include "Utils.h"
 #include "Random.h"
@@ -77,8 +78,8 @@ void timeSTN()
  */
 void timeMatrixMultiply(int dim, int N)
 {
-    Matrix<Real> A(dim); 
-	UTRMatrix<Real> B(dim);
+    RealMatrix A(dim); 
+	UTRRealMatrix B(dim);
 	Timer watch;
 	
 	std::cout << "\n\nTiming square matrix times upper triangular matrix\n"
@@ -167,7 +168,7 @@ void matrixExponentials()
 	// We use the product ^=Q ie. *=Q' where Q=I+Adt which is faster than
 	// the product *=Q. Consequently we have to work with the lower triangular 
 	// transpose of A instead of a itself.
-	LTRMatrix<Real> A(dim), Q(dim), R(dim);       
+	LTRRealMatrix A(dim), Q(dim), R(dim);       
 	for(int i=0;i<dim;i++)
 	for(int j=0;j<=i;j++){ 
 		
@@ -177,7 +178,7 @@ void matrixExponentials()
 	}
 	
 	int n = (int)(1.0/dt);
-	UTRMatrix<Real> H(dim), K(dim);
+	UTRRealMatrix H(dim), K(dim);
 	
 	// intitialization of H(t), K(t), t=0
     for(int i=0;i<dim;i++){ H(i,i)=K(i,i)=1; }
@@ -217,11 +218,11 @@ void expBt(int n)
 	Real* Tc=fl->getTenorStructure();
 	int j=5, k=7;
 	
-	UTRMatrix<Real>& Bt=fl->B(Tc[j],k);
-	UTRMatrix<Real>& Bs=fl->B(Tc[k],k);
-    UTRMatrix<Real>& eBt=Bt.exp();
+	UTRRealMatrix& Bt=fl->B(Tc[j],k);
+	UTRRealMatrix& Bs=fl->B(Tc[k],k);
+    UTRRealMatrix& eBt=Bt.exp();
     Bs*=(-1.0);
-	UTRMatrix<Real>& eBsInv=Bs.exp();
+	UTRRealMatrix& eBsInv=Bs.exp();
 	eBt*=eBsInv;
 	cout << "\nThe matrix exp(B(t))exp(-B(s)):\n" << eBt;
 	
@@ -341,9 +342,9 @@ void expBt(int n)
 	 */
     void brownianMotionInBall(int dim, int T, Real dt, int N)
     {
-		Region< vector<Real> >* D=new Ball(dim,1.0);
+		Region< RealVector >* D=new Ball(dim,1.0);
 		VectorProcess* X=new VectorBrownianMotion(dim,T,dt);
-		StoppingTime* tau=new FirstExitTime<vector<Real>,Real>(X,D);
+		StoppingTime* tau=new FirstExitTime<RealVector,Real>(X,D);
 		
 		Real sum=0;
 		for(int k=0;k<N;k++){

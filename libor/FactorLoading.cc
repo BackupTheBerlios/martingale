@@ -20,9 +20,11 @@ spyqqqdia@yahoo.com
 
 */
 
-#include <string>
-#include <iostream>
+
+#include "FactorLoading.h"
 #include "Matrices.h"
+//#include <string>
+//#include <iostream>
 using namespace Martingale;
 
 
@@ -77,6 +79,13 @@ nu(Real t, int p) const
 }
 
 
+
+// GLOBAL INSERTION
+std::ostream& operator << 
+(std::ostream& os, const FactorLoading& fl){ return fl.printSelf(os); }
+
+
+
 /*******************************************************************************
  *
  *            Constant volatility-correlation factor loading
@@ -107,7 +116,7 @@ integral_sgi_sgj_rhoij(int i, int j, Real t, Real T) const
 }
    
 
-const UTRRealMatrix 
+const UTRRealMatrix& 
 ConstantFactorLoading::
 correlationMatrixRoot()
 { 
@@ -115,7 +124,7 @@ correlationMatrixRoot()
 }
    
    
-const UTRRealMatrix 
+const RealMatrix& 
 ConstantFactorLoading::
 correlationMatrixRankReducedRoot(int r)
 { 
@@ -130,7 +139,7 @@ printSelf(std::ostream& os) const
 {
 	return
 	os << endl << endl
-	   << "Factor loading with constant volatilities:" << endl << vols << endl
+	   << "Factor loading with constant volatilities:" << endl << sg << endl
        << "and constant correlations:" << endl << corr;
 }
 
