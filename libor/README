@@ -59,8 +59,9 @@ No improvement.
 6-23-03:
 
 Split up Libortree2F into Lattice.h, Node.h, LmmLattice.h, LatticeOption.h
-To do:
-implement ConstVolLiborLactorLoading, then ConstVolLmmLattice and 
-ConstVolLmmLatticeSwaptions.
+Two factor lattice for the Libor market model is working in the case of constant
+Libor volatilities (ConstVolLmmLattice2F). Swaption priced correctly.
+
+Next: implement lattices for asset baskets, American lattice options.
 
 
