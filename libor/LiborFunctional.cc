@@ -23,6 +23,8 @@ spyqqqdia@yahoo.com
 
 
 #include "LiborFunctional.h"
+#include "Option.h"
+#include "Bond.h"
 
 
 MTGL_BEGIN_NAMESPACE(Martingale)
@@ -65,6 +67,26 @@ forwardCapletPayoff(int i, Real kappa, const RealArray1D& H, Real delta)
 	Real XiTi=X(i,H);                 // X_i(T_i)
 	return XiTi>delta*kappa ? (XiTi-delta*kappa)*H[i+1] : 0.0;
 }
+
+
+Real 
+forwardBondCallPayoff(BondCall* bc, const RealArray1D& H)
+{
+	Real  K = bc->getStrike();
+	Bond* B = bc->getBond();
+	
+	int t = bc->getPeriodsToExpiry(),     // option expires at T_t 
+	    p = B->get_p(),                   // coupon period [T_p,T_q)
+	    q = B->get_q();                   
+	const RealArray1D& c = B->get_c();    // coupons
+	
+	Real F_B = 0.0,                         // forward bond price
+	     F_K = K*H[t];                      // forward strike price
+	for(int i=p;i<q;i++) F_B+=c[i]*H[i];
+		
+	return F_B-F_K>0? F_B-F_K : 0.0;
+}
+		
 	
 	
 

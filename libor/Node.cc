@@ -93,7 +93,17 @@ lattice(latticeData), k_(new int[latticeData->r])
 	for(int i=0;i<r;i++) k_[i]=k[i];
 }
 
-	
+
+
+int 
+LmmNode:: 
+get_t() const
+{
+	int nSteps=lattice->nSteps;
+	if(s%nSteps==0) return s/nSteps;
+	return s/nSteps+1;
+}
+
 
 const RealArray1D& 
 LmmNode::
@@ -190,15 +200,14 @@ forwardCapletPayoff(Real kappa)
 }
 
 
-int 
+Real 
 LmmNode:: 
-get_t() const
+forwardBondCallPayoff(BondCall* bc)
 {
-	int nSteps=lattice->nSteps;
-	if(s%nSteps==0) return s/nSteps;
-	return s/nSteps+1;
+	int t=get_t();
+	const RealArray1D& H=Hvect(t);
+    return LiborFunctional::forwardBondCallPayoff(bc,H);
 }
-
 
 
 ostream& 

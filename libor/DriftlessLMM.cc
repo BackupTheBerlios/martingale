@@ -24,12 +24,20 @@ spyqqqdia@yahoo.com
 #include "Array.h"
 #include "StochasticGenerator.h"
 #include "LiborFactorLoading.h"
+#include "Bond.h"
 #include <cmath>
 //#include <math.h>
 #include <algorithm>
 
 
 MTGL_BEGIN_NAMESPACE(Martingale)
+
+
+using std::ostream;
+using std::cout;
+using std::endl;
+using std::log;
+using std::exp;
 
 
 /*******************************************************************************
@@ -119,8 +127,8 @@ printWienerIncrements(int t, int s)  const
 	for(int u=t;u<s;u++){			 
         for(int k=u+1;k<n;k++){ 
 			
-			std::cout << Z(u,k) << " "; 
-		    if(k==n-1) std::cout << endl; 
+			cout << Z(u,k) << " "; 
+		    if(k==n-1) cout << endl; 
 		}
 	}
 } // end printWienerIncrements
@@ -154,7 +162,7 @@ timeStep(int t, int p)
     // compute Y_j=log(U_j) using the cached deterministic drift
     // steps m(t,j)
     for(int j=q;j<n;j++){ Y(t+1,j)=Y(t,j)+m(t,j)+V[j];
-                          U(t+1,j)=std::exp(Y(t+1,j)); }
+                          U(t+1,j)=exp(Y(t+1,j)); }
 							  
      // write the accrual factors H_j=B_j/B_n
      Real f=1;
@@ -368,9 +376,9 @@ bondAggregateVolatility(Bond* B, int t) const
 
 
 
-std::ostream& 
+ostream& 
 DriftlessLMM::
-printSelf(std::ostream& os) const 
+printSelf(ostream& os) const 
 {
 	return
 	os << "\nDriftless Libor Market Model, random dynamics: " << *SG

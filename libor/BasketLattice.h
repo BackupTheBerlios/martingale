@@ -207,6 +207,9 @@ public:
 	 */
     int getDimension() const { return n_; }
 	
+	/** The size of the time step. */
+	Real getTimeStep(){ return dt_; }
+	
     /** The vector of initial asset price logs.
 	 */
     RealArray1D& get_log_S0() { return Y0_; }

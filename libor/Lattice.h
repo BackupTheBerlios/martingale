@@ -100,6 +100,9 @@ public:
 
     int getTimeSteps() const { return T; }
 	
+	/** The size of the time step.*/
+	virtual Real getTimeStep() = 0;
+	
 	/** The list of nodes at time t.
 	 */
 	vector<Node*>* getNodeList(int t) { return nodeList[t]; }

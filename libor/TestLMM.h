@@ -24,11 +24,15 @@ spyqqqdia@yahoo.com
 #define martingale_testlmm_h
 
 #include "TypedefsMacros.h"
-#include "Derivatives.h"
+#include "Option.h"
 #include "LiborFactorLoading.h"
 #include "LiborMarketModel.h"            // for inclusion to main.cc
 #include "LmmLattice.h"
-#include "LatticeOption.h"
+#include <iostream>
+
+using std::cout;
+using std::endl;
+
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
@@ -74,10 +78,10 @@ static void testLiborFactorLoadingFactorization(int n, int r)
 	for(int volType=0;volType<3;volType++)
 	for(int corrType=0;corrType<2;corrType++){
 		
-	   std::cout << "\nTesting Libor factor loading," 
-		         << "\ncorrelation matrices low rank factorization:" 
-		         << "\nVolatility surface type = VolSurface::" << volType
-		         << "\nCorrelation type = Correlations::" << corrType;
+	   cout << "\nTesting Libor factor loading," 
+		    << "\ncorrelation matrices low rank factorization:" 
+		    << "\nVolatility surface type = VolSurface::" << volType
+            << "\nCorrelation type = Correlations::" << corrType;
 	   Timer watch;
 	   watch.start();
 	   fl=LiborFactorLoading::sample(n,volType,corrType);
@@ -108,13 +112,13 @@ void testLmmPaths(int n)
 	for(int corrType=0;corrType<2;corrType++){
 		
 		LiborMarketModel* lmm=LiborMarketModel::sample(n,lmmType,volType,corrType);
-		std::cout << "\n\n20 Libor paths, LMM type: " << lmm->getType() 
-		          << endl << endl;
+		cout << "\n\n20 Libor paths, LMM type: " << lmm->getType() 
+		     << endl << endl;
 		for(int path=0;path<2;path++){
 			
 			lmm->newPath();
 		    for(int t=0;t<n-5;t++) std::cout << lmm->XL(n-4,t) << ", ";
-			std::cout << lmm->XL(n-4,n-5) << endl;
+			cout << lmm->XL(n-4,n-5) << endl;
 		}
 	}
 }	
@@ -242,57 +246,52 @@ void testLmmLattice()
 	// main loop
 	while(do_again==1){
 	
-	    std::cout << "\n\nBuilding and testing a lattice for the driftless libor market model:"
-	              << "\nEnter dimension n of Libor process: n = ";
-	    int n; std::cin >> n;
-	    std::cout << "Enter number r of factors (2 or 3): r = ";
-	    int r; std::cin >> r;
+	    cout << "\n\nBuilding and testing a lattice for the driftless libor market model:"
+	         << "\nEnter dimension n of Libor process: n = ";
+	    int n; cin >> n;
+	    cout << "Enter number r of factors (2 or 3): r = ";
+	    int r; cin >> r;
 	    switch(r){
 		
 		    case 2 : LmmLattice2F::test(n); break;
 	        case 3 : LmmLattice3F::test(n); break;
-			default : std::cout << "\n\n\nNumber of factors must be two or three.";
+			default : cout << "\n\n\nNumber of factors must be two or three.";
 		}
 		
-		std::cout << "\n\nDo another run (yes = 1, no = 0) do_again = ";
-		std::cin >> do_again;
+		cout << "\n\nDo another run (yes = 1, no = 0) do_again = ";
+		cin >> do_again;
 	}
 } // end testLmmlattice
 
 
-/** Swaption price in a lattices for the driftless Libor Market Model compared to 
- *  analytic and Monte Carlo prices.
- *  Asks for the type of lattice (light/heavy), number of factors, number of time steps per 
- *  Libor accrual interval and swap period [T_p,T_q]. Then sets up sample swaption 
- *  (constant volatility and JR correlations, book, 6.11.2) and computes the forward price.
+
+// SWAPTIONS
+
+/** Swaption prices in the driftless Libor Market Model
+ *  (constant volatility and JR correlations, book, 6.11.2).
+ *  Analytic, default lattice, Monte Carlo and QMC prices with
+ *  and without control variates.
  *
  * @param verbose details on lattice and factor loading.
  */
-void testLatticeSwaption(bool verbose=false)
+void testSwaption(bool verbose=false)
 {
 	int do_again=1;
 	// main loop
 	while(do_again==1){
 	
-	    std::cout << "\n\nSwaption price in a lattice for the driftless libor market model:"
-	              << "\nSwap interval: [T_p,T_q]."
-		          << "\nEnter p = ";
-	    int p; std::cin >> p;
-		std::cout << "Enter q = ";
-		int q; std::cin >> q;
-	    std::cout << "Enter number r of factors (2 or 3): r = ";
-	    int r; std::cin >> r;
-		std::cout << "Number of time steps in each Libor accrual interval = ";
-		int nSteps; std::cin >> nSteps;
-	    switch(r){
+	    cout << "\n\nSwaption price in a lattice for the driftless libor market model:"
+	         << "\nSwap interval: [T_p,T_q]."
+		     << "\nEnter p = ";
+	    int p; cin >> p;
+		cout << "Enter q = ";
+		int q; cin >> q;
 		
-		    case 2 : LatticeSwaption2F::test(p,q,nSteps,verbose); break;
-	        case 3 : LatticeSwaption3F::test(p,q,nSteps,verbose); break;
-			default : std::cout << "\n\n\nNumber of factors must be two or three.";
-		}
+        Swaption* swpn = Swaption::sample(p,q); 
+		swpn->testPrice();
 		
-		std::cout << "\n\nDo another run (yes = 1, no = 0) do_again = ";
-		std::cin >> do_again;
+		cout << "\n\nDo another run (yes = 1, no = 0) do_again = ";
+		cin >> do_again;
 	}
 } // end testLatticeSwaption
 

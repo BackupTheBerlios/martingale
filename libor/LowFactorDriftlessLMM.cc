@@ -21,6 +21,7 @@ spyqqqdia@yahoo.com
 */
 
 #include "LowFactorDriftlessLMM.h"
+#include "Bond.h"
 #include "Utils.h"
 #include "Array.h"
 #include "Matrix.h"
@@ -29,14 +30,15 @@ spyqqqdia@yahoo.com
 #include <cmath>
 #include <algorithm>
 
+
+MTGL_BEGIN_NAMESPACE(Martingale)
+
+
 using std::ostream;
 using std::cout;
 using std::endl;
 using std::log;
 using std::exp;
-
-
-MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 /*******************************************************************************

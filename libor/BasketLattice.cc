@@ -27,17 +27,16 @@ spyqqqdia@yahoo.com
 #include "Utils.h"
 #include "Node.h"
 #include "FactorLoading.h"
-#include <iostream>
 #include <cmath>
+
+
+MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 using std::ostream;
 using std::cout;
 using std::log;
 using std::exp;
-
-
-MTGL_BEGIN_NAMESPACE(Martingale)
 
  
 // BASKET LATTICE DATA

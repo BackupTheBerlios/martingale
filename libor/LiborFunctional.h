@@ -30,6 +30,9 @@ spyqqqdia@yahoo.com
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
+// dependencies
+class BondCall;
+
 	
 /** <p>Free standing functions to computing various functionals F of the
  *  Libor process as deterministic functions 
@@ -74,13 +77,21 @@ namespace LiborFunctional {
 	
 	/** Payoff of a caplet with strike rate kappa on the interval [T_i,T_{i+1}]. 
 	 *  Payoff is accrued forward to the horizon T_n. It is assumed that the
-	 *  vector H is compute at time T_i.
+	 *  vector H is computed at time T_i.
 	 *
 	 * @param H vector of accrual factors.
 	 * @param delta length of all Libor accrual periods.
      */
     Real forwardCapletPayoff
 	(int i, Real kappa,const RealArray1D& H, Real delta);
+	
+	
+	/** Payoff of the {@link BondCall} accrued forward to the horizon T_n. 
+	 *
+	 * @param bc the BondCall.
+	 * @param H vector of accrual factors.
+     */
+    Real forwardBondCallPayoff(BondCall* bc, const RealArray1D& H);
 
 };
 

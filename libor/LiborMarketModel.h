@@ -45,7 +45,6 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 // dependencies
-class std::ostream;
 struct LiborFactorLoadingType;
 class LiborFactorLoading;
 class Bond;  // defined below
@@ -487,127 +486,6 @@ public:
 
 
 }; // end LiborMarketModel
-
-
-
-
-// GLOBAL INSERTION
-
-std::ostream& operator << (std::ostream& os, const LiborMarketModel& lmm);
-
-
-
-
-
-/*******************************************************************************
- *
- *                          BONDS
- *
- ******************************************************************************/
-
-
-
-/** General <a name="bond">bond</a>
- *  \f[B(t)=\sum\nolimits_j=p^{q-1}c_jB_j(t),\f]
- *  that is, a linear combination of zero coupon bonds based on a 
- *  Libor market model. It is assumed that \f$c_j\geq0\f$.
- *  {@link BondCall}.
- *
- */
-class Bond {
-   
-	LiborMarketModel* LMM;  // the object generating the Libors
-
-	int n,                  // number of Libors including L_0
-	    p,q;                // coupon periods [T_p,T_q]
-
-	RealArray1D c;          // c_j units of B_j(t), j=p,...,q-1
-	RealArray1D b;          // b_j=c_p+...+c_j, j=p,...,q-1
-
-	     
-public: 
-	
-// ACCESSORS
-	
-	/** The underlying Libor market model */
-	LiborMarketModel* getLMM() const { return LMM; }
-	
-	/** Resets the underlying Libor market model.*/
-	void setLMM(LiborMarketModel* lmm){ LMM=lmm; }
-	
-	/** See <a href="bond">bond definition</a>. */
-	int get_p() const { return p; }
-	
-	/** See <a href="bond">bond definition</a>. */
-	int get_q() const { return q; }
-	
-	/** See <a href="bond">bond definition</a>. */
-	const RealArray1D& get_c() const { return c; }
-	
-	/** \f$b_j=c_p+\dots+c_j, p\leq j<q\f$.*/
-	const RealArray1D& get_b() const { return b; }
-
-// CONSTRUCTOR
-
-    /** <p>General bond portfolio, ie. linear combination \f$B\f$ of zero coupon bonds
-     *  \f[B(t)=\sum\nolimits_j=p^{q-1}d_jB_j(t)\f]
-     *
-     * @param k,m = p,q.
-     * @param d coupons.
-     * @param lmm underlying Libor market model.
-     */
-    Bond(int k, int m, const RealArray1D& d, LiborMarketModel* lmm);
-	
-	
-	/** <p>Zero coupon bonds maturing at time \f$T_i\f$.
-     *
-     * @param i bond matures at time \f$T_i\f$.
-     * @param lmm underlying Libor market model.
-     */
-    Bond(int i, LiborMarketModel* lmm);
-
-
-    
-// PPRICE
-	
-     /** Forward price \f$F(T_t)=\sum\nolimits_{j=p}^{q-1}c_jH_j(T_t)\f$ at time
-	  *  \f$T_t\leq T_p\f$ from current Libor path.
-	  */
-     Real forwardPrice(int t) const;
-
-	 
-     /** Forward price \f$F(0)=\sum\nolimits_{j=p}^{q-1}c_jH_j(0)\f$ at time
-	  *  \f$t=0\f$.
-	  */
-     Real forwardPrice() const;
-	 
-	 /** Cash price \f$B(T_t)=\sum\nolimits_{j=p}^{q-1}c_jB_j(T_t)\f$ at time
-	  *  \f$T_t\leq T_p\f$ from current Libor path.
-	  */
-     Real cashPrice(int t) const;
-
-	 
-     /** Cash price \f$B(0)=\sum\nolimits_{j=p}^{q-1}c_jB_j(0)\f$ at time
-	  *  \f$t=0\f$.
-	  */
-     Real cashPrice() const;
-	 
-	 
-// TO STRING
-
-    /** Message identifying the object (parameter values, etc)
-     */
-    std::ostream& printSelf(std::ostream& os) const;
-	
-
-
-}; // end Bond
-
-
-// GLOBAL INSERTION
-std::ostream& operator << (std::ostream& os, const Bond& bond);
-
-
 
 
 

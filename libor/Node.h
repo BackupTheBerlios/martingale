@@ -26,20 +26,19 @@ spyqqqdia@yahoo.com
 
 #include "TypedefsMacros.h"
 #include "Utils.h"
+#include "Edge.h"
 #include "Array.h"                    // problem with typdefs in forward declarations
 #include <vector>                     // direct member
 
 
-using std::vector;
-
-
-
 MTGL_BEGIN_NAMESPACE(Martingale)
 
+using std::vector;
 
 // forward declarations
 class LiborFactorLoading;             // LiborFactorLoading.h
 class std::ostream;
+class BondCall;
 // class RealArray1D;
 
 
@@ -77,29 +76,6 @@ class std::ostream;
  * node. 
  */
  
- 
-
-/**********************************************************************************
- *
- *            PROBABILITY WEIGHTED EDGES
- *
- *********************************************************************************/ 
- 
-
-class Node;
-
-/** Edge in a node of a general stochastic lattice. Provides pointer to the node
- *  the edge connects to and transition probability along the edge.
- */
-struct Edge {
-	
-	 /** Node we transition to along this edge */
-	 Node* node; 
-	 /** Transition probability along this edge */
-	 Real probability;  
-
-}; // end Edge	
-	
 
 
 /**********************************************************************************
@@ -211,31 +187,30 @@ int* getIntegerTicks(){ return k_; }
  *  which overwrite the workspace.
  */
 const RealArray1D& Hvect(int p);
-
 	
 /** The forward price \f$H_{p,q}\f$ of the annuity \f$B_{p,q}\f$ over the 
  *  interval [T_p,T_q] at this node.
  */
 Real H_pq(int p, int q);
-	
-	
-/** The swaprate \f$S_{p,q}\f$ for a swap on the interval [T_p,T_q] at this node.
+		
+/** The swaprate \f$S_{p,q}\f$ for a swap on [T_p,T_q] at this node.
  */
 Real swapRate(int p, int q);
-	
-	
-/** Payoff of a forward swaption with strike rate kappa exercising into a swap on 
- *  the interval [T_p,T_q] at this node. Payoff is accrued forward to the horizon T_n. 
+		
+/** Payoff of a forward swaption with strike rate kappa exercising into 
+ *  a swap on the interval [T_p,T_q] if exercised at this node. 
+ *  Payoff is compounded forward to the horizon T_n. 
  */
 Real forwardSwaptionPayoff(int p, int q, Real kappa);
 
-
-/** Forward accrued payoff of a caplet with strike rate kappa at this node. 
+/** Forward compounded payoff of a caplet with strike rate kappa at this node. 
  *  Assumes that the node lives at the Libor reset point at which Libor for
  *  this caplet is set.
  */
 Real forwardCapletPayoff(Real kappa);
 
+/** Forward payoff of the BondCall bc if exercised at this node. */
+Real forwardBondCallPayoff(BondCall* bc);
 
 /** Diagnostic. Prints the time t, vector H and field pi.*/
 std::ostream& printSelf(std::ostream& os);

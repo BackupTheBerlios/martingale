@@ -265,6 +265,24 @@ Dependency analysis and tightened up include structure.
 Can still be tightened up <a href="ToDo.html#8-12-03">more</a>.
 
 
+<h3>8-14-03:</h3>
+
+Major rewrite of Derivatives.h (now Option.h).
+European and American options all special cases of Bermudan options.
+Lattice and Monte Carlo pricing integrated in all options.
+No more use of random variables and controlled random variables
+in option pricing. This is now done by standalone functions in
+Pricing.h.
+<p>
+Status: <a href="ToDo.html#8-14-03">Incomplete</a>.
+
+
+<h3>8-15-03:</h3>
+
+Split into separate files Edge.h, Bond.h to reduce dependencies.
+Rewrite Derivatives.h --> Option.h finished but incomprehensible linker error remains.
+
+
 
 
 </body>

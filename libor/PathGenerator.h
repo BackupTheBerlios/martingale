@@ -20,26 +20,31 @@ spyqqqdia@yahoo.com
 
 */
 
-#ifndef martingale_typedefsmacros_h
-#define martingale_typedefsmacros_h
+#ifndef martingale_pathgenerator_h    
+#define martingale_pathgenerator_h
 
-#include <iostream>                         // once and for all
-
-#define MTGL_BEGIN_NAMESPACE(name) namespace name {
-#define MTGL_END_NAMESPACE(name) }
+#include "TypedefsMacros.h"
 
 
-#define SMALL       30               // matrix optimizations below this size.
-#define LMM_MAX_DIM 300              // maximal dimension of a Libor process for
-                                     // which a lattice can be built.
-#define BASKET_MAX_DIM 300           // maximum number of assets in a basket for
-                                     // which a lattice can be built.
-
-// the basic scalar type
-typedef double Real;
+MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 
+/** <p> Interface to all entities generating paths.
+ *  Forward a request for a new path to the concrete subclasses.
+ *  Implicit assumption: the new path is stored and accessible as <i>the current
+ *  path</i> of the PathGenerator.
+ */
+struct PathGenerator {
+	
+	virtual void newPath();
+		
+}; // end PathGenerator
+
+
+
+
+MTGL_END_NAMESPACE(Martingale)
 
 #endif
-
+ 

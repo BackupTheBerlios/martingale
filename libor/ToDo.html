@@ -202,6 +202,27 @@ Clear up the linker problem when splitting TestLMM.h into header and source file
 Split all Test*.h files into header and source files.
 
 
+<a name="8-14-03"></a>
+<h3>8-14-03:</h3>
+
+Finish rewrite of Derivitives.h --> Option.h.
+The method isExercisable(int t) depends on the step size which can vary in a lattice.
+Use continuous times instead:
+<p>
+isExercisable(Real t).
+<p>
+Status: with this Option and LiborDerivative are finished but the Swaptions have to be rewritten.
+Implement BermudanSwpations and European and American BasketOptions.
+
+
+<h3>8-15-03:</h3>
+
+Get rid of the strange linker error and test the option pricing code.
+Split all Test*.h files into header and source files.
+
+ 
+
+
 
 </body>
 </html>

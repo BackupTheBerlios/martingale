@@ -53,22 +53,12 @@ class LmmNode;                  // Node.h
  *  equal size \f$\delta/nSteps\f$ where nSteps denotes the number of time steps 
  *  in each Libor accrual interval.
  *
- * <p>Lattices depend on the number f of factors and the type of LmmNode (heavy or lite).
+ * <p>Nodes have the smallest possible memory footprint to accommodate millions
+ *  of nodes in a lattice. See {@link LmmNode}. The number of nodes depends on the
+ *  number f of factors of the Brownian driver preserved in the simulation.
  *  Even though the lattice is fully recombining the number of nodes explodes with the 
  *  number of factors and time steps. Realistically only 3 factor latttices are possible
  *  on PC equipment.
- *
- * <p> Heavy nodes store the entire vector H of accrual factors in each node
- *  All other functionals are computed from the accrual factors. A lattice built with
- *  these nodes requires a lot of memory and builds itself slowly. Once built however 
- *  it prices all derivatives very fast. This version is to be used if several derivatives 
- *  are to be priced based on the same lattice. 
- *  
- * <p>Lite nodes store only the state variables from which the accrual factors 
- *  H_j are computed. A lattice built with these nodes uses much less memory and builds 
- *  more quickly. Such a lattice can use many more nodes. However pricing derivatives 
- *  is slower. This is to be used if many nodes are necessary or if only one derivative
- *  is to be priced.
  *
  * <p><a name="lmm-lattice-3f">Three factor LMM lattice:</a>
  *  Nodes in a 3 factor lattice for the Libor market model {@link LmmLattice3F}
@@ -77,19 +67,20 @@ class LmmNode;                  // Node.h
  *  \f[V_j(s)\simeq\sigma_j\left[R_{j1}Z_1(s)+R_{j2}Z_2(s)+R_{j3}Z_3(s)\right],\f]
  *  where the matrix R is the approximate root of rank 3 of the correlation matrix 
  *  \f$\rho\f$ of the underlying driftless LMM: \f$\rho\simeq RR'\f$. 
- *  <p><a name="rescale"></a>The rows of R
- *  are scaled back to unit norm to preserve the correlations \f$\rho_{jj}=1\f$.
+ *  <p><a name="rescale"></a>The rows of R have to be
+ *  scaled back to unit norm to preserve the correlations \f$\rho_{jj}=1\f$.
  *  This diminishes the quality of the approximation \f$\rho\simeq RR'\f$ but
- *  preserves the volatilities \f$\sigma_j\f$ of the \f$V_j\f$. If we don't do this we 
- *  lose volatility. See book, 8.1.2, for details and notation. 
+ *  preserves the volatilities \f$\sigma_j\f$ of the \f$V_j\f$. Otherwise volatility
+ *  is lost. See book, 8.1.2, for details and notation. Wether or not rescaling
+ *  is indicated has to be determined by experiment. For example when pricing at the money
+ *  swaptions rescaling leads to a significant deterioration in accuracy.
  *
  * <p>The \f$Z_j(t)\f$ are independent standard Brownian motions which evolve from the state
  *  \f$Z_j(0)=0\f$ and then tick up or down in ticks of size \f$a=\sqrt{dt}\f$ where dt is the 
  *  size of the time step. The state at any node is then given by the triple of integers
- *  (i,j,k) with
- *  \f[Z_1=ia,\quad Z_2=ja,\quad Z_3=ka.\f]
- *  Two factor lattices are completely similar but the implementation is kept separate for
- *  greater clarity.
+ *  (k0,k1,k2) with
+ *  \f[Z_0=k0*a,\quad Z_1=k1*a,\quad Z_2=k2*a.\f]
+ *  Two factor lattices are completely similar.
  *
  * <p><b>Arbitrage</b>
  * Recall that the \f$V_j\f$ are the volatility parts (unbounded variation parts) of the 
@@ -112,8 +103,8 @@ class LmmNode;                  // Node.h
  *     </li>
  * </ul>
  * We want to have a large number of nodes but not so large as to exceed main memory. 
- * With 1GB main memory we can tolerate about 5.3 million lightweight nodes
- * corresponding to 250 time steps in a two factor lattice and 3.5 million lightweight 
+ * With 1GB main memory we can tolerate about 5.3 million nodes corresponding to 250
+ * time steps in a two factor lattice and 3.5 million 
  * nodes corresponding to 60 time steps in a three factor model. The number of time 
  * steps in the lattice can be controlled by choosing the number of time steps in each
  * Libor accrual interval. 
@@ -172,13 +163,7 @@ struct LmmLatticeData {
  
 
 /** <p>Lattice of the driftless Libor market model with constant volatility 
- *  surface. This is a lattice with nodes of type 
- *  <center><code>
- *  LmmNode&lt;LmmNodeBase&gt;, 
- *  </code></center>
- *  where LmmNodeBase=LmmNode::BaseType.
- *  The base determines if the nodes are lightweight or heavyweight.
- *  See {@link Node}, {@link LmmNode_LiteBase} or {@link LmmNode_HeavyBase}. 
+ *  surface, constant Libor accrual periods and nodes of type {@link LmmNode}.
  *  See book 6.8, 8.1.1 for the details and notation. 
  *  For more details see the file reference for the file LmmLattice.h.
  */
@@ -212,6 +197,9 @@ public:
     /** The factor loading of the underlying LMM.
 	 */
     LiborFactorLoading* getFactorLoading(){ return factorLoading; } 
+	
+	/** The size of the time step.*/
+	Real getTimeStep(){ return delta/nSteps; }
 
     /** Dimension of underlying LMM (number of accrual periods).
 	 */

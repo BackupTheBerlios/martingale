@@ -27,17 +27,15 @@ spyqqqdia@yahoo.com
 #include "Utils.h"
 #include "Matrix.h"
 #include "LiborFactorLoading.h" 
-#include <iostream>
 #include <cmath>
-
-using std::ostream;
-using std::cout;
-using std::log;
-
 
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
+
+using std::ostream;
+using std::cout;
+using std::log;
 
 
 // LMM LATTICE DATA
