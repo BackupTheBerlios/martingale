@@ -63,14 +63,21 @@ doesn't link but x->printSelf(os) works. Why is that?
 
 <li>Go after major memory leak detected by the old calibration routine.
    Check if matrix operations (especially pseudo square roots and log-Libor covariation
-   matries deallocate evrything properly).
+   matries deallocate everything properly.
 </li>
-<li>Implement  SLowLMMLattice, where the nodes do not cache the vector H, only the
+<li>Implement  SlowLMMLattice, where the nodes do not cache the vector H, only the
    variables evolved in the lattice from which this vector can be computed.
    This uses much less memory at the expense of computational effort.
    We can have millions of nodes.</li>
    
 <li>Implementation of Bermudan style options in lattice both Libor and otherwise. </li>
+
+<li>Redesign the matrix classes using traits as template parameters to shrink the code size.
+     Use allocaters for upper triangular, lower triangular, symmetric etc matrices.
+     Find out about iterator design (otherwise methods rowBegin(i), rowEnd(i)).
+     Since we don't have matrix expressions to deal with "#define MATRIX-MAX-DIM"
+     limit all matrices to this size and create a static workspace of that size. Then write to that 
+     workspace in matrix products (saves memory allocation).</li>
 </ul>
 
 
