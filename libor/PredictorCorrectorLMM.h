@@ -82,13 +82,13 @@ class PredictorCorrectorLMM : public LiborMarketModel {
     UTRMatrix<Real> Y;
 
     // drift step vector
-    Real* m;
+    RealArrayD1 m;
     
     // volatility step vector
-    Real* V;
+    RealArrayD1 V;
     
     // vector used to store factors X_j(t)/(1+X_j(t)) during time steps
-    Real* F;
+    RealArrayD1 F;
     
     // the log-Libor covariation matrices needed for the time steps
     UTRMatrixSequence logLiborCovariationMatrices;
@@ -180,7 +180,7 @@ public:
 	/** Prints the matrix Z of current Wiener increments,
 	 *  method is used for testing only.
 	 */
-	void printWienerIncrements(int t, int T);
+	void printWienerIncrements(int t, int s);
 	
 	
 	/** <p>The effective dimension of the simulation, that is, the number of 
@@ -192,7 +192,7 @@ public:
 	 *  generator may not be able to ensure equidistribution in this dimension
 	 *  calling into question the mathematical basis for Monte Carlo expectations.
 	 */ 
-	int effectiveDimension(int t, int T) const { return (T-t)*(2*n-(1+t+T))/2; }
+	int effectiveDimension(int t, int s) const { return (s-t)*(2*n-(1+t+s))/2; }
 
 
 		
@@ -236,17 +236,17 @@ public:
      
     
      /** Path of Libors
-      *  \f[t\in[0,T]\mapsto (L_p(t),L_{p+1}(t),...,L_{n-1}(t))\f]
-      *  ie. the Libors \f$L_j(t), j>=p\f$, are computed from discrete
-      *  time t=0 to discrete time t=T.
+      *  \f[s\in[0,t]\mapsto (L_p(s),L_{p+1}(s),...,L_{n-1}(s))\f]
+      *  ie. the Libors \f$L_j(s), j>=p\f$, are computed from discrete
+      *  time s=0 to discrete time s=t.
       *
-      * @param T discrete time up to which Libors are computed.
+      * @param t discrete time up to which Libors are computed.
       * @param p Libors evolved are \f$L_j, j=p,p+1,\dots,n-1\f$.
       */
-     void newPath(int T, int p)
+     void newPath(int t, int p)
      {
-         SG->newWienerIncrements(0,T,Z);
-         for(int t=0;t<T;t++)timeStep(t,p);
+         SG->newWienerIncrements(0,t,Z);
+         for(int s=0;s<t;s++)timeStep(s,p);
      }
 	 
 	 
@@ -262,15 +262,15 @@ public:
     Real capletAggregateVolatility(int i);
 	 
 	 
-   /** <p>Analytic approximation for the aggregate caplet volatility
-	*  \f[\Sigma_i(0,T)=\sqrt{\langle Y_i\rangle_0^T},\f] 
-	*  where \f$Y_{p,q}=log(S_{p,q})\f$ is the logarithm of the swap rate. 
+   /** <p>Analytic forecast for the swap rate volatility
+	*  \f[\Sigma_{p,q}(0,T)=\sqrt{\langle Y\rangle_0^{T_t}},\f] 
+	*  where \f$Y=log(S_{p,q})\f$ is the logarithm of the swap rate. 
 	*  Quantity is needed for Black approximate swaption formula.</p>
 	*
     * @param p,q swap along on \f$[T_p,T_q]\f$.
-    * @param T continuous time \f$T\leq T_p\f$.
+    * @param t swaption exercise at time \f$T_t\leq T_p\f$.
     */ 
-    Real swaptionAggregateVolatility(int p, int q, Real T);
+    Real swaptionAggregateVolatility(int p, int q, int t);
     
      
      

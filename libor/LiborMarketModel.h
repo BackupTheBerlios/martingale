@@ -65,11 +65,12 @@ class LiborMarketModel {
 	
 protected:
     
-    int n;               // number of forward Libors
-    Real* delta;         // delta[t]=T_{t+1}-T_t,length of compounding intervals
-    Real* Tc;            // tenor structure, Tc[t]=T_t
-    Real* l;             // initial Libors, l[j]=L_j(0)
-    Real* x;             // initial X-Libors x[j]=X_j(0)=delta_jL_j(0)
+	// initialized from the factorloading
+    int n;                      // number of forward Libors
+    RealArray1D& delta;         // delta[t]=T_{t+1}-T_t,length of compounding intervals
+    RealArray1D& T;             // tenor structure, Tc[t]=T_t
+    RealArray1D& l;             // initial Libors, l[j]=L_j(0)
+    RealArray1D& x;             // initial X-Libors x[j]=X_j(0)=delta_jL_j(0)
     
     // volatility and correlation structure
     LiborFactorLoading* factorLoading;
@@ -90,21 +91,21 @@ public:
     
     /** The array of continuous times \f$T_j\f$.
      */
-    Real* getTenorStructure() const { return Tc; }
+    const RealArray1D& getTenorStructure() const { return Tc; }
     
     
     /** The array of accrual periods \f$delta_j\f$.
      */
-    Real* getDeltas() const { return delta; }
+    const RealArray1D& getDeltas() const { return delta; }
     
-    /** The array of initial Libors \f$L_j(0)\f$.
+    /** Initial Libors \f$L_j(0)\f$.
      */
-    Real* initialTermStructure() const { return l; }
+    const RealArray1D& getInitialLibors() const { return l; }
     
     
     /** The array of initial X-Libors \f$X_j(0)=\delta_jL_j(0)\f$.
      */
-    Real* initialxTermStructure() const { return x; }
+    const RealArray1D& getInitialXLibors() const { return x; }
     
     
     /** The {@link FactorLoading} of the Libor process
@@ -142,8 +143,17 @@ public:
 
    
 // CONSTRUCTION
+
+    
+    /** Constructor
+	 *
+     * @param fl volatility and correlation structure, see
+     * {@link FactorLoading}.
+     */
+    LiborMarketModel(LiborFactorLoading* fl);
    
-	
+   
+    	
 	/** Generates a sample Libor factor loading of dimension n 
 	 *  (number of Libor accrual intervals) of type CS or JR.
 	 *
@@ -153,15 +163,6 @@ public:
 	 */
 	static LiborFactorLoading* 
     sampleFactorLoading(int n, Real delta=0.25, int factorLoadingType=CS);
-
-
-    
-    /** Constructor
-	 *
-     * @param fl volatility and correlation structure, see
-     * {@link FactorLoading}.
-     */
-    LiborMarketModel(LiborFactorLoading* fl);
     
 
     
@@ -185,20 +186,20 @@ public:
  
      
      /** Path of Libors
-      *  \f[t\in[0,T]\mapsto (L_p(t),L_{p+1}(t),...,L_{n-1}(t))\f]
-      *  ie. the Libors \f$L_j(t), j>=p\f$, are computed from discrete
-      *  time t=0 to discrete time t=T.
+      *  \f[s\in[0,t]\mapsto (L_p(s),L_{p+1}(s),...,L_{n-1}(s))\f]
+      *  ie. the Libors \f$L_j(s), j>=p\f$, are computed from discrete
+      *  time s=0 to discrete time s=t.
       *
-      * @param T discrete time up to which Libors are computed.
+      * @param t discrete time up to which Libors are computed.
       * @param p Libors evolved are \f$L_j, j=p,p+1,...,n-1\f$.
       */
-     virtual void newPath(int T, int p) = 0;
+     virtual void newPath(int t, int p) = 0;
 	 
 	 
 	 	
 	 /** <p>The effective dimension of the simulation, that is, the number of 
 	  *  standard normal deviates needed to compute one path from discrete time t
-	  *  to discrete time T.
+	  *  to discrete time s.
 	  *
 	  *  <p>Note: if this is too high (>623 for Mersenne Twister) a random number
 	  *  generator may not be able to ensure equidistribution in this dimension
@@ -206,7 +207,7 @@ public:
 	  *
 	  *  <p>Default implementation, returns zero.
 	  */ 
-	 virtual int effectiveDimension(int t, int T) const { return 0; }
+	 virtual int effectiveDimension(int t, int s) const { return 0; }
 
 
      
@@ -391,8 +392,8 @@ public:
      } 
 	 
 	 
-   /** <p>The forecast \f$\Sigma(0,T_t)\f$ of swap rate volatility to 
-	*  expiration, see book 6.9.3.</p>
+   /** <p>The forecast \f$\Sigma_{p,q}(0,T_t)\f$ of swap rate volatility to 
+	*  expiration, see book 6.7.</p>
 	*
     *  <p>Quantity is needed for approximate analytic swaption price.
 	*  Default implementation: error message and abort.</p>
@@ -461,8 +462,8 @@ class Bond {
 	int n,                  // number of Libors including L_0
 	    p,q;                // coupon periods [T_p,T_q]
 
-	vector<Real> c;         // c_j units of B_j(t), j=p,...,q-1
-	vector<Real> b;         // b_j=c_p+...+c_j, j=p,...,q-1
+	RealArray1D c;          // c_j units of B_j(t), j=p,...,q-1
+	RealArray1D b;          // b_j=c_p+...+c_j, j=p,...,q-1
 
 	     
 public: 
@@ -470,7 +471,7 @@ public:
 // ACCESSORS
 	
 	/** The underlying Libor market model */
-	LiborMarketModel* getLMM(){ return LMM; }
+	LiborMarketModel* getLMM() const { return LMM; }
 	
 	/** Resets the underlying Libor market model.*/
 	void setLMM(LiborMarketModel* lmm){ LMM=lmm; }
@@ -482,10 +483,10 @@ public:
 	int get_q() const { return q; }
 	
 	/** See <a href="bond">bond definition</a>. */
-	vector<Real>& get_c() { return c; }
+	const RealArray1D& get_c() const { return c; }
 	
 	/** \f$b_j=c_p+\dots+c_j, p\leq j<q\f$.*/
-	vector<Real>& get_b() { return b; }
+	const RealArray1D& get_b() const { return b; }
 
 // CONSTRUCTOR
 
@@ -496,7 +497,7 @@ public:
      * @param d coupons.
      * @param lmm underlying Libor market model.
      */
-    Bond(int k, int m, vector<Real> d, LiborMarketModel* lmm);
+    Bond(int k, int m, const RealArray1D& d, LiborMarketModel* lmm);
 	
 	
 	/** <p>Zero coupon bonds maturing at time \f$T_i\f$.

@@ -36,7 +36,19 @@ using namespace Martingale;
    
 // CONSTRUCTION
 
-    LiborFactorLoading* LiborMarketModel::
+
+    LiborMarketModel::
+	LiborMarketModel(LiborFactorLoading* fl) :
+	n(fl->getDimension()),
+	delta(fl->getDeltas()),
+	T(fl->getTenorStructure()),
+	l(fl->getInitialLibors()),
+	x(fl->getInitialXLibors()),
+	factorLoading(fl)
+	{   } 
+	
+	
+	LiborFactorLoading* LiborMarketModel::
 	sampleFactorLoading(int n, Real delta=0.25, int factorLoadingType=CS)
     {
 		LiborFactorLoading* fl=0;
@@ -47,17 +59,6 @@ using namespace Martingale;
 		}
 		return fl;
 	}
-
-
-    LiborMarketModel::
-	LiborMarketModel(LiborFactorLoading* fl) :
-	n(fl->getDimension()),
-	delta(fl->getDeltas()),
-	Tc(fl->getTenorStructure()),
-	l(fl->getInitialTermStructure()),
-	x(fl->getInitialXLibors()),
-	factorLoading(fl)
-	{   } 
        
      
      
@@ -67,8 +68,8 @@ using namespace Martingale;
      Real LiborMarketModel::vol(int i)
      {
          if(i==0) return 0.0;
-		 Real T=Tc[i], 
-		      sgsquare=factorLoading->integral_sgi_sgj_rhoij(i,i,0,T)/T;
+		 Real  T_i=T[i],
+		       sgsquare=factorLoading->integral_sgi_sgj_rhoij(i,i,0,T_i)/T_i;
          return sqrt(sgsquare);
      }
 	 
@@ -265,7 +266,7 @@ using namespace Martingale;
 
 
     Bond::
-    Bond(int k, int m, vector<Real> d, LiborMarketModel* lmm) :
+    Bond(int k, int m, const RealArray1D& d, LiborMarketModel* lmm) :
     LMM(lmm),
 	n(lmm->getDimension()), p(k), q(m), 
 	c(d),

@@ -54,11 +54,11 @@ using namespace Martingale;
     DriftlessLMM::
 	DriftlessLMM(LiborFactorLoading* fl) : LiborMarketModel(fl),
     Z(n), U(n), Y(n), H(n+1), m(n), 
-	V(new Real[n]),
+	V(n),
 	logLiborCovariationMatrices(n-1),
 	logLiborCovariationMatrixRoots(n-1),
 	SG(new MonteCarloLiborDriver(n)),
-	XVec(*(new vector<Real>(n)))
+	XVec(n)
 	{        
         // initialize U,Y path arrays
         for(int j=0;j<n;j++){ 
@@ -105,12 +105,12 @@ using namespace Martingale;
 // WIENER INCREMENTS	
 	
 
-	void DriftlessLMM::printWienerIncrements(int t, int T)
+	void DriftlessLMM::printWienerIncrements(int t, int s)
     {
          // recall that Z is an upper triangular array
-		 for(int s=t;s<T;s++){
+		 for(int u=t;u<s;u++){
 			 
-             for(int k=s+1;k<n;k++){ cout << Z(s,k) << " "; 
+             for(int k=u+1;k<n;k++){ cout << Z(u,k) << " "; 
 				                     if(k==n-1) cout << endl; }
 		}
 	} // end printWienerIncrements
@@ -202,8 +202,8 @@ using namespace Martingale;
      Real DriftlessLMM::
 	 capletAggregateVolatility(int i)
      { 
-		 Real Ti=Tc[i];
-		 UTRMatrix<Real>& R=factorLoading->logLiborCovariationMatrix(i,n,0,Ti).utrRoot();
+		 Real T_i=T[i];
+		 UTRMatrix<Real>& R=factorLoading->logLiborCovariationMatrix(i,n,0,T_i).utrRoot();
 		 vector<Real> x(n-i,i);
 		 x[i]=1;
 		 Real f=H(0,i+1); 
@@ -217,16 +217,15 @@ using namespace Martingale;
      Real DriftlessLMM::
 	 swaptionAggregateVolatility(int p, int q, int t)
      { 
-         Real Tt=Tc[t];
-		 UTRMatrix<Real>& Q=factorLoading->logLiborCovariationMatrix(p,n,0,Tt).utrRoot();
+		 UTRMatrix<Real>& Q=factorLoading->logLiborCovariationMatrix(p,n,0,T[t]).utrRoot();
 		 vector<Real> x(n-p,p);
 		 Real denom1=H(0,p)-H(0,q),
 		      denom2=0;
 		 for(int j=p;j<q;j++) denom2+=delta[j]*H(0,j+1);
 			 
 		 x[p]=U(0,p)/denom1;
-		 for(int j=p+1;j<q;j++)x[j]=U(0,j)/denom1-(Tc[j]-Tc[p])*U(0,j)/denom2;
-		 for(int j=q;j<n;j++)  x[j]=-(Tc[q]-Tc[p])*U(0,j)/denom2;
+		 for(int j=p+1;j<q;j++)x[j]=U(0,j)/denom1-(T[j]-T[p])*U(0,j)/denom2;
+		 for(int j=q;j<n;j++)  x[j]=-(T[q]-T[p])*U(0,j)/denom2;
 		 x*=Q.transpose();
 		 return x.norm();
      } // end swaptionAggregateVolatility
@@ -241,8 +240,7 @@ using namespace Martingale;
 		 Real F=B->forwardPrice();
 		 vector<Real>& b=B->get_b();
 		 		 
-		 Real Tt=Tc[t];
-		 UTRMatrix<Real>& R=factorLoading->logLiborCovariationMatrix(t,n,0,Tt).utrRoot();
+		 UTRMatrix<Real>& R=factorLoading->logLiborCovariationMatrix(t,n,0,T[t]).utrRoot();
 		 vector<Real> x(n-t,t);
 			 
 		 for(int j=t;j<p;j++)  x[j]=-U(0,j)/H_i0(t);

@@ -35,40 +35,12 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 
 /*******************************************************************************
  *
- *                                 DriftlessLMM
+ *                                 LowFactorDriftlessLMM
  *
  ******************************************************************************/ 
 
-/**<p>Libor market model which simulates the "forward transported" Libors
- * \f[U_j=X_j(1+X_{j+1})\dots(1+X_{n-1})\f]
- * with Gaussian, that is, state independent factor loadings. Simulation takes place
- * in the forward martingale measure \f$P_n\f$ at time \f$T_n\f$ where these quantities
- * are local martingales and hence driftless. This speeds up path simulation by a factor
- * of three. Moreover \f$U(t)\f$ is a Gaussian process with known distribution and time 
- * steps can be simulated precisely without approximation.</p>
- *
- * <p>By contrast a simulation of the Libors \f$X_j(t)\f$ with Gaussian factor loadings
- * does not lead to a Gaussian process or even a process with known distribution because
- * of the state dependent Libor drift. Time steps cannot be simulated precisely and path 
- * computation is approximate.</p>
- *
- * <p>The Libors \f$X_j(t)\f$, accrual factor \f$H_j(t)=B_j(t)/B_n(t)\f$, annuities
- * \f$B_{p,q}(t)\f$ and swaprates \f$S_{p,q}(t)\f$ can all be computed with little effort
- * from the quantities \f$U_j(t)\f$. This makes this by far the fastest and smoothest 
- * Libor market model.</p>
- *
- * <p>The Libors \f$X_j(t)\f$ now have stochastic volatility and consequently the Black 
- * caplet formula no longer applies directly. However it can still be used to get a highly
- * accurate analytic approximation to the caplet price and the same is true of swaptions.
- * </p>
- *
- * <p>Paths step directly from one point \f$T_i\f$ on the 
- * tenor structure to the following point \f$T_{i+1}\f$ and are simulated in 
- * the forward martingale measure \f$P_n\f$ at the terminal time \f$t=T_n\f$.
- * The stochastic dynamics is either pseudo random (MC) based on the Mersenne Twister or
- * quasi random (QMC) based on the Sobol sequence.</p>
- *
- * <p>The covariation matrices C(t) which control the time steps \f$T_t\to T_{t+1}\f$
+/**<p>A driftless Libor market model {@link DriftlessLMM} where
+ * the covariation matrices C(t) which control the time steps \f$T_t\to T_{t+1}\f$
  * are approximated as products \f$C(t)\simeq R(t)R(t)'\f$ with R(t) of rank r. The idea
  * is to speed up the simulation by reducing matrix sizes.
  *
@@ -102,7 +74,7 @@ class LowFactorDriftlessLMM : public LiborMarketModel {
     UTRMatrix<Real> m;
     
     // volatility step vector
-    Real* V;
+    RealArray1D V;
     
  
     // the log(U_j) covariation matrices of the needed for the time steps
@@ -114,7 +86,7 @@ class LowFactorDriftlessLMM : public LiborMarketModel {
 	
     StochasticGenerator* SG;    // generates the Wiener increments driving the paths     
 	
-	vector<Real>& XVec;         // cache for fast returning of X-Libor vectors.
+	vector<Real> XVec;          // cache for fast returning of X-Libor vectors.
   
 
 public:
@@ -209,7 +181,7 @@ public:
 	/** Prints the matrix Z of current Wiener increments,
 	 *  method is used for testing only.
 	 */
-	void printWienerIncrements(int t, int T);
+	void printWienerIncrements(int t, int s);
 	
 	
 	/** <p>The effective dimension of the simulation, that is, the number of 
@@ -221,7 +193,7 @@ public:
 	 *  generator may not be able to ensure equidistribution in this dimension
 	 *  calling into question the mathematical basis for Monte Carlo expectations.
 	 */ 
-	int effectiveDimension(int t, int T) const { return (T-t)*r; }
+	int effectiveDimension(int t, int s) const { return (s-t)*r; }
 
 
 		
@@ -265,17 +237,17 @@ public:
      
     
      /** Path of Libors
-      *  \f[t\in[0,T]\mapsto (L_p(t),L_{p+1}(t),...,L_{n-1}(t))\f]
-      *  ie. the Libors \f$L_j(t), j>=p\f$, are computed from discrete
-      *  time t=0 to discrete time t=T.
+      *  \f[s\in[0,t]\mapsto (L_p(s),L_{p+1}(s),...,L_{n-1}(s))\f]
+      *  ie. the Libors \f$L_j(s), j>=p\f$, are computed from discrete
+      *  time s=0 to discrete time s=t.
       *
-      * @param T discrete time up to which Libors are computed.
+      * @param t discrete time up to which Libors are computed.
       * @param p Libors evolved are \f$L_j, j=p,p+1,...,n-1\f$.
       */
-     void newPath(int T, int p)
+     void newPath(int t, int p)
      {
-         SG->newWienerIncrements(0,T,Z);
-         for(int t=0;t<T;t++)timeStep(t,p);
+         SG->newWienerIncrements(0,t,Z);
+         for(int s=0;s<t;s++)timeStep(s,p);
      }
 	 
 	 
@@ -290,8 +262,8 @@ public:
       */
      Real vol(int i)
      {
-  		 Real Ti=Tc[i], Sigma=capletAggregateVolatility(i);
-		 return Sigma/sqrt(Ti);
+  		 Real Sigma=capletAggregateVolatility(i);
+		 return Sigma/sqrt(T[i]);
      }
 	 
      
@@ -423,7 +395,7 @@ public:
 	 
 	 
    /** Forecast for the total swap rate volatility
-	*  \f[\Sigma(0,T_t)=\sqrt{\langle Y\rangle_0^{T_t}},\f]
+	*  \f[\Sigma_{p,q}(0,T_t)=\sqrt{\langle Y\rangle_0^{T_t}},\f]
 	*  on the interval \f$[0,T_t]\f$. 
 	*  Here \f$Y=log(S_{p,q})\f$ is the logarithm of the swap rate. 
 	*  Quantity is needed for Black approximate swaption formula.

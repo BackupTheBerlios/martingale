@@ -55,13 +55,11 @@ vector<Real>& FastPredictorCorrectorLMM::XLvect(int t, int p)
     FastPredictorCorrectorLMM::
     FastPredictorCorrectorLMM(LiborFactorLoading* fl) : LiborMarketModel(fl),
     Z(n), X(n), Y(n), m0(n),
-	m(new Real[n]),
-	V(new Real[n]),
-	G(new Real[n]),
+	m(n), V(n), G(n),
 	logLiborCovariationMatrices(n-1),
 	logLiborCovariationMatrixRoots(n-1),
 	SG(new MonteCarloLiborDriver(n)),
-	XVec(*(new vector<Real>(n)))
+	XVec(n)
 	{        
         // initialize path arrays
         for(int j=0;j<n;j++){ X(0,j)=x[j]; Y(0,j)=log(x[j]); }
@@ -100,12 +98,12 @@ vector<Real>& FastPredictorCorrectorLMM::XLvect(int t, int p)
 	
 
 	void FastPredictorCorrectorLMM::
-	printWienerIncrements(int t, int T)
+	printWienerIncrements(int t, int s)
     {
          // recall that Z is an upper triangular array
-		 for(int s=t;s<T;s++){
+		 for(int u=t;u<s;u++){
 			 
-             for(int k=s+1;k<n;k++){ cout << Z(s,k) << " "; 
+             for(int k=u+1;k<n;k++){ cout << Z(u,k) << " "; 
 				                     if(k==n-1) cout << endl; }
 		}
 	} // end printWienerIncrements
@@ -164,16 +162,16 @@ vector<Real>& FastPredictorCorrectorLMM::XLvect(int t, int p)
      Real FastPredictorCorrectorLMM::
      capletAggregateVolatility(int i)
      { 
-         Real volsqr=factorLoading->integral_sgi_sgj_rhoij(i,i,0,Tc[i]);
+         Real volsqr=factorLoading->integral_sgi_sgj_rhoij(i,i,0,T[i]);
 		 return sqrt(volsqr);
      } 
 	 
 
      Real FastPredictorCorrectorLMM::
-	 swaptionAggregateVolatility(int p, int q, Real T)
+	 swaptionAggregateVolatility(int p, int q, int t)
      { 
           UTRMatrix<Real>& 
-		  Q=factorLoading->logLiborCovariationMatrix(p,q,0,T).utrRoot();
+		  Q=factorLoading->logLiborCovariationMatrix(p,q,0,T[t]).utrRoot();
 		  vector<Real> x_pq(q-p,p);
 		  for(int j=p;j<q;j++) x_pq[j]=(B0(j)-B0(j+1))/B_pq(p,q);
 		  x_pq*=Q.transpose();
