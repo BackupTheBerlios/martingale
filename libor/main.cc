@@ -28,7 +28,8 @@ spyqqqdia@yahoo.com
 // #include "TestMatrix.h"
 // #include "TestProbability.h"
 // #include "TestLMM.h"
- #include "LiborTree2F.h"
+// #include "LiborTree2F.h"
+# include "LmmLatticeEuropeanOption.h"
 // #include "TestFormula.h"
 // #include "Examples.h"
 // #include "DirichletProblem.h"
@@ -87,7 +88,16 @@ int main()
 	// testLiborMeans(30,25,20,50000);
 	// testLognormalLMM(20);
 	
-	 LiborTree2F::test(50);
+	
+	
+/*******************************************************************************
+ *
+ *                        LMM TREE
+ *
+*******************************************************************************/
+	
+	 // LiborTree2F::test(50);
+	 LatticeSwaption::test(30,30,50);
 
 	
 	

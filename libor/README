@@ -1,0 +1,53 @@
+5-17-03: 
+
+LMMs working on swaptions and caplets,
+Book swaption formula verified.
+
+5-30-03:
+
+Most files split into .cc and .h files.
+templatization of boost::random random number generators
+causes problems, reverted to Random::U01 in all nonessentail applications.
+Standard normal deviates are still Mersenne twister mt19937 based.
+
+LiborProcess, LognormalLiborVector, EmpiricalRandomVariable (is part of
+RandomVariables) deleted.
+
+
+6-2-03:
+
+Massive linking problems when splitting StochasticProcesses, TestLMM, 
+TestProbabiliy, TestMatrix into .h and .cc files.
+"Undefined reference foo" although foo is defined in the .cc file
+and no templates are involved. Cannot understand what's going on.
+
+Matrix class expanded to encompass non square matrices.
+Matrix multiply and exponential tests still pass.
+
+
+6-15-03:
+
+Working on LiborTree2F.h
+TnT.h can be eliminated. Integrated into Matrices.h as global functions.
+
+
+6-20-03:
+
+Libortree2F: 
+
+Matrix inversion of the last two rows of the rank 2 root of the covariation matrix
+is ill conditioned because of the high correlation of V_{n-2}, V_{n-1}.
+Decorrelate these from the beginning.
+
+Swaption valuation in a LiborTree2F runs but produces an incorrect result.
+The value H[t] in the nodes is too large (much larger than the remaining H[j]).
+
+NEW CLASS: LowfactorDriftlessLMM, DriftlessLMM with number of factors reduced
+to r, that is, the covariation matrices C(t) controlling the time steps are factored
+as C(t) = R(t)R(t)' with R(t) of rank r. Tested on swaption and seems to be working.
+
+SobolVectorDriver inefficient for this LMM since it is allocated in a dimension which 
+assumes that full Libor paths are computed. This dimrension may be too high.
+No other effect but inefficiency. Cannot be resolved unless a new driver is written.
+
+
