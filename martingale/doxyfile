@@ -1,0 +1,29 @@
+PROJECT_NAME               =   gpr
+
+#input/output directories
+INPUT                      =   .
+FILE_PATTERNS              =   *.h         
+OUTPUT_DIRECTORY           =   ../doc/
+
+#html output
+GENERATE_LATEX             =   NO
+GENERATE_HTML              =   YES
+HTML_OUTPUT                =   html
+GENERATE_TREEVIEW          =   YES
+
+
+#doc format
+EXTRACT_ALL                =   YES
+EXTRACT_STATIC             =   YES
+#MULTILINE_CPP_IS_BIEF     =   YES
+DETAILS_AT_TOP             =   YES
+INHERIT_DOCS               =   YES
+SORT_MEMBER_DOCS           =   NO
+SHOW_USED_FILES            =   YES
+SOURCE_BROWSER             =   YES
+ALPHABETICAL_INDEX         =   YES
+
+#warnings
+WARNINGS                   =   YES
+WARN_IF_DOC_ERROR          =   YES
+WARN_FORMAT                =   "$file $line $text"
