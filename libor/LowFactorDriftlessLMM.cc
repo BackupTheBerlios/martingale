@@ -229,14 +229,6 @@ vol(int i) const
 
 Real 
 LowFactorDriftlessLMM::
-L(int j, int t) const 
-{ 
-	return XL(j,t)/delta[j]; 
-}
-
-
-Real 
-LowFactorDriftlessLMM::
 XL(int j, int t) const 
 { 
 	 if(j<n-1) return U(t,j)/H(t,j+1); 

@@ -142,6 +142,10 @@ vol(int i) const
 	
 // FORWARD TRANSPORTING FACTORS
 
+Real
+LiborMarketModel::	
+L(int j, int t) const { return XL(j,t)/delta[j]; }
+
 // H_0(0)
 Real 
 LiborMarketModel::
@@ -171,7 +175,7 @@ Real
 LiborMarketModel::
 H_it(int i, int t) 
 { 
-     if(i==0)return 1.0;
+     if(i==n)return 1.0;
 	 const RealVector& X_t=XLvect(t,i);         // X_t[j]=X_j(T_t), j>=i
 	 Real f=1.0;
      for(int j=i;j<n;j++)f*=(1.0+X_t[j]);

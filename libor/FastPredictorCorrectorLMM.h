@@ -125,15 +125,7 @@ public:
 
 
 // LIBORS
-
-
-     /** Libor \f$L_j(t)\f$, value in current path.
-      *
-      * @param t time.
-      */
-     Real L(int j, int t) const;
-
-     
+ 
      /** X-Libor \f$X_j(T_t)=\delta_jL_j(T_t)\f$, value in current path.
       *
       * @param j Libor index.

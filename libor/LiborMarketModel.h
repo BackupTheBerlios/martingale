@@ -240,17 +240,24 @@ public:
 	/** The vector \f$(X_p(T_t),...,X_{n-1}(T_t))\f$ from current path. 
       */
      virtual const RealVector& XLvect(int t, int p) = 0;
-	
+	 
 
-	 /** Computes a full Libor path from time zero to the horizon.
-      */
-     virtual void newPath() = 0;
+// PATH COMPUTATION
+
+     /** Time step t-&gt;t+1 for Libors \f$X_j\f$ or 
+	  *  \f$U_j\f$ with \f$j\geq p\f$.
+	  */
+	 virtual void timeStep(int t, int p) = 0;
+	 
+	 
+	 /** A full Libor path to the horizon. */
+	 virtual void newPath() = 0;
  
      
      /** Path of Libors
       *  \f[s\in[0,t]\mapsto (L_p(s),L_{p+1}(s),...,L_{n-1}(s))\f]
       *  ie. the Libors \f$L_j(s), j>=p\f$, are computed from discrete
-      *  time s=0 to discrete time s=t.
+      *  time s=0 to discrete time s=t. Default is the full path.
       *
       * @param t discrete time up to which Libors are computed.
       * @param p Libors evolved are \f$L_j, j=p,p+1,...,n-1\f$.
@@ -294,6 +301,10 @@ public:
 
 	
 // FORWARD TRANSPORTING FACTORS
+	 
+	 
+	 /** Libor \f$L_j(T_t)\f$.*/
+	 Real L(int j, int t) const;
 	 
 	 
 	 /** \f$H_0(0)=1/B_n(0)\f$, accrual factor \f$T_0\rightarrow T_n\f$ with Libors 

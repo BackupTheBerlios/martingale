@@ -352,8 +352,8 @@ public:
 	 * @param nRestarts number of times the optimizer is restarted.
      * @param verbose messages about results, default is <code>false</code.
      */
-    BFGS(int _n, RealArray1D& _x, int _nVals, Real _stepmax, 
-	     RealArray1D& _h, int _nRestarts=3, bool _verbose=false);
+    BFGS(int _n, const RealArray1D& _x, int _nVals, Real _stepmax, 
+	     const RealArray1D& _h, int _nRestarts=3, bool _verbose=false);
 	
 		    	
     /** Sets function value, gradient and initial direction by making calls to {@link Optimizer#f}. 
@@ -367,7 +367,7 @@ public:
 // MIN SEARCH                
       
      /** Unconstrained search for the minimum of the function 
-      *  {@link Optimizer#f}.
+      *  {@link Optimizer#f}. User must delete this vector.
       *
       * @returns the minimizing vector <code>x</code>.
       */

@@ -35,6 +35,7 @@ using std::endl;
 
 
 MTGL_BEGIN_NAMESPACE(Martingale)
+MTGL_BEGIN_NAMESPACE(Test_LMM)
 
 /** A collection of free standing short test programs.
  */
@@ -266,41 +267,105 @@ void testLmmLattice()
 
 
 
-// SWAPTIONS
+// TESTS IN THE DRIFTLESS LMM
 
-/** Swaption prices in the sample driftless Libor Market Model
- *  (constant volatility and JR correlations, book, 6.11.2).
+
+/** Auxilliary function for {@link testLiborDerivative()}.*/
+void testSwaption()
+{
+    cout << "\nSwap interval: [T_p,T_q]."
+		 << "\nEnter p = ";
+	int p; cin >> p;
+    cout << "Enter q = ";
+    int q; cin >> q;
+		
+    Swaption* swpn = Swaption::sample(p,q); 
+	swpn->testPrice();
+}
+
+
+/** Auxilliary function for {@link testLiborDerivative()}.*/
+void testCallOnBond()
+{
+    cout << "\nCoupons will be intialized randomly."
+	     << "\nInterval [T_p,T_q] for which coupons are received:"
+		 << "\nEnter p = ";
+	int p; cin >> p;
+    cout << "Enter q = ";
+    int q; cin >> q;
+		
+    BondCall* bondcall = BondCall::sample(p,q); 
+	bondcall->testPrice();
+}
+
+
+/** Auxilliary function for {@link testLiborDerivative()}.*/
+void testCallOnZeroCouponBond()
+{
+    cout << "\nZero coupon bond matures at T_p:"
+		 << "\nEnter p = ";
+	int p; cin >> p;
+		
+    BondCall* bondcall = BondCall::sampleCallOnZeroCouponBond(p);
+	bondcall->testPrice();
+}
+
+
+/** Auxilliary function for {@link testLiborDerivative()}.*/
+void testCaplet()
+{
+    cout << "\nCaplet on [T_i,T_{i+1}], i=n/3"
+	     << "\nEnter dimension n of Libor process, n =";
+	int n; cin >> n;
+		
+    Caplet* cplt = Caplet::sample(n); 
+	cplt->testPrice();
+}
+
+
+
+/** Pricing of some Libor derivatives in the default driftless Libor Market 
+ *  Model (constant volatility and JR correlations, book, 6.11.2).
  *  Analytic, default lattice, Monte Carlo and QMC prices with
  *  and without control variates. Asks for user input in a
- *  perpetual loop.
- *
- * @param verbose details on lattice and factor loading.
+ *  perpetual loop. Reports error relative to the analytic price. Note however 
+ *  that the analytic price itself is an approximation.
  */
-void testSwaption()
+void testLiborDerivative()
 {
 	int do_again=1;
 	// main loop
 	while(do_again==1){
 	
-	    cout << "\n\nSwaption price in a lattice for the driftless libor market model:"
-	         << "\nSwap interval: [T_p,T_q]."
-		     << "\nEnter p = ";
-	    int p; cin >> p;
-		cout << "Enter q = ";
-		int q; cin >> q;
-		
-        Swaption* swpn = Swaption::sample(p,q); 
-		swpn->testPrice();
+	    cout << "\n\nPricing of at the money Libor derivatives"
+		     << "\nin the default driftless Libor Market Model."
+		     << "\nChoose derivative:"
+		     << "\nCaplet (0)"
+		     << "\nSwaption (1)"
+		     << "\nCall on bond (2)"
+		     << "\nCall on zero coupon bond (3)" 
+		     << "\nDerivative = ";
+		int derivative; cin>>derivative;
+		switch(derivative){
+			
+			case 0  : testCaplet(); break;
+			case 1  : testSwaption(); break;
+			case 2  : testCallOnBond(); break;
+			case 3  : testCallOnZeroCouponBond(); break;
+			default : 
+			cout << "\nDerivative not recognized. Defaulting to swaption.";
+			testSwaption();
+		}
 		
 		cout << "\n\nDo another run (yes = 1, no = 0) do_again = ";
 		cin >> do_again;
 	}
-} // end testLatticeSwaption
+} // end testLiborDerivative
 
 
 	
 	     
-	
+MTGL_END_NAMESPACE(Test_LMM)	
 MTGL_END_NAMESPACE(Martingale)
 
 #endif

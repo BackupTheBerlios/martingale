@@ -209,8 +209,8 @@ Real BFGS::EPS=0.000000001;
 // CONSTRUCTOR
 
 BFGS::
-BFGS(int n, RealArray1D& _x, int _nVals, Real _stepmax, 
-	 RealArray1D& _h, int _nRestarts, bool _verbose=false) :
+BFGS(int n, const RealArray1D& _x, int _nVals, Real _stepmax, 
+	 const RealArray1D& _h, int _nRestarts, bool _verbose=false) :
 Optimizer(n),
 stepmax(_stepmax),
 nVals(_nVals), fVals(0), restarts(0), nRestarts(_nRestarts),

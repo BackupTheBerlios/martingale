@@ -61,10 +61,6 @@ switchToMC()
 
 // LIBORS
 
-Real 
-PredictorCorrectorLMM::
-L(int j, int t) const { return X(t,j)/delta[j]; }
-
      
 Real 
 PredictorCorrectorLMM::

@@ -223,16 +223,20 @@ Split all Test*.h files into header and source files.
 
 <h3>8-16-03:</h3>
 
-<ul>
-<li>Lattice volatility rescaling: introduce a parameter which allows us to 
+Lattice volatility rescaling: introduce a parameter which allows us to 
 control to which percent the volatility is rescaled. Swaption price experiments
-indicate that full rescale overshoots the target.</li>
-<li>Implement Monte Carlo American option pricing: exercise triggers,
-each option gets a method to provide a default exercise trigger.
-This is used to compute the forwardPayoffAlongCurrentPath().</li>
-</ul>
+indicate that full rescale overshoots the target.
 
- 
+<p>Implement Monte Carlo American option pricing: exercise triggers,
+each option gets a method to provide a default exercise trigger.
+This is used to compute the forwardPayoffAlongCurrentPath().
+
+
+<a name="8-18-03"></a>
+<h3>8-18-03:</h3>
+
+Monte Carlo pricing of zero coupon bonds fails, lattice pricing works OK,
+general bonds work OK. Get to the root of this.
 
 
 

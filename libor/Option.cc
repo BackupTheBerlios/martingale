@@ -122,18 +122,15 @@ printSelf(ostream& os) const
  ******************************************************************************/
 
 
-void 
-LiborPathGenerator::
-newPath(){ LMM->newPath(t,i); }
-
-
 LiborDerivative::
 LiborDerivative
-(LiborMarketModel* lmm, int s, int i, bool lt, bool mc, bool cv) : 
+(LiborMarketModel* lmm, LiborPathGenerator* lpg,
+ int s, bool an, bool lt, bool mc, bool cv) : 
 // T=lmm->getTenorStructure()[s] is the continuous time to expiry
-Option(lmm->getTenorStructure()[s],lt,mc,cv),
+Option(lmm->getTenorStructure()[s],an,lt,mc,cv),
 LMM(lmm),
-LPG(new LiborPathGenerator(lmm,s,i)), n(lmm->getDimension()), t(s)
+LPG(lpg), 
+t(s)
 {  
 	// lattice pricing assumes constant vols and driftless LMM
 	int volType = lmm->getType()->flType->volType;
@@ -191,48 +188,55 @@ testPrice()
           cvmcPrice,            // Monte carlo price with control variate
 	      lPrice,               // Price in the default lattice
 	      epsilon=0.00000001;   // replacement for zero denominator
+	
+	  int nPath=10000;
          
 	  // message
 	  cout << "\n\n\n\n\n" << *this << *LMM
            << "\nEffective dimension of the simulation = " << effectiveDimension()
-	       << endl << endl
-	       << "\nForward prices: "  << endl;
+	       << "\n\n\n\nFORWARD PRICES, "  << nPath << " paths:" << endl << endl;
 		
 	  // PRICES: 
 	
 	  // analytic
-      aPrice=analyticForwardPrice();
-	  cout << "Analytic: " << aPrice << endl;
+	  if(hasAnalytic_){
+      
+		  aPrice=analyticForwardPrice();
+	      cout << "Analytic: " << aPrice << endl << endl;
+	  }
 	
 	  // lattice 
 	  if(hasLattice_){
 		  
 	      LmmLattice* theLattice = getDefaultLattice();
 	      lPrice = Option::latticeForwardPrice(theLattice);
-	      cout << "Default lattice: " << lPrice << " , relative error: "
-		       << relativeError(aPrice,lPrice,epsilon) << "%" << endl;
+	      cout << "Default lattice: " << lPrice 
+		       << "\nRelative error: " << relativeError(aPrice,lPrice,epsilon) << "%" 
+		       << endl << endl;
 		  theLattice->rescaleVols();
 		  lPrice = Option::latticeForwardPrice(theLattice);
-	      cout << "Default lattice (volatilities rescaled): " << lPrice << " , relative error: "
-		       << relativeError(aPrice,lPrice,epsilon) << "%" << endl;
+	      cout << "Default lattice (volatilities rescaled): " << lPrice 
+		       << "\nRelative error: " << relativeError(aPrice,lPrice,epsilon) << "%" 
+		       << endl << endl;
 		  delete theLattice;
       }
-		
-	  // Monte Carlo
-	  int nPath=10000;
+	  
 	  
 	  if(hasMonteCarlo_){
 		  
           mcPrice=monteCarloForwardPrice(nPath);
-	      cout << "Monte Carlo, " << nPath << " paths: "<< mcPrice << " , relative error: " 
-		       << relativeError(aPrice,mcPrice,epsilon) << "%" << endl;
+	      cout << "Monte Carlo: " << mcPrice 
+		       << "\nRelative error: " << relativeError(aPrice,mcPrice,epsilon) << "%" 
+		       << endl << endl;
 	  }
+	  
 	  
 	  if(hasControlVariate_){
 		  
 	      cvmcPrice=controlledMonteCarloForwardPrice(nPath);
-          cout << "Monte Carlo with control variate: " << cvmcPrice << ", relative error: " 
-		       << relativeError(aPrice,cvmcPrice,epsilon) << "%"<< endl;
+          cout << "Monte Carlo with control variate: " << cvmcPrice 
+		       << "\nRelative error: " << relativeError(aPrice,cvmcPrice,epsilon) << "%"
+		       << endl << endl;
 	  }
 		   
 	  		   
@@ -242,8 +246,9 @@ testPrice()
 	  if(hasMonteCarlo_){
 		  
           mcPrice=monteCarloForwardPrice(nPath);
-          cout << "Quasi Monte Carlo: " << mcPrice << ", relative error: " 
-		       << relativeError(aPrice,mcPrice,epsilon) << "%" << endl;
+          cout << "Quasi Monte Carlo: " << mcPrice 
+		       << "\nRelative error: " << relativeError(aPrice,mcPrice,epsilon) << "%" 
+		       << endl << endl;
 	  }
 		   
 	  LMM->restartSobolGenerator();
@@ -251,8 +256,9 @@ testPrice()
 	  if(hasControlVariate_){
 		  
 	      cvmcPrice=controlledMonteCarloForwardPrice(nPath);		   
-		  cout << "Quasi Monte Carlo with control variate: " << cvmcPrice << ", relative error: " 
-		   << relativeError(aPrice,cvmcPrice,epsilon) << "%"<< endl;
+		  cout << "Quasi Monte Carlo with control variate: " << cvmcPrice 
+		       << "\nRelative error: " << relativeError(aPrice,cvmcPrice,epsilon) << "%"
+		       << endl << endl;
 	  }
 
 } // end testPrice
@@ -271,7 +277,10 @@ testPrice()
 Caplet::
 Caplet(int k, Real strike, LiborMarketModel* lmm) :
  // Libors L_j, j>=k needed until time t=min(k+1,n-1)
-LiborDerivative(lmm,min(k+1,lmm->getDimension()-1),k,false,true,true),              
+LiborDerivative
+(lmm, new LiborPathsToFixedTime(lmm,min(k+1,lmm->getDimension()-1),k),
+ min(k+1,lmm->getDimension()-1),true,false,true,true
+),              
 i(k), 
 kappa(strike),
 delta_i((lmm->getDeltas())[i])
@@ -348,8 +357,11 @@ printSelf(ostream& os) const
 
 Swaption::
 Swaption(int p_, int q_, int t_, Real strike, LiborMarketModel* lmm) :
-// Libors L_j, j>=p needed until time t   
-LiborDerivative(lmm,t_,p_,true,true,true),                                          
+// Libors L_j, j>=t needed until time t  (forward transporting)
+LiborDerivative
+(lmm, new LiborPathsToFixedTime(lmm,t_,t_),
+ t_,true,true,true,true
+),                                          
 p(p_), q(q_), t(t_),                                  
 kappa(strike)
 {   } 
@@ -371,13 +383,11 @@ Real
 Swaption::
 forwardPayoffAlongCurrentPath()
 {
-	Real S_pqT,B_pqT,h,f;
+	Real S_pqT,H_pqT,h;
 	S_pqT=LMM->swapRate(p,q,t);                   // swaprate S_{p,q}(T_t)
-    B_pqT=LMM->B_pq(p,q,t);
-    h=B_pqT*max(S_pqT-kappa,0.0);                 // payoff at time T_t
-    f=LMM->H_ii(t);                               // H_t(T_t) accrual T_t->T_n at time T_t
-     // move this from time T_t to time T_n
-    return f*h;	
+	if(S_pqT<kappa) return 0.0;
+    H_pqT=LMM->H_pq(p,q,t);
+    return H_pqT*(S_pqT-kappa);                   // payoff at time T_t
 }
 
 	 
@@ -443,8 +453,11 @@ printSelf(ostream& os) const
 
 BondCall::
 BondCall(Bond* D, Real strike, int s) : 
-// Libors L_j, j>=D.p needed until time T_s
-LiborDerivative(D->getLMM(),s,D->get_p(),true,true,true),     
+// Libors L_j, j>=s needed until time T_s (forward transporting)
+LiborDerivative
+(D->getLMM(), new LiborPathsToFixedTime(D->getLMM(),s,s),	
+ s,true,true,true,true
+),     
 B(D),
 p(D->get_p()), q(D->get_q()), 
 K(strike), t(s)
@@ -453,11 +466,11 @@ K(strike), t(s)
 	
 BondCall* 
 BondCall::
-sample(int n, int lmmType, int volType, int corrType)
+sample(int p, int q, int lmmType, int volType, int corrType)
 {
 	LiborMarketModel* 
-	lmm=LiborMarketModel::sample(n,lmmType,volType,corrType);
-	int p=n/3, q=2*n/3, t=p;
+	lmm=LiborMarketModel::sample(q,lmmType,volType,corrType);
+	int t=p;
 	RealArray1D c(q-p,p);
 	for(int j=p;j<q;j++) c[j]=0.5+Random::U01();
 	Bond* bond=new Bond(p,q,c,lmm);
@@ -469,12 +482,12 @@ sample(int n, int lmmType, int volType, int corrType)
 
 BondCall* 
 BondCall::
-sampleCallOnZeroCouponBond(int n, int lmmType, int volType, int corrType)
+sampleCallOnZeroCouponBond(int p, int lmmType, int volType, int corrType)
 {
 	LiborMarketModel* 
-	lmm=LiborMarketModel::sample(n,lmmType,volType,corrType);
-	int i=n/2, t=i-1;
-	Bond* B=new Bond(i,lmm);
+	lmm=LiborMarketModel::sample(p+3,lmmType,volType,corrType);
+	int t=p-1;
+	Bond* B=new Bond(p,lmm);
 	Real K=B->cashPrice();
 		
 	return new BondCall(B,K,t);
@@ -486,13 +499,10 @@ BondCall::
 forwardPayoffAlongCurrentPath() 
 {  
 	Real F=B->forwardPrice(t),
-		 Ht=LMM->H_ii(t);                // H_t(T_t)
+		 Ht=LMM->H_it(t,t);                // H_t(T_t)=1/B_n(T_t)
 
-	return max<Real>(F-K*Ht,0.0);
+	return max(F-K*Ht,0.0);
 }
-//<----------- INVESTIGATE ----------->
-// if we use LMM instead of lmm=B->getLMM(), then the paths of the Libor model underlying B
-// don't move even with our initilization of LiborDerivative::LMM as B->getLMM(), why is that???		
 
 	 
 Real 

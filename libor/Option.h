@@ -48,6 +48,8 @@ class Bond;
 // class RealVector;
 class LmmLattice;
 class LmmNode;
+class PathGenerator;
+class LiborPathGenerator;
 
 
 /*! \file Option.h
@@ -78,7 +80,8 @@ class Option {
 protected:
     
 	 Real T_;                 // time to expiry in years
-	 bool hasLattice_,        // evaluation in lattice implemented
+	 bool hasAnalytic_,       // analytic pricing formula implemented
+	      hasLattice_,        // evaluation in lattice implemented
 	      hasMonteCarlo_,     // Monte Carlo path pricing implemented
 	      hasControlVariate_; // control variate is implemented
        
@@ -89,12 +92,14 @@ public:
 	Real getExpiration(){ return T_; }
 
     /** @param T time to expiry in years.
+	 *  @param an analytic pricing formula is implemented.
 	 *  @param lt lattice pricing is implemented.
 	 *  @param mc Monte Carlo pricing is implemented.
 	 *  @param cv control variate is implemented.
 	 */
-    Option(Real T, bool lt, bool mc, bool cv) : 
-	T_(T), hasLattice_(lt), hasMonteCarlo_(mc), hasControlVariate_(cv)
+    Option(Real T, bool an, bool lt, bool mc, bool cv) : 
+	T_(T), 
+	hasAnalytic_(an), hasLattice_(lt), hasMonteCarlo_(mc), hasControlVariate_(cv)
 	{   }
 	
 	
@@ -168,39 +173,17 @@ virtual std::ostream& printSelf(std::ostream& os) const;
  *
  *                          LIBOR DERIVATIVE
  *
- ******************************************************************************/
-
-/** PathGenerator for Libor derivatives. Maintains reference to underlying 
- *  LiborMarketModel and forwards request for a newPath() to the LMM while
- *  controlling which Libors are computed until which time.
- */
-class LiborPathGenerator : public PathGenerator {
-	
-	LiborMarketModel* LMM;
-	/** Libors are computed until time T_t.*/   int t;                     
-	/** Libors evolved are L_j, j>=i.*/         int i;                     
-	
-public:
-	
-	/** @param lmm the underlying LiborMarketModel.
-	 *  @param s time until which Libors are computed.
-	 *  @param k Libors evolved are L_j, j>=k.
-	 */
-	LiborPathGenerator(LiborMarketModel* lmm, int s, int k) :
-	LMM(lmm), t(s), i(k)
-    {   }
-	
-	void newPath();
-	
-};
-	
-	
+ ******************************************************************************/	
 
 /** Class which factors out some common features of all Libor derivatives.
  *  PathGenerators for Libor derivatives see to it that only those Libors
- *  are computed which are really needed for the option payoff. The standing
+ *  are computed which are really needed for the option payoff. 
+ *
+ * <p>To compound the payoff forward from time the \f$T_t\f$ of exercise to 
+ *  the horizon we need all Libors \f$X_j,\ j\geq t\f$. The standing
  *  assumption is that the underlying LMM makes one time step per Libor
- *  compounding period.
+ *  compounding period. This class does not take ownership of the underlying 
+ *  LMM (delete separately).
  */
 class LiborDerivative : public Option {
 	
@@ -214,16 +197,21 @@ protected:
 
 public:
 	
-/** @param lmm underlying Libor market model.
- *  @param s Libors are needed until time \f$T_s\f$. 
+/** @param lmm underlying {@link LiborMarketModel}.
+ *  @param lpg the {@link LiborPathGenerator} for the option.
+ *  @param s option expires at \f$T_s\f$. 
  *  @param i Libors needed are L_j, j>=i.
+ *  @param an analytic pricing formula is implemented.
  *  @param lt lattice pricing is implemented.
  *  @param mc Monte Carlo pricing is implemented.
  *  @param cv control variate is implemented.
  */
 // T_t is handed to Option as "time to expiration".
 LiborDerivative
-(LiborMarketModel* lmm, int s, int i, bool lt, bool mc, bool cv);
+(LiborMarketModel* lmm, LiborPathGenerator* lpg,
+ int s, bool an, bool lt, bool mc, bool cv);
+
+~LiborDerivative(){ delete LPG; }
 	
 /** Number t of Libor compounding periods to expiry (at T_t).*/
 // Usually this is t but not always, see Caplet where it is t-1.
@@ -258,9 +246,11 @@ std::ostream& printSelf(std::ostream& os) const;
 
 // TESTING PRICING ROUTINES
 
-/** Tests the analytic price against Monte Carlo
+/** Tests the analytic price against Lattice, Monte Carlo
  *  and Quasi Monte Carlo prices with and without control variates from
  *  a sample of 20000 paths of the underlying Libor process.
+ *  Reports error relative to the analytic price. Note however that the 
+ *  analytic price itself may be an approximation.
  */
 virtual void testPrice();
 
@@ -317,7 +307,12 @@ Caplet(int k, Real strike, LiborMarketModel* lmm);
  * @param volType type of volatility surface, VolSurface::CONST, JR, M.
  * @param corrType type of correlations, Correlations::CS, JR.
  */
-static Caplet* sample(int n, int lmmType, int volType, int corrType);
+static Caplet* sample
+(int n, 
+ int lmmType = 0,    // LiborMarketModel::DL, we use literals to avoid includes 
+ int volType = 2,    // VolSurface::CONST
+ int corrType =1     // Correlations::CS
+);
 		
 
 // PAYOFF
@@ -385,30 +380,30 @@ public:
 
 // CONSTRUCTOR
 
-    /** <p>The payer swaption \f$Swpn(T,[T_p,T_q],\kappa)\f$ with strike rate 
-     *  \f$\kappa\f$ exercisable at time \f$T_t\leq T_p\f$.</p>
-     *
-     * @param p,q period of swap \f$[T_p,T_q]\f$.
-     * @param strike strike rate.
-	 * @param t swaption exercises at time \f$T_t\leq T_p\f$.
-	 * @param lmm underlying Libor market model.
-     */
-    Swaption(int p_, int q_, int t_, Real strike, LiborMarketModel* lmm);
+/** <p>The payer swaption \f$Swpn(T,[T_p,T_q],\kappa)\f$ with strike rate 
+ *  \f$\kappa\f$ exercisable at time \f$T_t\leq T_p\f$.</p>
+ *
+ * @param p,q period of swap \f$[T_p,T_q]\f$.
+ * @param strike strike rate.
+ * @param t swaption exercises at time \f$T_t\leq T_p\f$.
+ * @param lmm underlying Libor market model.
+ */
+Swaption(int p_, int q_, int t_, Real strike, LiborMarketModel* lmm);
 	
 
-    /** Sample at the money swaption with t=p.
-	 *	 
- 	 * @param n dimension (number of Libor accrual intervals).
-	 * @param int lmmType type of Libor market model: {@link LiborMarketModel::DL,PC,FPC}
-	 * @param volType type of volatility surface, VolSurface::CONST, JR, M.
-	 * @param corrType type of correlations, Correlations::CS, JR.
-	 */
-	static Swaption* sample
-	(int p, int q,
-	 int lmmType = 0,    // LiborMarketModel::DL, we use literals to avoid includes 
-	 int volType = 2,    // VolSurface::CONST
-	 int corrType =1     // Correlations::CS
-	);
+/** Sample at the money swaption with t=p.
+ *	 
+ * @param n dimension (number of Libor accrual intervals).
+ * @param int lmmType type of Libor market model: {@link LiborMarketModel::DL,PC,FPC}
+ * @param volType type of volatility surface, VolSurface::CONST, JR, M.
+ * @param corrType type of correlations, Correlations::CS, JR.
+ */
+static Swaption* sample
+(int p, int q,
+ int lmmType = 0,    // LiborMarketModel::DL, we use literals to avoid includes 
+ int volType = 2,    // VolSurface::CONST
+ int corrType =1     // Correlations::CS
+);
 	
 	 
     
@@ -475,28 +470,40 @@ Real getStrike(){ return K; }
  */
 BondCall(Bond* D, Real strike, int s);
 		
-/** Sample bond with p=n/3, q=2*n/3, all coupons random in [0.5,1.5].
- *  Call on this bond with strike rate = cash price of the bond
- *  at the horizon exercisable at time \f$T_p\f$. 
+/** Sample call on bond with random coupons in [0.5,1.5] received at 
+ *  \f$T_j,\ p\leq j<q\f$. Strike price = cash price of the bond,
+ *  expiration at \f$T_p\f$. 
  *	 
- * @param n dimension (number of Libor accrual intervals).
+ * @param p coupons begin at \f$T_p\f$.
+ * @param q coupons end at \f$T_q\f$.
  * @param lmmType type of Libor market model: {@link LiborMarketModel}::DL,PC,FPC.
  * @param volType type of volatility surface, {@link VolSurface}::CONST, JR, M.
  * @param corrType type of correlations, {@link Correlations}::CS, JR.
  */
-static BondCall* sample(int n, int lmmType, int volType, int corrType);
+static BondCall* sample
+(int p, int q, 
+ int lmmType = 0,    // LiborMarketModel::DL, we use literals to avoid includes 
+ int volType = 2,    // VolSurface::CONST
+ int corrType =1     // Correlations::CS
+);
 	
 	 
-/** Sample call on zero coupon bond with i=n/2, strike price = cash price 
- *  of the bond at the horizon exercisable at time \f$T_{i-1}\f$. 
+/** Sample call on zero coupon bond maturing at \f$T_p\f$ 
+ *  exercisable at time \f$T_{p-1}\f$, strike price = cash price  
  *  This is a worst case for the assumptions of the analytic price formulas.
+ *  Dimension of LMM is chosen to be p+3.
  *	 
- * @param n dimension (number of Libor accrual intervals).
+ * @param p bond matures at \f$T_p\f$
  * @param lmmType type of Libor market model: {@link LiborMarketModel}::DL,PC,FPC.
  * @param volType type of volatility surface, {@link VolSurface}::CONST, JR, M.
  * @param corrType type of correlations, {@link Correlations}::CS, JR.
  */
-static BondCall* sampleCallOnZeroCouponBond(int n, int lmmType, int volType, int corrType);
+static BondCall* sampleCallOnZeroCouponBond
+(int p, 
+ int lmmType = 0,    // LiborMarketModel::DL, we use literals to avoid includes 
+ int volType = 2,    // VolSurface::CONST
+ int corrType =1     // Correlations::CS
+);
 
         
 // FORWARD TRANSPORTED PAYOFF AND CONTROL VARIATE

@@ -104,10 +104,10 @@ int main()
 	
 	
 	
-	// testLiborFactorLoading(20);
-	// testLiborFactorLoadingFactorization(60,3);    // rank 3 factorization
+	// Test_LMM::testLiborFactorLoading(20);
+	// Test_LMM::testLiborFactorLoadingFactorization(60,3);    // rank 3 factorization
 	
-	// testLmmPaths(20);
+	// Test_LMM::testLmmPaths(20);
 
 	// Examples::liborPathTiming(30,20000);         // 5000 paths in dimension 30
 	
@@ -119,12 +119,14 @@ int main()
 	     int volType=VolSurface::CONST;     // JR, M, CONST
          int corrType=Correlations::CS;     // JR, CS
 */
-	// testCapletPrice(n,lmmType,volType,corrType); 
-	// testSwaptionPrice(n,lmmType,volType,corrType);
-	// testCallOnBondPrice(n,lmmType,volType,corrType);
-	// testCallOnZeroCouponBondPrice(n,lmmType,volType,corrType);
+	// Test_LMM::testCapletPrice(n,lmmType,volType,corrType); 
+	// Test_LMM::testSwaptionPrice(n,lmmType,volType,corrType);
+	// Test_LMM::testCallOnBondPrice(n,lmmType,volType,corrType);
+	// Test_LMM::testCallOnZeroCouponBondPrice(n,lmmType,volType,corrType);
 	
-	testSwaption();
+	// Libor derivatives in the driftless LMM with constant volatilities, 
+	// includes lattice pricing
+	Test_LMM::testLiborDerivative();
 	
 
 	

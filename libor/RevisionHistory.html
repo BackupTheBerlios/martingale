@@ -288,6 +288,24 @@ Rewrite Derivatives.h --> Option.h finished but incomprehensible linker error re
 Linker error resolved and Option pricing is working.
 
 
+<h3>8-18-03:</h3>
+
+New routine for testing all Libor derivatives in a driftless LMM.<br>
+ <a href="ToDo.html#8-18-03">Bug</a> in Monte Carlo zero coupon bond pricing detected.
+ 
+ 
+<h3>8-19-03:</h3>
+
+Zero coupon bond bug: for forward transporting from time T_t all Libors X_j, j=t,t+1,...,n-1,
+are needed regardless of the Libor derivative.
+<p>
+LiborPathGenerator moved to PathGenerator.h and rewritten (affects all LiborDerivative
+constructors), PjTrigger and Bermudan swaptions implemented. Code links but has not been
+tested yet on Bermudan swaptions. All other Libor derivatives are working.
+<p>
+New files: Trigger.h,cc.
+
+
 
 </body>
 </html>

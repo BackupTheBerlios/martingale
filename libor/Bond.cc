@@ -51,10 +51,10 @@ Bond::
 Bond(int i, LiborMarketModel* lmm) :
 LMM(lmm),
 n(lmm->getDimension()), p(i), q(i+1), 
-c(1,p),
-b(1,p)
+c(1,i),
+b(1,i)
 {   
-	c[p]=b[p]=1.0;
+	c[i]=b[i]=1.0;
 }
 
     

@@ -204,13 +204,6 @@ vol(int i) const
 
 // LIBORS
 
-Real 
-DriftlessLMM::
-L(int j, int t) const 
-{ 
-	return XL(j,t)/delta[j]; 
-}
-
 
 // XLibor
 Real 

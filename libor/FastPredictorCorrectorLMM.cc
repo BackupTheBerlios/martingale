@@ -63,14 +63,6 @@ switchToMC()
 
 Real 
 FastPredictorCorrectorLMM::
-L(int j, int t) const 
-{ 
-	return X(t,j)/delta[j]; 
-}
-
-
-Real 
-FastPredictorCorrectorLMM::
 XL(int j, int t) const 
 { 
 	return X(t,j); 
