@@ -230,6 +230,13 @@ public:
          for(int k=0;k<n;k++) Z[u][k]=Random::sTN();
     }
 	
+	/** Writes standard normal deviates needed to drive one path 
+	 *  path from discrete time t to discrete time s into the 
+	 *  matrix Z. 
+	 */
+	void newWienerIncrements(int t, int s, Matrix<Real>& Z)
+    {   newWienerIncrements(t,s,Z.getData());  }
+	
 	/** String identifying the generator.
 	 */
 	string toString() const { return "Mersenne Twister"; }
@@ -269,6 +276,14 @@ public:
         for(int k=0;k<n;k++){ Z[u][k]=x[coordinate]; coordinate++; }
      
     } // end newWienerIncrements
+	
+    
+	/** Writes standard normal deviates needed to drive one path 
+	 *  path from discrete time t to discrete time s into the 
+	 *  matrix Z. 
+	 */
+	void newWienerIncrements(int t, int s, Matrix<Real>& Z)
+    {   newWienerIncrements(t,s,Z.getData());  }
 	
 	void restart(){ if(lds) lds->restart(); }
 	
