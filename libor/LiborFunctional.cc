@@ -26,30 +26,47 @@ spyqqqdia@yahoo.com
 
 
 MTGL_BEGIN_NAMESPACE(Martingale)
-
+MTGL_BEGIN_NAMESPACE(LiborFunctional)
 	
 	
 Real 
-LiborFunctional::
-H_pq(int p, int q, const RealArray1D& H, const RealArray1D& delta)
+H_pq(int p, int q, const RealArray1D& H, Real delta)
 {
 	Real sum=0.0;
-	for(int j=p;j<q;j++) sum+=delta[j]*H[j+1];
+	for(int j=p;j<q;j++) sum+=H[j+1];
 			
-	return sum;
+	return delta*sum;
 }
 
 
 Real 
-LiborFunctional::
-S_pq(int p, int q, const RealArray1D& H, const RealArray1D& delta)
+swapRate(int p, int q, const RealArray1D& H, Real delta)
 {
-	Real H_pq=0.0;
-	for(int j=p;j<q;j++) H_pq+=delta[j]*H[j+1];
+	Real Hpq=0.0;
+	for(int j=p;j<q;j++) Hpq+=H[j+1];
+	Hpq*=delta;
 			
-	return (H[p]-H[q])/H_pq;
+	return (H[p]-H[q])/Hpq;
 }
 
 
+Real 
+forwardSwaptionPayoff(int p, int q, Real kappa, const RealArray1D& H, Real delta)
+{
+	Real Hpq=H_pq(p,q,H,delta);
+    Real Spq=swapRate(p,q,H,delta);
+	return Spq>kappa ? (Spq-kappa)*Hpq : 0.0;
+}
 
+
+Real 
+forwardCapletPayoff(int i, Real kappa, const RealArray1D& H, Real delta)
+{
+	Real XiTi=X(i,H);                 // X_i(T_i)
+	return XiTi>delta*kappa ? (XiTi-delta*kappa)*H[i+1] : 0.0;
+}
+	
+	
+
+MTGL_END_NAMESPACE(LiborFunctional)
 MTGL_END_NAMESPACE(Martingale)

@@ -29,6 +29,7 @@ spyqqqdia@yahoo.com
 #include <cstdlib>                        // exit()
 
 
+
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
@@ -39,6 +40,13 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  *
  *********************************************************************************/
  
+Node::
+~Node()
+{ 
+	vector<Edge*>::iterator theEdge=edges.begin();
+	while(theEdge!=edges.end()){ delete *theEdge; ++theEdge; }
+	// the direct member edges is deallocated automatically
+} 	
 
 
 void 
@@ -46,11 +54,12 @@ Node::
 printTransitionProbabilities() const
 {
 	cout << "\n\n\nTransition probabilities\n: ";
-	std::list<Edge>::const_iterator theEdge;
-	for(theEdge=edges.begin(); theEdge!=edges.end(); ++theEdge) 
-	{	
-		Real p=theEdge->probability;
-		cout << p << ", ";
+	vector<Edge*>::const_iterator theEdge=edges.begin();
+	while(theEdge!=edges.end()) {
+	
+		Edge* edge = *theEdge;
+		cout << edge->probability << ", ";
+		++theEdge;
 	}		
 } // end printTransitionProbabilities
 
@@ -65,12 +74,12 @@ printTransitionProbabilities() const
 // LITE-LMM-NODES
 
 // out of class initialization necessary
-RealArray1D LiteLmmNode::H_(LMM_MAX_DIM); 
-RealArray1D LiteLmmNode::V_(LMM_MAX_DIM);
+RealArray1D LmmNode_LiteBase::H_(LMM_MAX_DIM); 
+RealArray1D LmmNode_LiteBase::V_(LMM_MAX_DIM);
 
 
-LiteLmmNode::
-LiteLmmNode(int s, const IntArray1D& k, LmmLatticeData* latticeData) : Node(s), 
+LmmNode_LiteBase::
+LmmNode_LiteBase(int s, const IntArray1D& k, LmmLatticeData* latticeData) : Node(s), 
 lattice(latticeData), k_(new int[latticeData->r]) 
 {
 	// set the state
@@ -81,7 +90,7 @@ lattice(latticeData), k_(new int[latticeData->r])
 	
 
 const RealArray1D& 
-LiteLmmNode::
+LmmNode_LiteBase::
 Hvect(int p)
 {
 	int n=lattice->n,                           // dimension of Libor process
@@ -132,7 +141,7 @@ Hvect(int p)
 
 
 int 
-LiteLmmNode:: 
+LmmNode_LiteBase:: 
 get_t() const
 {
 	int nSteps=lattice->nSteps;
@@ -143,7 +152,7 @@ get_t() const
 
 
 std::ostream& 
-LiteLmmNode:: 
+LmmNode_LiteBase:: 
 printType(std::ostream& os) 
 {
 	return
@@ -153,7 +162,7 @@ printType(std::ostream& os)
 
 
 std::ostream& 
-LiteLmmNode:: 
+LmmNode_LiteBase:: 
 printSelf(std::ostream& os)
 {
 	int t=get_t();
@@ -169,10 +178,10 @@ printSelf(std::ostream& os)
 // HEAVY-LMM-NODES
 
 // out of class initialization necessary
-RealArray1D HeavyLmmNode::V_(LMM_MAX_DIM);
+RealArray1D LmmNode_HeavyBase::V_(LMM_MAX_DIM);
 	
-HeavyLmmNode::
-HeavyLmmNode(int s, const IntArray1D& k, LmmLatticeData* latticeData) : Node(s),
+LmmNode_HeavyBase::
+LmmNode_HeavyBase(int s, const IntArray1D& k, LmmLatticeData* latticeData) : Node(s),
 lattice(latticeData),                        // get_t() needs this for nSteps
 k_(new int[latticeData->r]), 
 H_((latticeData->n)-get_t()+1,get_t()) 
@@ -224,7 +233,7 @@ H_((latticeData->n)-get_t()+1,get_t())
 
 
 int 
-HeavyLmmNode:: 
+LmmNode_HeavyBase:: 
 get_t() const
 {
 	int nSteps=lattice->nSteps;
@@ -235,7 +244,7 @@ get_t() const
 
 
 std::ostream& 
-HeavyLmmNode:: 
+LmmNode_HeavyBase:: 
 printType(std::ostream& os) 
 {
 	return
@@ -245,7 +254,7 @@ printType(std::ostream& os)
 
 
 std::ostream& 
-HeavyLmmNode:: 
+LmmNode_HeavyBase:: 
 printSelf(std::ostream& os) const
 {
 	int t=get_t();

@@ -31,7 +31,7 @@ spyqqqdia@yahoo.com
 // #include "TestProbability.h"
  #include "TestLMM.h"
 // #include "TestOptimizers.h"
-// #include "LatticeOption.h"
+ #include "LatticeOption.h"
 // #include "TestFormulas.h"
 // #include "Examples.h"
 // #include "DirichletProblem.h"
@@ -113,11 +113,12 @@ int main()
 	
 	
 	// anomalies in high dimensions (n>=70) for all but DriftlessLMM,
+/*
 	     int n=50;                          // dimension
 	     int lmmType=LiborMarketModel::PC;  // DL, LFDL, PC, FPC
 	     int volType=VolSurface::JR;         // JR, M, CONST
          int corrType=Correlations::CS;     // JR, CS
-
+*/
 	// testCapletPrice(n,lmmType,volType,corrType); 
 	// testSwaptionPrice(n,lmmType,volType,corrType);
 	// testCallOnBondPrice(n,lmmType,volType,corrType);
@@ -159,11 +160,9 @@ int main()
  *
 *******************************************************************************/
 	
-	
-	 
-	 // LatticeSwaption3F::test(15,19,30);
-     testLmmLattice();
-	 
+
+     // testLmmLattice();
+	 testLatticeSwaption();
 	 
 	
 /*******************************************************************************
