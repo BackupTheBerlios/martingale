@@ -77,7 +77,7 @@ namespace Pricing {
 using std::vector;
 	
 
-/** The forward price of theOption when priced in thelattice.
+/** The forward price of theOption when priced in theLattice.
  */
 template<typename LatticeType, typename OptionType>
 Real latticeForwardPrice(LatticeType* theLattice, OptionType* theOption)

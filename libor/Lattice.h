@@ -208,17 +208,18 @@ public:
 /** <a name="lattice-builder"><b>Lattice builders.</b></a>
  *  Standalone functions to build lattices with m time steps for which the state 
  *  variable is a standard Brownian motion Z in r dimensions (the number of factors). 
- *  Assumes that the nodes store the state Z_j=k[j]*a, a=sqrt(dt), j=0,1,...,r-1, 
+ *  Assumes that the nodes store the state 
+ *  \f[Z_j=k[j]*a,\quad a=\sqrt{dt},\quad j=0,1,...,r-1,\f]
  *  in the integer vector k and have construtors of the form
  *  <center><code>
  *  Node(int s, int* k, LatticeData* latticeData),
  *  </code></center>
  *  where s is the number of time steps to reach the node from time zero,
- *  k is the integer vector storing the state of Z and latticeData is  data object
- *  handed to the nodes from the lattice.
- *  Here dt is the size of the time step and a=sqrt(dt) the tick size of a standard 
- *  Brownian motion over a time step of size dt. The type Node must define a function 
- *  <code>int* getIntegerTicks()</code> returning 
+ *  k is the integer vector storing the state of Z and latticeData is an object
+ *  containing necessary information about the lattice the nodes live in.
+ *  Here dt is the size of the time step and \f$a=\sqrt{dt}\f$ the tick size of a 
+ *  standard Brownian motion over a time step of size dt. The type Node must 
+ *  define a function <code>int* getIntegerTicks()</code> returning 
  *  the state vector k.
  */
 namespace LatticeBuilder {

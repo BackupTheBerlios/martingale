@@ -49,6 +49,13 @@ class LiborFactorLoading;        // LiborFactorLoading.h
 
 
 
+/*! \file PredictorCorrectorLMM.h
+ *  Libor Market Model simulating Libors using 
+ *  the predictor corrector algorithm. See {@link PredictorCorrectorLMM}.
+ */
+
+
+
 /*******************************************************************************
  *
  *                                 PredictorCorrectorLMM

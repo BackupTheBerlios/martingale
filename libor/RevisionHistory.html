@@ -318,6 +318,15 @@ of a DriftlessLMM lattice pricing are all working. Disparity between lattice and
 remains to be <a href="ToDo.html#8-20-03">cleared up.</a>
 
 
+<h3>8-21-03:</h3>
+
+Augmented the PjTrigger by a Sobol global search for parameter optimization and ran test with
+1200 search points. This produces results only slightly better than BFGS optimization.
+Thus it seems that the exercise strategy of the PjTrigger cannot deliver more than it does.
+Significantly it often underestimates the Bermudan swaption price relative to a lattice computed price
+by one third.
+
+
 
 </body>
 </html>

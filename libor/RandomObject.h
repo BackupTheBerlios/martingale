@@ -31,6 +31,10 @@ spyqqqdia@yahoo.com
 
 
 
+/*! \file RandomObject.h
+ *  Random variable with values of arbitrary type.
+ */
+
 // The whole implementation is in the header!
 
 /** <p><code>RangeType</code>-valued random variable <code>X</code>. 

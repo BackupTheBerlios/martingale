@@ -21,8 +21,6 @@ spyqqqdia@yahoo.com
 */
 
 
-// the entire implementation is in the header
-
 
 #ifndef martingale_controlled_randomvariable_h    
 #define martingale_controlled_randomvariable_h 
@@ -37,6 +35,12 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 
 // dependencies: 
 // class RealVector;
+
+
+/*! \file ControlledRandomVariable.h
+ *  Random variable with a control variate. Allows for the computation of
+ *  expectations with reduced variance.
+ */
 
 
 

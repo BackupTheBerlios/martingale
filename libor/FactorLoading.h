@@ -41,7 +41,10 @@ class std::ostream;
 
 
 
-
+/*! \file FactorLoading.h
+ *  Factor loading (stochastic integrand) for multidimensional
+ *  Ito processes. See {@link FactorLoading}.
+ */
 
 /*******************************************************************************
  *

@@ -31,6 +31,13 @@ spyqqqdia@yahoo.com
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
+/*! \file PathGenerator.h
+ *  Controllers for the computation of paths (typically assets or interest 
+ *  rates underlying options). The path generator sees to it that the minimum 
+ *  number of variables is evolved only as far as needed.
+ */
+
+
 
 /** Path generators control the computation of asset price or interest rate 
  *  paths for the purpose of Monte Carlo option pricing. The path generator

@@ -49,10 +49,17 @@ class LiborFactorLoading;        // LiborFactorLoading.h
 
 
 
+/*! \file FastPredictorCorrectorLMM.h
+ *  Libor Market Model simulating Libors using an optimized version
+ *  of the predictor corrector algorithm. Speedup for the price of a small
+ *  loss in accuracy. See {@link FastPredictorCorrectorLMM}.
+ */
+
+
 
 /*******************************************************************************
  *
- *                                 PredictorCorrectorLMM
+ *                                 FastPredictorCorrectorLMM
  *
  ******************************************************************************/ 
 
@@ -230,7 +237,7 @@ public:
 	 
 	 
    /** <p>Analytic approximation for the aggregate swap rate volatility
-	*  \f[\Sigma_{p,q}(0,T_t)=\sqrt{\langle Y\rangle_0^{T_t},\f] 
+	*  \f[\Sigma_{p,q}(0,T_t)=\sqrt{\langle Y\rangle_0^{T_t}},\f] 
 	*  where \f$Y=log(S_{p,q})\f$ is the logarithm of the swap rate. 
 	*  Quantity is needed for Black approximate swaption formula.</p>
 	*

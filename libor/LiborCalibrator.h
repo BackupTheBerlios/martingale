@@ -48,6 +48,13 @@ class LiborFactorLoading;
 
 
 
+/*! \file LiborCalibrator.h
+ *  Calibration of the various LMM types to caplet and coterminal swaption prices
+ *  (swaps ending at the horizon).
+ */
+
+
+
 /**********************************************************************************
  *
  *               LmmOptimizer
@@ -164,13 +171,15 @@ std::istream& operator >> (std::istream& is, CapletData& cplt);
 
 /** <p>Class which calibrates the parameters of the factorloading of any given LMM to a 
  *  set of caplet and swaption (forward) prices read from two separate files respectively.
+ *  See book, 6.11.
  *  The factor loading is calibrated to all caplets Caplet(i) (on \f$[T_i,T_{i+1}]\f$) 
  *  and all coterminal swaptions Swaption(i,n) (swap on \f$[T_i,T_n]\f$) expiring at time
  *  \f$T_i\f$ respectively. The strikes can be chosen  arbitrarily.
  *
  * <p>To simplify the procedure we calibrate by matching caplet prices exactly. This is
- * restrictive and certainly suboptimal but it does allow us to compute the scaling factors 
- * c_i from the caplet prices and hence limits the dimension of the optimization problem to
+ * restrictive and certainly suboptimal but it does allow us to compute the volatility
+ * scaling factors c_i (book, 6.11.1)
+ * from the caplet prices and hence limits the dimension of the optimization problem to
  * seven (the number of parameters for both volatility surface and correlations, see book,
  * 6.11.3). To find suitable parameter values we use a primitive form of global search along 
  * a Sobol sequence in the parameter region. 
@@ -178,8 +187,6 @@ std::istream& operator >> (std::istream& is, CapletData& cplt);
  * <p>The data which we use for calibration purposes are synthetic prices compute from the
  * analytic approximations for caplet and swaption pries in the various LMMs. The data files
  * reside in the directory SyntheticData in the source file directory.
- *
- *
  */
 
 class LmmCalibrator {
@@ -552,7 +559,7 @@ public:
 protected:
 
 
-	 /** The squareroot \f$\sqrt{xCx'=(Cx,x)\f$ where $C$ is the covariation 
+	 /** The squareroot \f$\sqrt{xCx'=(Cx,x)}\f$ where $C$ is the covariation 
 	  *  matrix in the field cvMatrix with indices j,k=i,...,n-1 and x is the vector
 	  *  in the field x indexed as x[j], j=i,...,n-1. This quantity is used to 
 	  *  compute caplet and swaption aggregate volatilities and the fields
@@ -566,7 +573,7 @@ protected:
 private:
 
       
-	 /** Computes the aggregate caplet volatilities \f$\ol\Sigma_i(0,T_i)\f$ to expiry
+	 /** Computes the aggregate caplet volatilities \f$\overline\Sigma_i(0,T_i)\f$ to expiry
 	  *  implied by the Black caplet formula from the caplet market prices and writes 
 	  *  them into the vector capletImpliedSigma.
 	  */

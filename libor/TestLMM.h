@@ -302,10 +302,11 @@ void testBermudanSwaption()
     int q; cin >> q;
 	cout << "Enter number of Libor paths for Monte Carlo simulation: ";
     int nPath; cin >> nPath;
-	cout << "Enter number of traing paths for the trigger:  ";
+	cout << "Enter number of training paths for the trigger:  ";
     int paths; cin >> paths;
-		
-    BermudanSwaption* bswpn = BermudanSwaption::sample(p,q,paths,false); 
+	
+	bool verbose=false;
+    BermudanSwaption* bswpn = BermudanSwaption::sample(p,q,paths,verbose); 
 	bswpn->testPrice(nPath);
 }
 

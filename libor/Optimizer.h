@@ -37,7 +37,8 @@ class LowDiscrepancySequence;
 
 
 /*! \file Optimizer.h
- * <p>BFGS and Downhill Simplex optimizers. The BFGS optimizer is modified so as to
+ * <p>BFGS, Downhill Simplex optimizers and global search along a Sobol sequence.
+ * The BFGS optimizer is modified so as to
  * cope with objective functions \f$f(u)\f$ with a graph with step function like 
  * qualities. Our main applications are expectations
  * \f[f(u)=E[X(u)],\f]
@@ -45,7 +46,7 @@ class LowDiscrepancySequence;
  * Even if this function is smooth the smoothness is lost as soon as the expectation
  * is computed as a finite sample mean.
  *
- * <p>The optimizers have been coded out of Numerical Recipes with some modifications. 
+ * <p>The optimizers follow the ideas in Numerical Recipes with some modifications. 
  * If this works for you be thankful. 
  * Multidimensional optimization is a nontrivial undertaking and a high quality implementation 
  * requires a significant amount of effort and expertise. I have no expertise in this field.
@@ -257,7 +258,7 @@ public:
  * the current direction and then performs a line search backward toward the 
  * last point. Why do we do that? The functions we are trying to minimize are
  * of the form 
- * \f[f(u)=E[X(u)]\f],
+ * \f[f(u)=E[X(u)],\f]
  * where X(u) is a random variable depending on the parameter
  * vector u and E denotes the expectation as usual.</p>
  *
@@ -265,10 +266,11 @@ public:
  * with the true expectation but instead have to work with the Monte Carlo computed
  * sample mean
  * \f[f_N(u)=(X_1(u)+...+X_N(u))/N,\f]
- * where the X_j(u) are independent observations of X(u). This function will most likely 
+ * where the \f$X_j(u)\f$ are independent observations of \f$X(u)\f$. 
+ * This function will most likely 
  * not be smooth as a function of the parameter vector u. Instead the parameter u 
  * will have to move at least for a minimal threshhold value before the 
- * finite sample of X(u) recognizes a difference. We should
+ * finite sample of \f$X(u)\f$ recognizes a difference. We should
  * therefore think of \f$f_N(u)\f$ as blocky, instead of a smooth  
  * parabola we will have a sequence of concentric flat terraces descending 
  * toward the minimum.</p>
@@ -545,9 +547,9 @@ public:
 	/** @param x0 initial point.
 	 *  @param nPoints total number of function evaluations.
 	 *  @param delta initial window all u with \f$x0_j-\delta_j<u_j<x0_j+\delta_j\f$.
-	 *  @param _verbose announce each new min during search.
+	 *  @param vbose announce each new min during search.
 	 */
-	SobolSearch(const RealArray1D& x0, int nVals, const RealArray1D& delta, bool _verbose=false);
+	SobolSearch(const RealArray1D& x0, int nVals, const RealArray1D& delta, bool vbose=false);
 	
 	/** Wether or not the vector u is in the search domain.
 	 *  This is the default implementation (true, unconstrained search).

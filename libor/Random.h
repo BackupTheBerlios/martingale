@@ -5,6 +5,12 @@
 
 #include "TypedefsMacros.h"
 
+
+/*! \files Random.h
+ *  Random number generators: uniform and standard normal.
+ */
+
+
 MTGL_BEGIN_NAMESPACE(Martingale)
 MTGL_BEGIN_NAMESPACE(Random)
 

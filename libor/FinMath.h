@@ -32,8 +32,9 @@ MTGL_BEGIN_NAMESPACE(FinMath)
 
 
 
-/** Standalone methods to compute functions or solve eqations
- *  useful in basic financial mathematics.
+/*! \file FinMath.h
+ * Standalone methods to compute functions or solve eqations
+ * useful in basic financial mathematics.
  *
  * @author Michael J. Meyer
  */
@@ -125,11 +126,11 @@ Real d_minus(Real Q, Real k, Real Sigma);
  *
  * \f[Price(t,S_1,S_2)=Q*N(d_+)-k*N(d_-).\f]
  *
- * In the special case of a call on S we have S_1=S, S_2 is the zero coupon 
- * bond maturing at call expiry, Q the forward price of S and the forward price 
+ * In the special case of a call on S we have S_1=S, S_2=B is the zero coupon 
+ * bond maturing at call expiry and the forward price 
  * of the call can be written as
- *
- * \f[Call.ForwardPrice(t,S)=Q*N(d_+)-k*N(d_-)=.\f]
+ * \f[Call.ForwardPrice(t,S)=Q*N(d_+)-k*N(d_-),\f]
+ * where Q=S/B is the forward price of S at expiry.
  *
  * @param Q The quotient S_1(t)/S_2(t)
  * @param k Ratio of exchange between assets (receive S_1 for kS_2).
@@ -189,9 +190,9 @@ Real bsDiscountedPutPrice(Real S, Real K, Real tau, Real sigma, Real B);
  *  \f$\Sigma\geq0\f$ using continued bisection.</p>
  *
  * <p> A solution \f$\Sigma=\Sigma(Q,k,y)\f$ exists if and only if \f$y<Q\f$.
- * To be used to compute implied volatilities from call forward prices y. 
- * Note that the solution \f$Sigma\f$ is not the implied annual volatility \f$sigma\f$, 
- * indeed these are related as \f$Sigma=sigma*\sqrt{\tau}\f$, where 
+ * Used to compute implied volatilities from call forward prices y. 
+ * Note that the solution \f$\Sigma\f$ is not the implied annual volatility 
+ * \f$\sigma\f$, indeed these are related as \f$Sigma=sigma*\sqrt{\tau}\f$, where 
  * \f$\tau=T-t\f$ is time to expiry.</p>
  */
 Real blackImpliedAggregateCallVolatility(Real Q, Real k, Real y);

@@ -52,12 +52,13 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 /** <p>Deterministic volatility surface \f$\sigma(t,T)\f$ for a FactorLoading.
- *  The actual volatility function of the process \f$Y_j\f$ (in applications to finance 
- *  usually asset returns, that is asset logarithms or Libor logarithms) is then given as
+ *  The actual volatility function of the process \f$Y_j\f$ (in applications to
+ *  finance usually asset returns, that is asset logarithms or Libor logarithms) 
+ *  is then given as 
  *  \f[\sigma_j(t)=k_j\sigma(t,T_j),\quad j=1,\dots,n-1.\f]
  *  where \f$k_j\f$ is a scaling factor to calibrate the annualized volatility
- *  of \f$Y_j\f$. In the case of a {@link DriftlessLMM} this function is the volatility 
- *  of the logarithms forward transported Libor \f$Y_j=log(U_j)\f$.
+ *  of \f$Y_j\f$. In the case of a {@link DriftlessLMM} \f$Y_j=log(U_j)\f$ is the 
+ *  the logarithm of forward transported Libor .
  *
  *  <p>To simplify calibration we assume that all volatility surface types
  *  depend on four Real parameters a,b,c,d. This suffices for all types which 

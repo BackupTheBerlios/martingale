@@ -42,6 +42,15 @@ class LiborFactorLoading;        // LiborFactorLoading.h
 
 
 
+
+/*! \file LowFactorDriftlessLMM.h
+ *  Libor Market Model simulating Libors from driftless state variables with
+ *  a rank reduced covariance matrix (rank = number of factors).
+ *  Extremely fast simulation, see {@link LowFactorDriftlessLMM}.
+ */
+
+
+
 /*******************************************************************************
  *
  *                                 LowFactorDriftlessLMM

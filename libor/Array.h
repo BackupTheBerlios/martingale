@@ -45,6 +45,8 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  *  is useful if the array is populated with pointers where 0 signifies the null pointer.
  *
  * <p>To turn on subscript checking for out of range error #define SUBSCRIPT_CHECK.
+ *  Note that this can slow down code using subscripting in innermost nested loops
+ *  by a factor of ten or more.
  *
  * @param S type of array elements.
  */

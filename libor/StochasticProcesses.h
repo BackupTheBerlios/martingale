@@ -38,7 +38,8 @@ class UTRRealMatrix;
 
 
 /*! \file StochasticProcesses.h
- *  A collection of stochastic processes.
+ *  Brownian motion in one and several dimensions and driftless
+ *  Ito processes.
  */
 
 

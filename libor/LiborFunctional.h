@@ -33,14 +33,26 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 // dependencies
 class BondCall;
 
+
+/*! \file LiborFunctional.h
+ *  Free standing functions to computing various functionals F of the
+ *  Libor process as deterministic functions \f$F=F(H)\f$ of a vector 
+ *  \f[H=(H_p(t),\dots,H_n(t))\f] 
+ *  of accrual factors at time t.  
+ */
+
 	
 /** <p>Free standing functions to computing various functionals F of the
- *  Libor process as deterministic functions 
- *  \f[F=F(H)\hbox{ of a vector } H=(H_p(t),\dots,H_n(t))\f] 
- *  of accrual factors at time \f$t\f$. It is assumed that the vector
+ *  Libor process as deterministic functions \f$F=F(H)\f$ of a vector 
+ *  \f[H=(H_p(t),\dots,H_n(t))\f] 
+ *  of accrual factors at time t. It is assumed that the vector
  *  H has natural indexation \f$H[j]=H_j(t),\ j=p,\dots,n\f$ and of course
- *  that it contains all the accrual factors whih are needed.
- *  It is also assumed that all Libor accrual periods have the same length.
+ *  that it contains all the accrual factors which are needed for the computation
+ *  of F. 
+ *
+ *  <p><b>Assumption:</b> all Libor compounding periods have the same length.
+ *  This class has to be rewritten if we work with LMM with irregular tenor 
+ *  structure.
  *
  *  <p>Note that the time t does not explicitly enter in any of the
  *  computations. This information is in the vector H.

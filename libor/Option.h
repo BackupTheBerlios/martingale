@@ -447,7 +447,7 @@ std::ostream& printSelf(std::ostream& os) const;
  ******************************************************************************/
 
 
-/** Call on a general bond \f$B(s)=\sum\nolimits_j=p^{q-1}c_jB_j(s)\f$
+/** Call on a general bond \f$B(s)=\sum\nolimits_{j=p}^{q-1}c_jB_j(s)\f$
  *  with strike rate \f$K\f$ based on a Libor market model and exercisable at a
  *  Libor reset point $\f$T_t\f$. It is assumed that \f$c_j\geq0\f$.
  */

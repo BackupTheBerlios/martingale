@@ -28,10 +28,9 @@ spyqqqdia@yahoo.com
 #include "RandomObject.h"
 #include "StochasticGenerator.h"
 
-/*
- * StochasticProcess.h
- *
- * Created on April 16, 2003, 4:30 AM
+/*! \file StochasticProcess.h
+ * Stochastic processes and associated objects such as stopping times, hitting times
+ * and first exit times of euclidean regions, path functionals.
  */
  
 // StoppingTime, Region, HittingTime, FirstExitTime, StochasticProcess, PathFunctional. 

@@ -51,11 +51,12 @@ class BondCall;
  *  A node in a lattice for the Libor market model lives at a time in some
  *  accrual interval \f$(T_{t-1},T_t]\f$. At this time the surviving Libors are
  *  \f$X_t,X_{t+1},\dots,X_{n-1}\f$, where n is the number of accrual intervals.
- *  Heavyweight nodes store the vector of accrual factors
+ *  Nodes only store the state of the Brownian driver (see below) to obtain the 
+ *  smallest possible memory footprint. This allows us to build lattices with
+ *  millions of nodes. The vector of accrual factors
  *  \f[H=(H_t,...,H_n)\f]
- *  while lightweight nodes compute this vector from the state of the Brownian 
- *  (see below). All other functionals of the Libor process are computed from 
- *  this vector with minimal computational effort. 
+ *  and all other functionals of the Libor process are computed from 
+ *  this vector with minimal computational effort. See {@link LiborFunctional}.
  *
  * <a name="lmm-node-3f">Nodes for a 3 factor LMM lattice:</a>
  * <p>Nodes in a 3 factor lattice for the Libor market model {@link LmmLattice3F}
@@ -72,8 +73,7 @@ class BondCall;
  * Each node stores the integer vector k as the basic state.
  *
  * <p>The case of nodes for an asset basket is similar except that the fundamental
- * vector which is either computed or stored is the vector S of asset prices at this 
- * node. 
+ * vector which is computed is the vector S of asset prices at this node. 
  */
  
 

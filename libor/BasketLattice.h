@@ -52,7 +52,7 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  *  \f[dY_j(t)=-\sigma_j^2/2dt+u_j\cdot dW(t)\f]
  *  resulting in
  *  \f[Y_j(t)=Y_j(0)-\sigma_j^2t/2+u_j\cdot W(t)=Y_j(0)-\sigma_j^2t/2+V_j(t)\f]
- *  with \f$V_j(t)=u_j\cdot dW(t)\f$. Taking exponentials we get
+ *  with \f$V_j(t)=u_j\cdot W(t)\f$. Taking exponentials we get
  *  \f[S_j(t)=S_j(0)exp[-\sigma_j^2t/2+V_j(t)].\f]
  *  The unit vectors \f$u_j\f$ determine the instantaneous
  *  correlations of the return increments \f$dY_j\f$ as \f$\rho_{ij}=u_i\cdot u_j\f$,
@@ -64,9 +64,9 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  *  See book, Appendix A.1. To keep the number of nodes manageable we must 
  *  reduce the number of factors, that is, the dimension of the Brownian motion W.
  *  If we want to run an r-factor model we compute U as an approximate r-factor
- *  pseudo square root of \f$\rho\$. Then U is an \f$n\times r\f$ matrix and the 
+ *  pseudo square root of \f$\rho\f$. Then U is an \f$n\times r\f$ matrix and the 
  *  \f$V_j(t)\f$ are approximated as
- *  \f[V_j(t)\simeq\sigma_j\left[U_{j1}Z_1(t)+\dots+U_{jr}Z_r(t),\right]
+ *  \f[V_j(t)\simeq\sigma_j\left[U_{j1}Z_1(t)+\dots+U_{jr}Z_r(t)\right],\f]
  *  where the \f$Z_j(t)\f$ are independent one dimensional Brownian motions
  *  (the components of W). Thus the lattice can be built to evolve the Brownian motion 
  *  \f$Z_j(t)\f$ (the factors) and this is the simplest of all lattices.
@@ -115,8 +115,8 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  *     </li>
  * </ul>
  * We want to have a large number of nodes but not so large as to exceed main memory. 
- * With 1GB main memory we can tolerate about 5.3 million lightweight nodes
- * corresponding to 250 time steps in a two factor lattice and 3.5 million lightweight 
+ * With 1GB main memory we can tolerate about 5.3 million nodes
+ * corresponding to 250 time steps in a two factor lattice and 3.5 million 
  * nodes corresponding to 60 time steps in a three factor model. 
  */
 

@@ -54,7 +54,7 @@ class BermudanSwaption;
  
 /** Let T denote discrete time (number of time steps) to the horizon.
  *  The class trigger implements a family of integer valued stopping times
- *  \f[\tau_t:\Omega\to[t,T].\f]
+ *  \f$\tau_t:\Omega\to[t,T]\f$, t=0,1,...,T.
  *  The equality \f$\tau_t=s\f$ means that s is the first time \f$s>t\f$ 
  *  at which a certain event occurs.
  */
@@ -150,6 +150,13 @@ bool isTriggered(int t, int s);
  *  <code>i</code> , false otherwise. Exercises only if payoff>0. 
  */
 bool exercise(int i, int t, const RealArray1D& x);
+
+/** The objective function of the parameters v=(p0,p1,p2) which has
+ *  to be maximized at time step t (the sum of forward payoffs when
+ *  exercising at time or thereafter according to the optimal
+ *  coefficients compute for times t+1,t+2,...,q-1).
+ */
+Real objectiveFunction(int t, const RealArray1D& v);
           
  
 private:
@@ -158,7 +165,6 @@ private:
  *  decide exercise and compute the coefficients. 
  */
 void fillTrainingPaths();
- 
            
 /** The pj-coefficients computed by the local optimizer.
  */      
@@ -167,7 +173,7 @@ void computeCoefficients();
 
 // PARAMETER OPTIMIZATION AT EACH EXERCISE TIME t  
 
-class LocalOptimizer : public BFGS {
+class LocalBFGS : public BFGS {
            
 	int t;                // time t at which the parameters are optimized
 	PjTrigger* trg;       // the trigger which contains the optimizer
@@ -187,7 +193,7 @@ public:
     * @param h directional increments for gradient computation.
     * @param verbose messages during optimization.
     */
-    LocalOptimizer
+    LocalBFGS
     (PjTrigger* pj_trg, int s, const RealArray1D x, int nVals, 
      Real stepmax, const RealArray1D h, bool verbose);
        
@@ -195,7 +201,38 @@ public:
 	// forward payoff fom exercise for s>=t under parameters v
     Real f(const RealArray1D& v);
 
-}; // end LocalOptimizer
+}; // end LocalBFGS
+
+
+class LocalSobolSearch : public SobolSearch {
+           
+	int t;                // time t at which the parameters are optimized
+	PjTrigger* trg;       // the trigger which contains the optimizer
+	
+public:
+       
+       
+   /** Optimizer for the parameters <code>p0,p1,p2</code>
+    *  used to parametrize the exercise boundary.
+	*
+	* @param pj_trg the PjTrigger containing the optimizer.
+    * @param s exercise time.
+	* @param paths number of training paths.
+	* @param x starting parameter vector.
+    * @param nVals number of function evaluations.
+    * @param delta window width.
+    * @param verbose messages during optimization.
+    */
+    LocalSobolSearch
+    (PjTrigger* pj_trg, int s, const RealArray1D x, int nVals, 
+     const RealArray1D delta, bool verbose);
+       
+    // the function we want to optimize
+	// forward payoff fom exercise for s>=t under parameters v
+    Real f(const RealArray1D& v);
+
+}; // end LocalSobolSearch
+ 
  
 };  // end PjTrigger
 

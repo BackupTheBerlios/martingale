@@ -35,7 +35,7 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 /*! \file RandomVariables.h
- *  A collection of random variables
+ *  A collection of some random variables.
  */
 
 

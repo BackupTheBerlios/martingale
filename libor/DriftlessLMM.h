@@ -43,6 +43,11 @@ class LiborFactorLoading;        // LiborFactorLoading.h
 
 
 
+/*! \file DriftlessLMM.h
+ *  Libor Market Model simulating Libors from driftless state variables.
+ *  Very fast fully exact simulation, see {@link DriftlessLMM}.
+ */
+
 
 /*******************************************************************************
  *
@@ -64,7 +69,7 @@ class LiborFactorLoading;        // LiborFactorLoading.h
  * of the state dependent Libor drift. Time steps cannot be simulated precisely and path 
  * computation is approximate.</p>
  *
- * <p>The accrual factors \f$H_j(t)=B_j(t)/B_n(t)\f$can are the most efficient way to store 
+ * <p>The accrual factors \f$H_j(t)=B_j(t)/B_n(t)\f$ are the most efficient way to store 
  * the state of the underlying Libor process and can easily be computed from the
  * quantities \f$U_j(t)\f$. Libors \f$X_j(t)\f$, annuities \f$B_{p,q}(t)\f$ and 
  * swap rates \f$S_{p,q}(t)\f$ are then computed from the \f$H_j\f$ with minimal effort.

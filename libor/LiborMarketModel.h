@@ -39,7 +39,7 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 
 /*! \file LiborMarketModel.h
  * Interface and partial implementation for all Libor market models based on
- * factorloadings {@link LiborFactorLoading} with a deterministic volatility 
+ * factor loadings {@link LiborFactorLoading} with a deterministic volatility 
  * {@link VolSurface} and constant correlations {@link Correlations}.
  */
 
@@ -58,8 +58,9 @@ class Bond;  // defined below
  * 
  ******************************************************************************/
  
- /** Type of simulation (driftless, low factor driftless, predictor-corrector, 
-  *  fast predictor-corrector) and LiborFactorLoadingType.
+ /** Object encapsulating the following information:<br> 
+  *  type of simulation (driftless, low factor driftless, predictor-corrector, 
+  *  fast predictor-corrector) and {@link LiborFactorLoadingType}.
   */
  struct LiborMarketModelType{
 	  
@@ -100,7 +101,7 @@ class Bond;  // defined below
  * fact the fastest model uses the forward transported Libors
  *\f[U_j=X_j(1+X_{j+1})\dots(1+X_{n-1})\f] 
  * as state variables since these are local martingales and hence driftless in the 
- * forward martingale measure at $t=T_n$, see {@link DriftlessLMM}.</p>
+ * forward martingale measure at \f$t=T_n\f$, see {@link DriftlessLMM}.</p>
  *
  * <p> If the state variables have a state dependent drift they will not follow a 
  * log-Gaussian process despite the Gaussian factor loadings. In fact the distribution of 

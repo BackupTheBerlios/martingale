@@ -256,14 +256,10 @@ Real tau(int s);
  *********************************************************************************/
 		
 
-//<----------------To Do----------------->
-// make this a class template depending on the Node type (lite/heavy).
-
-
 /** <p><a href="lmm-lattice-3f">Two factor lattice</a> for driftless Libor market model  
  *  {@link DriftlessLMM} with constant volatility functions \f$\sigma_j(t)=\sigma_j\f$. 
  *
- * <p>It is assumed that all Libor accrual intervals have equal length \f$\delta\f$..
+ * <p>It is assumed that all Libor accrual intervals have equal length \f$\delta\f$.
  *  The lattice makes nSteps time steps of equal length \f$dt=\delta/nSteps\f$ in 
  *  each accrual interval. Consequently discrete time t corresponds to continuous time
  *  \f[t*dt=T_{t/nSteps}+(t\;mod\;nSteps)*dt.\f]
@@ -321,15 +317,10 @@ void buildLattice(int m, bool verbose);
  *********************************************************************************/
 
 
-//<----------------To Do----------------->
-// make this a class template depending on the Node type (lite/heavy).
-
-
-
 /** <p><a href="lmm-lattice-3f">Three factor lattice</a> for driftless Libor market model  
  *  {@link DriftlessLMM} with constant volatility functions \f$\sigma_j(t)=\sigma_j\f$. 
  *
- * <p>It is assumed that all Libor accrual intervals have equal length \f$\delta\f$..
+ * <p>It is assumed that all Libor accrual intervals have equal length \f$\delta\f$.
  *  The lattice makes nSteps time steps of equal length \f$dt=\delta/nSteps\f$ in 
  *  each accrual interval. Consequently discrete time t corresponds to continuous time
  *  \f[t*dt=T_{t/nSteps}+(t\;mod\;nSteps)*dt.\f]

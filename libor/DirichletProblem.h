@@ -36,6 +36,15 @@ class Ball;
 class VectorBrownianMotion;
 class StoppingTime;
 // class RealVector
+
+
+/*! \file DirichletProblem.h
+ *  Solving the Dirichlet problem for a EuclideanRegion G (in any dimension): 
+ *  for a given function h defined on the boundary of G we seek a function f satisfying 
+ *  \f$\nabla f=0\f$ on the interior, \f$f=h\f$ on the boundary of G.
+ *  Solution computed at arbitrary points x in G using Brownian motion.
+ *  For more details see {@link DirichletProblem}.
+ */
  
  
 /** <p>This class solves the Dirichlet problem for a EuclideanRegion G (in any dimension): 

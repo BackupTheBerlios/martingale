@@ -47,6 +47,10 @@ class std::ostream;
 
 
 
+/*! \file LiborFactorLoading.h
+ *  Factor loading (stochastic integrand, volatility process) for Libor logarithms.
+ *  See {@link FactorLoading}.
+ */
 
 
 
@@ -56,7 +60,7 @@ class std::ostream;
  * 
  ******************************************************************************/
  
- /** Integer and string IDs of the Volsurface and Correlations of a
+ /** Object encapsulating type information (Volsurface and Correlations) of a
   *  LiborFactorLoading.
   */
  struct LiborFactorLoadingType{
@@ -107,9 +111,9 @@ class std::ostream;
  *  Y and related processes.
  *
  * <p><a name="CVt"></a>
- * More precisely to simulate the time step \f$Y(T_t)\to Y(T_{t+1})\f$ where t is now 
- * discrete time we need the matrix \f$CV(t)=CV(t+1,n,T_t,T_{t+1})\f$,
- * \f[CV(t)_{ij}=\int_{T_t}^{T_{t+1}}sigma_i(s)\sigma_j(s)\rho_{ij}ds,\quad t+1\leq i,j<n,\f]
+ * More precisely to simulate the time step \f$Y(T_t)\to Y(T_{t+1})\f$ (here t is
+ * discrete time) we need the matrix \f$CV(t)=CV(t+1,n,T_t,T_{t+1})\f$,
+ * \f[CV(t)_{ij}=\int_{T_t}^{T_{t+1}}\sigma_i(s)\sigma_j(s)\rho_{ij}ds,\quad t+1\leq i,j<n,\f]
  * for the drift step as well as its upper triangular root R satisfying
  * \f$CV(t)=R(t)R(t)'\f$ for the volatility step.
  *
