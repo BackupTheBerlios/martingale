@@ -1980,6 +1980,13 @@ std::ostream& operator << (std::ostream& os, const Matrix<S>& A)
 
 
 
+// the important special case of Real scalars
+typedef vector<Real>    RealVector;
+typedef UTRMatrix<Real> UTRRealMatrix;
+typedef LTRMatrix<Real> LTRRealMatrix;
+typedef Matrix<Real>    RealMatrix;
+
+
 
 
 /***************************************************************************************
