@@ -93,7 +93,7 @@ controlledForwardPayoff() { return new ControlledForwardPayoff(this); }
      
 Real 
 Derivative::
-analyticForwardPrice() 
+analyticForwardPrice() const
 {
      std::cout << endl 
           << "Derivative.analyticForwardPrice():" << endl
@@ -142,6 +142,13 @@ getControlVariateMean()
 }
 
 
+
+// GLOBAL INSERTION
+
+std::ostream& operator << 
+(std::ostream& os, const Derivative& fl){ return fl.printSelf(os); }
+
+
 /*******************************************************************************
  *
  *                          LIBOR DERIVATIVE
@@ -177,13 +184,13 @@ testPrice()
 	      epsilon=0.00000001;   // replacement for zero denominator in relError
          
 	 // correlation with control variate
-     std::cout << *this << endl
-	      << LMM << endl
-	      << endl << "Effective dimension of the simulation = " 
-	      << effectiveDimension()
-	      << endl;
+	printSelf(std::cout);                       // cout << *this linkage problems
+	LMM->printSelf(std::cout);                  // cout << *LMM linkage problems
+    std::cout << endl << "Effective dimension of the simulation = " 
+	          << effectiveDimension()
+	          << endl;
 		
-	  int nPath=20000;
+	  int nPath=1000;
       // prices
       aprice=analyticForwardPrice();
       mcprice=monteCarloForwardPrice(nPath);
@@ -217,26 +224,13 @@ testPrice()
 
 void 
 LiborDerivative::
-priceTest(int volType, int corrType, bool DL=true) 
+priceTest(int lmmType, int volType, int corrType) 
 {
      Timer watch;
-
-	 if(DL){
-		 watch.start();
-		 setLMM(DriftlessLMM::sample(n,volType,corrType)); 
-         testPrice();
-	     watch.stop();
-	     watch.report("DriftlessLMM");
-		 
-	} else {
-		
-		 watch.start();
-	     setLMM(PredictorCorrectorLMM::sample(n,volType,corrType));   
-         testPrice();
-    	 watch.stop();
-	     watch.report("PredictorCorrectorLMM");
-	 } // end if
-
+     setLMM(LiborMarketModel::sample(n,lmmType,volType,corrType)); 
+     testPrice();
+	 watch.stop();
+	 watch.report(" ");
 
 } // end priceTest
 	
@@ -272,9 +266,9 @@ delta_i((lmm->getDeltas())[i])
 
 Caplet* 
 Caplet::
-sample(int n, int volType, int corrType)
+sample(int n, int lmmType, int volType, int corrType)
 {
-	LiborMarketModel* lmm=DriftlessLMM::sample(n,volType,corrType);
+	LiborMarketModel* lmm=LiborMarketModel::sample(n,lmmType,volType,corrType);
 	int i=n/3;
 	Real kappa=(lmm->getInitialLibors())[i];
 	return new Caplet(i,kappa,lmm);
@@ -357,10 +351,11 @@ kappa(strike)
 } 
 
 
+Swaption* 
 Swaption::
-Swaption* sample(int n, int volType, int corrType)
+sample(int n, int lmmType, int volType, int corrType)
 {
-	LiborMarketModel* lmm=DriftlessLMM::sample(n,volType,corrType);
+	LiborMarketModel* lmm=LiborMarketModel::sample(n,lmmType,volType,corrType);
 	int p=n/3, q=n, t=p;
 	Real kappa=lmm->swapRate(p,q);
 	return new Swaption(p,q,t,kappa,lmm);
@@ -466,9 +461,10 @@ K(strike), t(s)
 	
 BondCall* 
 BondCall::
-sample(int n, int volType, int corrType)
+sample(int n, int lmmType, int volType, int corrType)
 {
-	LiborMarketModel* lmm=DriftlessLMM::sample(n,volType,corrType);
+	LiborMarketModel* 
+	lmm=LiborMarketModel::sample(n,lmmType,volType,corrType);
 	int p=n/3, q=2*n/3, t=p;
 	RealArray1D c(q-p,p);
 	for(int j=p;j<q;j++) c[j]=0.5+Random::U01();
@@ -481,9 +477,10 @@ sample(int n, int volType, int corrType)
 
 BondCall* 
 BondCall::
-sampleCallOnZeroCouponBond(int n, int volType, int corrType)
+sampleCallOnZeroCouponBond(int n, int lmmType, int volType, int corrType)
 {
-	LiborMarketModel* lmm=DriftlessLMM::sample(n,volType,corrType);
+	LiborMarketModel* 
+	lmm=LiborMarketModel::sample(n,lmmType,volType,corrType);
 	int i=n/2, t=i-1;
 	Bond* B=new Bond(i,lmm);
 	Real K=B->cashPrice();

@@ -25,7 +25,8 @@ spyqqqdia@yahoo.com
 
 #include "TypedefsMacros.h"
 #include "Derivatives.h"
-
+#include "LiborFactorLoading.h"
+#include  "LiborMarketModel.h"            // for inclusion to main.cc
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
@@ -44,23 +45,17 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  */
 void testFactorLoading(int n)
 {
-	LiborFactorLoading* fl;
-	cout << "\nTesting CS_FactorLoading: " << endl;
-	Timer watch;
-	watch.start();
-	fl=CS_FactorLoading::sample(n);
-	watch.stop();
-	watch.report("CS_FactorLoading set up.");
-
-	fl->selfTest();
-	
-	cout << "\n\n\nTesting JR_FactorLoading: " << endl;
-	watch.start();
-	fl=JR_FactorLoading::sample(n);
-	watch.stop();
-	watch.report("JR_FactorLoading set up.");
-
-	fl->selfTest();
+	LiborFactorLoading* fl=0;
+	for(int volType=0;volType<3;volType++)
+	for(int corrType=0;corrType<2;corrType++){
+		
+	   Timer watch;
+	   watch.start();
+	   fl=LiborFactorLoading::sample(n,volType,corrType);
+	   fl->selfTest();
+	   watch.stop();
+	   watch.report(" ");
+	}
 	
 } // end testFactorLoading
 
@@ -73,22 +68,25 @@ void testFactorLoading(int n)
 static void testLiborFactorLoadingFactorization(int n, int r)
 {
 
-	cout << "\n\n  CS-FactorLoading:"  << endl;
-	LiborFactorLoading* 
-	fl = CS_FactorLoading::sample(n);
-	for(int t=0;t<n-2;t++){
+	LiborFactorLoading* fl=0;
+	for(int volType=0;volType<3;volType++)
+	for(int corrType=0;corrType<2;corrType++){
 		
-		UTRRealMatrix& CV=fl->logLiborCovariationMatrix(t);
-		CV.testFactorization(r);
-    }
-	
-	cout << "\n\n\n\n\n  JR-FactorLoading:" << endl;
-	fl = JR_FactorLoading::sample(n);
-	for(int t=0;t<n-2;t++){
+	   std::cout << "\nTesting Libor factor loading," 
+		         << "\ncorrelation matrices low rank factorization:" 
+		         << "\nVolatility surface type = VolSurface::" << volType
+		         << "\nCorrelation type = Correlations::" << corrType;
+	   Timer watch;
+	   watch.start();
+	   fl=LiborFactorLoading::sample(n,volType,corrType);
+	   for(int t=0;t<n-2;t++){
 		
-		UTRRealMatrix& CV=fl->logLiborCovariationMatrix(t);
-		CV.testFactorization(r);
-    }
+		   const UTRRealMatrix& CV=fl->logLiborCovariationMatrix(t);
+		   CV.testFactorization(r);
+       }
+	   watch.stop();
+	   watch.report(" ");
+	}
 } // end factorizationTest
 
  
@@ -97,11 +95,6 @@ static void testLiborFactorLoadingFactorization(int n, int r)
  *                        LMM TESTS
  *
  ******************************************************************************/
-
-/** Sets up a LognormalLMM in dimension n and prints
- *  the drift step vectors and covariationmatrixRoots.
- */
-void testLognormalLMM(int n){ LognormalLMM::test(n); }
 
 
  
@@ -120,17 +113,16 @@ void testLognormalLMM(int n){ LognormalLMM::test(n); }
  *  and a QMC dynamics. The forward transporting and discounting involves 
  *  all Libors \f$L_j, j\geq p\f$. This is a good stress test for the LMM.
  *
- * @param PC use a {@link PredictorCorrectorLMM} Libor market model.
- * @param FPC use a {@link FastPredictorCorrectorLMM} Libor market model.
- * @param LS use a {@link LightSpeedLMM} Libor market model.
+ * @param lmmType type of Libor market model: {@link LiborMarketModel}::DL,PC,FPC.
+ * @param volType type of volatility surface: {@link VolSurface}::JR,M,CONST.
+ * @param corrType type of log-Libor correlations: {@link Correlations}::JR,CS.
  */
-void testSwaptionPrice(bool PC=false, bool FPC=false, bool LS=true)
+void testSwaptionPrice(int lmmType, int volType, int corrType)
 { 
-    for(int n=30;n<70;n+=20)
-	for(Real delta=0.1;delta<0.6;delta+=0.4){
+    for(int n=30;n<70;n+=20){
 		
-		Swaption* swpn=Swaption::sample(n,delta);
-	    swpn->priceTest(delta,PC,FPC,LS);
+		Swaption* swpn=Swaption::sample(n,lmmType,volType,corrType);
+	    swpn->testPrice();
 	}
        
 } // end testSwaptionPrice
@@ -156,16 +148,17 @@ void testSwaptionPrice(bool PC=false, bool FPC=false, bool LS=true)
  *  and a QMC dynamics. The forward transporting and discounting involves 
  *  all Libors \f$L_j, j\geq i+1\f$.</p>
  *
- * @param PC use a {@link PredictorCorrectorLMM} Libor market model.
- * @param FPC use a {@link FastPredictorCorrectorLMM} Libor market model.
- * @param LS use a {@link LightSpeedLMM} Libor market model.
+ * @param lmmType type of Libor market model: {@link LiborMarketModel}::DL,PC,FPC.
+ * @param volType type of volatility surface: {@link VolSurface}::JR,M,CONST.
+ * @param corrType type of log-Libor correlations: {@link Correlations}::JR,CS.
  */
-void testCapletPrice(bool PC=false, bool FPC=false, bool LS=true)
+void testCapletPrice(int lmmType, int volType, int corrType)
 { 
-    int n=80; Real delta=0.25;
-	Caplet* cplt=Caplet::sample(n,delta);
-	cplt->priceTest(delta,PC,FPC,LS);
-       
+     for(int n=30;n<70;n+=20){
+		
+		LiborDerivative* cplt=Caplet::sample(n,lmmType,volType,corrType);
+	    cplt->testPrice();
+	}
 } // end testCapletPrice
 
 
@@ -184,19 +177,17 @@ void testCapletPrice(bool PC=false, bool FPC=false, bool LS=true)
  *  and a QMC dynamics. The forward transporting and discounting involves 
  *  all Libors \f$L_j, j\geq p\f$. This is a good stress test for the LMM.
  *
- * @param PC use a {@link PredictorCorrectorLMM} Libor market model.
- * @param FPC use a {@link FastPredictorCorrectorLMM} Libor market model.
- * @param LS use a {@link LightSpeedLMM} Libor market model.
+ * @param lmmType type of Libor market model: {@link LiborMarketModel}::DL,PC,FPC.
+ * @param volType type of volatility surface: {@link VolSurface}::JR,M,CONST.
+ * @param corrType type of log-Libor correlations: {@link Correlations}::JR,CS.
  */
-void testCallOnBondPrice(bool PC=false, bool FPC=false, bool LS=true)
+void testCallOnBondPrice(int lmmType, int volType, int corrType)
 { 
-    for(int n=30;n<60;n+=20)
-	for(Real delta=0.25;delta<0.6;delta+=0.4){
+    for(int n=30;n<70;n+=20){
 		
-		BondCall*  bc=BondCall::sample(n,delta);
-	    bc->priceTest(delta,PC,FPC,LS);
-	}
-       
+		BondCall* bc=BondCall::sample(n,lmmType,volType,corrType);
+	    bc->testPrice();
+	}       
 } // end testBondCallPrice
 
 
@@ -210,13 +201,13 @@ void testCallOnBondPrice(bool PC=false, bool FPC=false, bool LS=true)
  * @param FPC use a {@link FastPredictorCorrectorLMM} Libor market model.
  * @param LS use a {@link LightSpeedLMM} Libor market model.
  */
-void testCallOnZeroCouponBondPrice(bool PC=false, bool FPC=false, bool LS=true)
+void testCallOnZeroCouponBondPrice(int lmmType, int volType, int corrType)
 { 
     for(int n=30;n<60;n+=20)
 	for(Real delta=0.25;delta<0.6;delta+=0.4){
 		
-		BondCall*  bc=BondCall::sampleCallOnZeroCouponBond(n,delta);
-	    bc->priceTest(delta,PC,FPC,LS);
+		BondCall*  bc=BondCall::sampleCallOnZeroCouponBond(n,lmmType,volType,corrType);
+	    bc->testPrice();
 	}
        
 } // end testCallOnZeroCouponBondPrice

@@ -140,15 +140,14 @@ timeStep(int t, int p)
     // only Libors U_j, j>=q make the step. To check the index shifts 
     // to zero based array indices below consider the case p=t+1 
     // (all Libors), then q=t+1.
-         
-         
+              
     // volatility step vector V
     for(int j=q;j<n;j++){
     
 		V[j]=0;
         for(int k=j;k<n;k++) V[j]+=R(j,k)*Z(t,k);  
     }
-    
+
 	// the drift step
 		 
     // compute Y_j=log(U_j) using the cached deterministic drift
@@ -375,13 +374,14 @@ printSelf(std::ostream& os) const
 	RealVector vols(n); vols[0]=0;
 	for(int i=1;i<n;i++) vols[i]=vol(i); 
 
-	return
-	os << "\nDriftless Libor Market Model, random dynamics: " << SG << endl
-	   << "State variables: Gaussian forward transported Libors" << endl 
+	os << "\nDriftless Libor Market Model, random dynamics: ";
+	SG->printSelf(os);
+	os << "State variables: Gaussian forward transported Libors" << endl 
 	   << "U_j=X_j(1+X_{j+1})...(1+X_{n-1})" << endl
-	   << "These are driftless, very fast exact simulation." << endl
-	   << factorLoading
-	   << "\n\nLibor volatilities:\n" << vols;      
+	   << "These are driftless, very fast exact simulation.";
+	factorLoading->printSelf(os);
+	os << "\n\nLibor volatilities:\n" << vols;  
+    return os;
 }
 	 
              

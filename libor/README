@@ -144,6 +144,12 @@ Mistakes should show up as nonpositive definite log-Libor covariation matrices.
 REMOVED: LognormalLMM and corresponding radical simplification of LiborFactorLoading.
 
 
+7-15-03
+
+Split into headers and source files nearly complete.
+CapletPrice LMM test fails.
+
+
 
 
 

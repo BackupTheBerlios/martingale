@@ -185,7 +185,7 @@ public:
        *  intended to be overidden in concrete subclasses.</p>
        *
        */
-      virtual Real analyticForwardPrice();
+      virtual Real analyticForwardPrice() const;
 	 
      
       /** The value of the forward price at time <code>t=0</code>.
@@ -223,8 +223,7 @@ public:
 
 // GLOBAL INSERTION
 
-std::ostream& operator << 
-(std::ostream& os, const Derivative& fl){ return fl.printSelf(os); }
+std::ostream& operator << (std::ostream& os, const Derivative& fl);
 
 
 
@@ -297,13 +296,11 @@ virtual void testPrice();
  *  DriftlessLMM. Quarterly accrual. Changes the underlying Libor
  *  market model but does not restore the original state (model).
  *
- * @param volType type of volatility surface: VolSurface::CONST, JR, M.
- * @param corrType type of correlations: Corrleations::JR, CS.
- * @param FPC use a {@link FastPredictorCorrectorLMM} Libor market model.
- * @param DL use a {@link DriftlessLMM} Libor market model (otherwise
- * the {@link PredictorCorrectorLMM} is used.
+ * @param lmmType type of LMM: {@link LiborMarketModel}::DL,PC,FPC.
+ * @param volType type of volatility surface: {@link VolSurface}::CONST, JR, M.
+ * @param corrType type of correlations: {@link Correlations}::JR, CS.
  */
-void priceTest(int volType, int corrType, bool DL=true);
+void priceTest(int lmmType, int volType, int corrType);
 
 		
 }; // end LiborDerivative
@@ -355,10 +352,11 @@ public:
 	 *  Based on a {@link DriftlessLMM}.
 	 *
 	 * @param n dimension (number of Libor accrual intervals).
+	 * @param int lmmType type of Libor market model: {@link LiborMarketModel::DL,PC,FPC}.
 	 * @param volType type of volatility surface, VolSurface::CONST, JR, M.
 	 * @param corrType type of correlations, Correlations::CS, JR.
 	 */
-	static Caplet* sample(int n, int volType, int corrType);
+	static Caplet* sample(int n, int lmmType, int volType, int corrType);
 		
 	 
     
@@ -452,10 +450,11 @@ public:
 	 *  Based on a {DriftlessLMM}.
 	 *	 
  	 * @param n dimension (number of Libor accrual intervals).
+	 * @param int lmmType type of Libor market model: {@link LiborMarketModel::DL,PC,FPC}
 	 * @param volType type of volatility surface, VolSurface::CONST, JR, M.
 	 * @param corrType type of correlations, Correlations::CS, JR.
 	 */
-	static Swaption* sample(int n, int volType, int corrType);
+	static Swaption* sample(int n, int lmmType, int volType, int corrType);
 	
 	 
     
@@ -546,25 +545,25 @@ public:
 	/** Sample bond with p=n/3, q=2*n/3, all coupons random in [0.5,1.5].
 	 *  Call on this bond with strike rate = cash price of the bond
 	 *  at the horizon exercisable at time \f$T_p\f$. 
-	 *  Based on a {DriftlessLMM} with a {@link CS_FactorLoading}.
 	 *	 
 	 * @param n dimension (number of Libor accrual intervals).
-	 * @param volType type of volatility surface, VolSurface::CONST, JR, M.
-	 * @param corrType type of correlations, Correlations::CS, JR.
+	 * @param lmmType type of Libor market model: {@link LiborMarketModel}::DL,PC,FPC.
+	 * @param volType type of volatility surface, {@link VolSurface}::CONST, JR, M.
+	 * @param corrType type of correlations, {@link Correlations}::CS, JR.
 	 */
-	static BondCall* sample(int n, int volType, int corrType);
+	static BondCall* sample(int n, int lmmType, int volType, int corrType);
 	
 	 
 	/** Sample call on zero coupon bond with i=n/2, strike price = cash price 
 	 *  of the bond at the horizon exercisable at time \f$T_{i-1}\f$. 
-	 *  Based on a {DriftlessLMM} with a {@link CS_FactorLoading}.
 	 *  This is a worst case for the assumptions of the analytic price formulas.
 	 *	 
 	 * @param n dimension (number of Libor accrual intervals).
-	 * @param volType type of volatility surface, VolSurface::CONST, JR, M.
-	 * @param corrType type of correlations, Correlations::CS, JR.
+	 * @param lmmType type of Libor market model: {@link LiborMarketModel}::DL,PC,FPC.
+	 * @param volType type of volatility surface, {@link VolSurface}::CONST, JR, M.
+	 * @param corrType type of correlations, {@link Correlations}::CS, JR.
 	 */
-	static BondCall* sampleCallOnZeroCouponBond(int n, int volType, int corrType);
+	static BondCall* sampleCallOnZeroCouponBond(int n, int lmmType, int volType, int corrType);
 
      
 	 

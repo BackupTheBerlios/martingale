@@ -113,7 +113,7 @@ private:
  *  through all nodes in the lattice. Here s is the discrete time of option expiration.
  *  The value \f$\pi_t=E_t(h)\f$ is written into the field <code>pi</code> of each node.
  */
-computeConditionalExpectations()
+void computeConditionalExpectations()
 {
 	// run through the list of nodes at time t=s and set the known value pi_s=h
 	std::list<Node*>& nodes_s=theLattice->getNodeList(s);	    

@@ -340,7 +340,7 @@ printSelf(std::ostream& os) const
 {
 	return
 	os << "\n\nCorrelations: Coffee-Shoenmakers, " 
-	   << "alpha=" << alpha << "beta=" << beta << "r_oo=" << r_oo 
+	   << "alpha=" << alpha << ", beta=" << beta << ", r_oo=" << r_oo 
 	   << endl;
 }
 
@@ -418,12 +418,12 @@ printSelf(std::ostream& os) const
 	RealVector vols(n-1,1);            // annualized volatilities
 	for(int i=1;i<n;i++) vols[i]=annualVol(i);
 		
-	return 
 	os << "\n\nLiborFactorLoading: dimension = " << n 
-	   << "Initial Libors: " << L0
-	   << "\nAnnualized volatilities: " << vols
-	   << "\nVolatility surface: " << vol
-	   << "\nCorrelations: " << corr;
+	   << "\nInitial Libors: " << L0
+	   << "\nAnnualized volatilities: " << vols;
+	vol->printSelf(os);
+	corr ->printSelf(os);
+	return os;
 }
 	
 	
@@ -506,7 +506,8 @@ selfTest() const
 	Real precision=0.001,       // maximum acceptable relative error in percent
 		 epsilon=0.00000000001; // zero denominator reset to epsilon
 	
-    std::cout << "\nLIBOR FACTORLOADING SELFTEST:" << endl << this;
+    std::cout << "\nLIBOR FACTORLOADING SELFTEST:";
+	printSelf(std::cout);
 	
 	cout << "\nTesting the root L of the matrix C=logLiborCovariationMatrix(t):" << endl;
 	for(int t=0;t<n-1;t++){

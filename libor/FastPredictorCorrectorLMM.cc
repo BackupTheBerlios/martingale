@@ -253,11 +253,13 @@ printSelf(std::ostream& os) const
 	RealVector vols(n);
 	for(int i=0;i<n;i++) vols[i]=vol(i); 
 
-    return
 	os << "\nLibor Market Model, fast predictor-corrector type."
-	   << "Random dynamics: " << SG << endl
-	   << factorLoading
-	   << "\n\nLibor volatilities:\n" << vols;
+	   << "\nRandom dynamics: ";
+	SG->printSelf(os);
+	factorLoading->printSelf(os);
+	os << "\n\nLibor volatilities:\n" << vols;
+	
+	return os;
 }
 	 
 

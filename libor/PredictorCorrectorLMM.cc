@@ -94,15 +94,15 @@ logLiborCovariationMatrices(n-1),
 logLiborCovariationMatrixRoots(n-1),
 SG(new MonteCarloLiborDriver(n)),
 XVec(n)
-{        
+{  
     // initialize path arrays
     for(int j=0;j<n;j++){ X(0,j)=x[j]; Y(0,j)=log(x[j]); }
         
 	// set pointers to matrices for time step simulation
 	for(int t=0;t<n-1;t++){
 			
-		const UTRRealMatrix cvm_t=factorLoading->logLiborCovariationMatrix(t);
-		const UTRRealMatrix cvmr_t=factorLoading->logLiborCovariationMatrixRoot(t);
+		const UTRRealMatrix& cvm_t=factorLoading->logLiborCovariationMatrix(t);
+		const UTRRealMatrix& cvmr_t=factorLoading->logLiborCovariationMatrixRoot(t);
 		logLiborCovariationMatrices.setMatrix(t,cvm_t);
         logLiborCovariationMatrixRoots.setMatrix(t,cvmr_t);
 	}
@@ -145,7 +145,7 @@ printWienerIncrements(int t, int s) const
 void 
 PredictorCorrectorLMM::
 timeStep(int t, int p)
-{   
+{
 	 /* The matrices needed for the time step T_t->T_{t+1}.
 	  */
      const UTRRealMatrix& C=logLiborCovariationMatrices.getMatrix(t); 
@@ -163,7 +163,7 @@ timeStep(int t, int p)
          V[j]=0;
          for(int k=j;k<n;k++) V[j]+=R(j,k)*Z(t,k);  
      }
-    
+   
      // predicted drift step vector for Y(t)=log(X(t))
      for(int k=q+1;k<n;k++) F[k]=1-1/(1+X(t,k));
      for(int j=q;j<n;j++){
@@ -250,11 +250,12 @@ printSelf(std::ostream& os) const
 	RealVector vols(n);
 	for(int i=0;i<n;i++) vols[i]=vol(i); 
 
-	return
-	os << "\nLibor markett model: predictor-corrector type" << endl
-	   << "\nRandom dynamics: " << SG
-	   << factorLoading
-	   << "\n\nLibor volatilities:\n" << vols;
+	os << "\nLibor market model: predictor-corrector type" << endl
+	   << "\nRandom dynamics: ";
+	SG->printSelf(os);
+	factorLoading->printSelf(os);
+	os << "\n\nLibor volatilities:\n" << vols;
+	return os;
 }
  
  

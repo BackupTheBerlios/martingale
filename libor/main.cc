@@ -28,13 +28,13 @@ spyqqqdia@yahoo.com
 // #include "FinMath.h"
 // #include "TestMatrix.h"
 // #include "TestProbability.h"
-// #include "TestLMM.h"
+ #include "TestLMM.h"
 // #include "TestOptimizers.h"
 // #include "LatticeOption.h"
 // #include "TestFormula.h"
 // #include "Examples.h"
 // #include "DirichletProblem.h"
-#include "LiborCalibrator.h"
+// #include "LiborCalibrator.h"
 
 
 using namespace Martingale;
@@ -90,15 +90,15 @@ int main()
 	// Examples::liborPathTiming(80,10000);         // 10000 paths in dimension 80
 	// Examples::liborApproximationError(124, 120, 120, 20000);
 	
-	/* anomalies in high dimensions (n>=70) for all but DriftlessLMM, 
-	bool LS=true,    // DriftlessLMM
-	     PC=false,   // PredictorCorrectorLMM
-		 FPC=false;  // FastPredictorCorrectorLMM
-	//testCapletPrice(LS,PC,FPC); 
-	//testSwaptionPrice(LS,PC,FPC);
-	//testCallOnBondPrice(LS,PC,FPC);
-	//testCallOnZeroCouponBondPrice(LS,PC,FPC);
-	*/
+	// anomalies in high dimensions (n>=70) for all but DriftlessLMM,
+	   int lmmType=LiborMarketModel::FPC;  // FPC, DL
+	   int volType=VolSurface::JR;        // M,CONST
+	   int corrType=Correlations::CS;     // JR
+	testCapletPrice(lmmType,volType,corrType); 
+	//testSwaptionPrice(lmmType,volType,corrType);
+	//testCallOnBondPrice(lmmType,volType,corrType);
+	//testCallOnZeroCouponBondPrice(lmmType,volType,corrType);
+	
 	// testLiborMeans(30,25,20,50000);
 	// testLognormalLMM(20);
 	
@@ -113,7 +113,7 @@ int main()
     // test the calibrator for the driftless LMM on a 
 	// constant volatility LiborFactorLoading
     // DriftlessLmmCalibrator::test(20,LiborFactorLoading::CV);
-	 DriftlessLmmCalibrator::writeSyntheticDataSample();
+	// DriftlessLmmCalibrator::writeSyntheticDataSample();
 	
 	// PredictorCorrectorLmmCalibrator::writeSyntheticDataSample();
 	

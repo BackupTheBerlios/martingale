@@ -26,6 +26,7 @@ spyqqqdia@yahoo.com
 #include "TypedefsMacros.h"
 #include "Random.h"
 #include "Matrices.h"
+#include <iostream>
 
 MTGL_BEGIN_NAMESPACE(Martingale) 
 
@@ -33,7 +34,6 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 // we are using
-class std::ostream;
 class LowDiscrepancySequence;
 
 

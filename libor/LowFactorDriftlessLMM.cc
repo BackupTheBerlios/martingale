@@ -385,13 +385,15 @@ printSelf(std::ostream& os) const
 	RealVector vols(n); vols[0]=0;
 	for(int i=1;i<n;i++) vols[i]=vol(i); 
 
-	return
-	os << "\nDriftless Libor Market Model, random dynamics: " << SG << endl
-	   << "State variables: Gaussian forward transported Libors" << endl 
+	os << "\nDriftless Libor Market Model, random dynamics: ";
+    SG->printSelf(os);
+	os << "State variables: Gaussian forward transported Libors" << endl 
 	   << "U_j=X_j(1+X_{j+1})...(1+X_{n-1})" << endl
-	   << "These are driftless, very fast exact simulation." << endl
-	   << factorLoading 
-	   << "\n\nLibor volatilities:\n" << vols;      
+	   << "These are driftless, very fast exact simulation.";
+	factorLoading->printSelf(os); 
+	os << "\n\nLibor volatilities:\n" << vols; 
+	
+	return os;
 }
 	 
              

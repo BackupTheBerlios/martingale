@@ -65,7 +65,7 @@ void testMatrixInverse()
 	U*=Uinv1;
 	
 	Real precision=0.001,       // maximum acceptable relative error in percent
-		 epsilon=0.00000000001; // zero denominator reset to epsilon
+		 epsilon=0.000000001; // zero denominator reset to epsilon
 	
 	Uinv.testEquals(I,precision,epsilon,"Uinv*U=I");
 	cout << Uinv << endl;

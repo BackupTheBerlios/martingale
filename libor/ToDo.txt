@@ -17,7 +17,14 @@ Headers include much less and the forward declarations give us a much better
 picture of the dependencies.
 
 
-State 7-12-03-0.1:
+State 7-13-03:
 
-All files in order listed in the project window up to and including Node.h
-have been rewritten in this way.
+All files have been rewritten in this way and there is only one problem left before
+linkage:
+No method Random::sTN()...
+
+7-15-03
+
+Linkage obtained.
+Caplet price test fails on PC, DL LMMs (others not tested).
+Investigate Libor path computation.

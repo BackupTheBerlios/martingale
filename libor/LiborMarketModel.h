@@ -32,13 +32,13 @@ spyqqqdia@yahoo.com
 
 #include "TypedefsMacros.h"
 #include "Matrices.h"
+#include <iostream>
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 // we are using
 class LiborFactorLoading;
-class std::ostream;
 
 
 class Bond;  // defined below
@@ -81,6 +81,15 @@ protected:
 	
 
 public:
+	
+	/** Flags for the type of LMM. 
+	 *  DL ({@link DrifltessLMM}), 
+	 *  PC ({@link PredictorCorrectorLMM}),
+	 *  FPC {@link FastPredictorCorrectorLMM}.
+	 */
+	static const int DL=0, PC=1, FPC=2;
+	
+	
 
     /** The number n of accrual periods.
      */
@@ -148,6 +157,16 @@ public:
      * {@link FactorLoading}.
      */
     LiborMarketModel(LiborFactorLoading* fl);
+   
+   
+    /** Sample Libor market model, quarterly accrual.
+	 *
+	 * @param n dimension (number of Libor accrual intervals).
+	 * @param lmmType type of Libor market model: {@link LiborMarketModel::DL,PC,FPC}.
+	 * @param volType type of volatility surface, VolSurface::CONST, JR, M.
+	 * @param corrType type of correlations, Correlations::CS, JR.
+	 */
+	static LiborMarketModel* sample(int n, int lmmType, int volType, int corrType);
  
     
 

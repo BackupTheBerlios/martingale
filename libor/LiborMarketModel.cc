@@ -21,6 +21,9 @@ spyqqqdia@yahoo.com
 */
 
 #include "LiborMarketModel.h"
+#include "DriftlessLMM.h"
+#include "PredictorCorrectorLMM.h"
+#include "FastPredictorCorrectorLMM.h"
 #include "Array.h"
 #include "QuasiMonteCarlo.h"
 #include "LiborFactorLoading.h"
@@ -46,6 +49,27 @@ l(fl->getInitialLibors()),
 x(fl->getInitialXLibors()),
 factorLoading(fl)
 {   } 
+
+
+LiborMarketModel* 
+LiborMarketModel::
+sample(int n, int lmmType, int volType, int corrType)
+{	
+    LiborMarketModel* lmm=0;
+	switch(lmmType){
+
+		case PC :
+        lmm=PredictorCorrectorLMM::sample(n,volType,corrType); break;
+		
+		case FPC :
+        lmm=FastPredictorCorrectorLMM::sample(n,volType,corrType); break;
+		
+		default :
+        lmm=DriftlessLMM::sample(n,volType,corrType); 
+	}
+	
+	return lmm;
+}
 	
 
 // LIBOR VOLATILITIES
