@@ -127,9 +127,22 @@ Thus the functionality of UTRRealMatrix is not available for RandomObjects with 
 <p>
 Move the functionality of UTRRealMatrix to the more general type  UTRMatrix&lt;S&gt; or limit 
 RandomObjects to Real scalars.
+
+<a name="8-5-03"></a>
+<h3>8-5-03</h3>
+
+State Lattice-rewrite: Nodes finished. Split<br>
+template&lt;class LmmNode&gt; class LmmLattice
 <p>
-Investigate if we cannot return T& from nextValue() in the class RandomObject.
-This is faster. What happens if T is a built in scalar type?
+Into subclasses<br>
+template&lt;class LmmNode&gt; class LmmLattice2F,3F
+<p>
+Merely the buildLattice(int m) methods have to be adapted and moved into the header file.
+Then rework the BasketLattice in exactly the same manner.
+<p>
+Note: 4 factor lattices are not reasonable since they generate 100s of millions of nodes.
+Therefore it is not worth introducing 4 dimensional arrays for node registry.
+
 
 
 
