@@ -55,6 +55,9 @@ p2(q-p,p),
 p3(q-p,p),
 S(q-p,p)
 {
+	if(verbose)
+	cout << "\n\nExercise trigger:";
+	
 	// index base t=p along time t
 	for(int i=0;i<nPath;i++) path[i]=new RealArray2D(q-p,4,p,0);
 	fillTrainingPaths();
@@ -104,7 +107,10 @@ void
 PjTrigger::
 fillTrainingPaths()
 {
-    for(int i=0;i<nPath;i++){
+    if(verbose)
+	cout << "\nComputing training paths.";
+	
+	for(int i=0;i<nPath;i++){
 		
         RealArray2D& path_i=getTrainingPath(i);    
         LMM->newPath(q-1,p);
@@ -131,6 +137,9 @@ void
 PjTrigger::
 computeCoefficients()
 {
+    if(verbose)
+	cout << "\nComputing coefficents parametrizing the exercise boundary.";
+	    
     // common to all optimizers
     int nVals=120;
     // initial search point, 
@@ -139,14 +148,13 @@ computeCoefficients()
 	z[0]=kappa/2; z[1]=kappa; z[2]=0.75*kappa;
     h[0]=z[0]/4; h[1]=z[1]/4; h[2]=z[2]/4;
     Real stepmax=kappa/3;
- 
+
     // backward recursive computation of the coefficient p_j(t)
     for(int t=q-2;t>=p;t--){
             
-        if(verbose) cout << "\n\nExercise point t = " << t << "\n\n";
+        if(verbose) cout << "\nExercise point t = " << t;
             
-        LocalOptimizer bfgs(this,t,nPath,z,nVals,stepmax,h,verbose);
-            
+        LocalOptimizer bfgs(this,t,z,nVals,stepmax,h,verbose);         
         const RealArray1D& pj=bfgs.search();
         p1[t]=pj[0];
         p2[t]=pj[1];
@@ -155,7 +163,7 @@ computeCoefficients()
         // for each path set the optimal exercise time s>=t starting
         // at time t
         for(int i=0;i<nPath;i++){
-                
+			
             RealArray2D& path_i=getTrainingPath(i);
             if(exercise(i,t,pj)) path_i[t][3]=t;
             else path_i[t][3]=path_i[t+1][3];
@@ -165,7 +173,6 @@ computeCoefficients()
         z[0]=pj[0]; z[1]=pj[1]; z[2]=pj[2];
         h[0]=z[0]/4; h[1]=z[1]/4; h[2]=z[2]/4;
         stepmax=max(min(z[0],min(z[1],z[2])),0.01)/2;
-		delete &pj;
       
     }// end t  
 } // end computeCoefficients
@@ -175,15 +182,13 @@ computeCoefficients()
 
 PjTrigger::LocalOptimizer::
 LocalOptimizer
-(PjTrigger* pj_trg, int s, int paths, const RealArray1D x, int nVals, 
+(PjTrigger* pj_trg, int s, const RealArray1D x, int nVals, 
  Real stepmax, const RealArray1D h, bool verbose
 ) :
 // dimension 3 (p1,p2,p3) and 0 restarts of the optimizer
-BFGS(3,x,nVals,stepmax,h,0,verbose), 
-t(s), nPath(paths), trg(pj_trg)
-{
-    setInitialConditions();
-} 
+BFGS(x,nVals,stepmax,h,0,verbose), 
+t(s), trg(pj_trg)
+{  } 
        
 
 Real 
@@ -191,8 +196,10 @@ PjTrigger::LocalOptimizer::
 f(const RealArray1D& v)
 {
     Real sum=0.0;
+	int nPath=trg->getPaths(),
+	    q=trg->get_q();
     for(int i=0;i<nPath;i++){
-           
+        
         RealArray2D& path_i=trg->getTrainingPath(i);
         // exercise time along this path, note t<=q-2
         int s;
@@ -200,9 +207,9 @@ f(const RealArray1D& v)
         else s=(int)(path_i[t+1][3]); 
                         
         // s=n never exercised, otherwise payoff is in path_i[s][2]
-        if(s<n) sum+=path_i[s][2];
+        if(s<q) sum+=path_i[s][2];
     } // end i
-
+//cerr << "\n\nf() = " << -sum;
     return -sum;
 } 
 

@@ -66,6 +66,12 @@ LiborPathGenerator(LiborMarketModel* lmm) : LMM(lmm) {  }
  *  Libor path was computed.
  */
 virtual int getTime() = 0;
+
+/** Sets the trigger for path generators which compute paths until a 
+ *  stop is triggered. This is the default implementation: no action,
+ *  appropriate for path generators computing paths to a fixed time.
+ */
+virtual void setTrigger(Trigger* trg){  }
 	
 };
 
@@ -102,20 +108,26 @@ class LiborPathsToTriggerTime : public LiborPathGenerator {
 	
     Trigger* trigger;  // trigger stops path computation
 	int i;             // Libors evolved are L_j, j>=i. 
+	int t;             // time at which path computation stops under all conditions.
 	int s;             // time until which the last Libor path was computed.
 	
 public:
 	
-	/** @param lmm the underlying LiborMarketModel.
-	 *  @param trg Libors are computed until the first time at which trg triggers.
+	/** Constructor initializes the trigger with null since typically
+	 *  the entire derivative has to be initialized before the trigger
+	 *  can be set. The trigger must be set calling 
+	 *  <code>setTrigger()</code> as soon as everything is in place.
+	 *
+	 *  @param lmm the underlying LiborMarketModel.
+	 *  @param r no Libor path computed past time \f$T_r\f$. 
 	 *  @param k Libors evolved are L_j, j>=k.
 	 */
-	LiborPathsToTriggerTime(LiborMarketModel* lmm, Trigger* trg, int k) :
-	LiborPathGenerator(lmm), 
-	trigger(trg), i(k)
+	LiborPathsToTriggerTime(LiborMarketModel* lmm, int r, int k) :
+	LiborPathGenerator(lmm), i(k), t(r)
     {   }
 	
 	void newPath();
+	void setTrigger(Trigger* trg){ trigger=trg; }
 	int getTime(){ return s; }
 	
 };

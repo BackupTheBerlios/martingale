@@ -119,7 +119,13 @@ sample(int n, int volType, int corrType)
 
     
 
-// WIENER INCREMENTS	
+// WIENER INCREMENTS
+
+
+void 
+PredictorCorrectorLMM::
+newWienerIncrements(int t){ SG->newWienerIncrements(0,t,Z); }
+
 	
 void 
 PredictorCorrectorLMM::
@@ -189,27 +195,6 @@ timeStep(int t, int p)
                            X(t+1,j)=std::exp(Y(t+1,j)); }  
       
 }  // end timeStep
-
-
-// PATHS
-
-void 
-PredictorCorrectorLMM::
-newPath()
-{
-    SG->newWienerIncrements(0,n-1,Z);
-    for(int t=0;t<n-1;t++)timeStep(t);
-}
-     
-    
-void 
-PredictorCorrectorLMM::	 
-newPath(int t, int p)
-{
-    SG->newWienerIncrements(0,t,Z);
-    for(int s=0;s<t;s++)timeStep(s,p);
-}
-     
 
 	 
 	 

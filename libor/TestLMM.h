@@ -20,11 +20,12 @@ spyqqqdia@yahoo.com
 
 */
 
+
 #ifndef martingale_testlmm_h    
 #define martingale_testlmm_h
 
 #include "TypedefsMacros.h"
-#include "Option.h"
+#include "BermudanOption.h"
 #include "LiborFactorLoading.h"
 #include "LiborMarketModel.h"            // for inclusion to main.cc
 #include "LmmLattice.h"
@@ -99,7 +100,7 @@ static void testLiborFactorLoadingFactorization(int n, int r)
  
 /*******************************************************************************
  *
- *                        LMM TESTS
+ *                        TESTS IN GENERAL LMM
  *
  ******************************************************************************/
 
@@ -146,7 +147,7 @@ void testSwaptionPrice(int n, int lmmType, int volType, int corrType)
 	Timer watch; watch.start();
 	int p=n/3, q=n;
     Swaption* swpn=Swaption::sample(p,q,lmmType,volType,corrType);
-	swpn->testPrice();
+	swpn->testPrice(20000);
 	watch.stop(); watch.report(" ");	
 } 
 
@@ -176,7 +177,7 @@ void testCapletPrice(int n, int lmmType, int volType, int corrType)
 {
 	Timer watch; watch.start();
 	LiborDerivative* cplt=Caplet::sample(n,lmmType,volType,corrType);
-	cplt->testPrice();
+	cplt->testPrice(20000);
 	watch.report(" ");
 } 
 
@@ -205,7 +206,7 @@ void testCallOnBondPrice(int n, int lmmType, int volType, int corrType)
 { 
 	Timer watch; watch.start();
 	BondCall* bc=BondCall::sample(n,lmmType,volType,corrType);
-	bc->testPrice();
+	bc->testPrice(20000);
 	watch.report(" ");     
 } 
 
@@ -225,7 +226,7 @@ void testCallOnZeroCouponBondPrice(int n, int lmmType, int volType, int corrType
 { 
 	Timer watch; watch.start();		
 	BondCall*  bc=BondCall::sampleCallOnZeroCouponBond(n,lmmType,volType,corrType);
-	bc->testPrice();
+	bc->testPrice(20000);
 	watch.report(" ");
 } 
 
@@ -267,7 +268,12 @@ void testLmmLattice()
 
 
 
-// TESTS IN THE DRIFTLESS LMM
+ 
+/*******************************************************************************
+ *
+ *                        TESTS IN THE DRIFTLESS LMM
+ *
+ ******************************************************************************/
 
 
 /** Auxilliary function for {@link testLiborDerivative()}.*/
@@ -278,9 +284,29 @@ void testSwaption()
 	int p; cin >> p;
     cout << "Enter q = ";
     int q; cin >> q;
+	cout << "Enter number of Libor paths: ";
+    int nPath; cin >> nPath;
 		
     Swaption* swpn = Swaption::sample(p,q); 
-	swpn->testPrice();
+	swpn->testPrice(nPath);
+}
+
+
+/** Auxilliary function for {@link testLiborDerivative()}.*/
+void testBermudanSwaption()
+{
+    cout << "\nSwap interval: [T_p,T_q]."
+		 << "\nEnter p = ";
+	int p; cin >> p;
+    cout << "Enter q = ";
+    int q; cin >> q;
+	cout << "Enter number of Libor paths for Monte Carlo simulation: ";
+    int nPath; cin >> nPath;
+	cout << "Enter number of traing paths for the trigger:  ";
+    int paths; cin >> paths;
+		
+    BermudanSwaption* bswpn = BermudanSwaption::sample(p,q,paths,false); 
+	bswpn->testPrice(nPath);
 }
 
 
@@ -293,9 +319,11 @@ void testCallOnBond()
 	int p; cin >> p;
     cout << "Enter q = ";
     int q; cin >> q;
+	cout << "Enter number of Libor paths: ";
+    int nPath; cin >> nPath;
 		
     BondCall* bondcall = BondCall::sample(p,q); 
-	bondcall->testPrice();
+	bondcall->testPrice(nPath);
 }
 
 
@@ -305,9 +333,11 @@ void testCallOnZeroCouponBond()
     cout << "\nZero coupon bond matures at T_p:"
 		 << "\nEnter p = ";
 	int p; cin >> p;
+	cout << "Enter number of Libor paths: ";
+    int nPath; cin >> nPath;
 		
     BondCall* bondcall = BondCall::sampleCallOnZeroCouponBond(p);
-	bondcall->testPrice();
+	bondcall->testPrice(nPath);
 }
 
 
@@ -317,9 +347,11 @@ void testCaplet()
     cout << "\nCaplet on [T_i,T_{i+1}], i=n/3"
 	     << "\nEnter dimension n of Libor process, n =";
 	int n; cin >> n;
+	cout << "Enter number of Libor paths: ";
+    int nPath; cin >> nPath;
 		
     Caplet* cplt = Caplet::sample(n); 
-	cplt->testPrice();
+	cplt->testPrice(nPath);
 }
 
 
@@ -342,16 +374,19 @@ void testLiborDerivative()
 		     << "\nChoose derivative:"
 		     << "\nCaplet (0)"
 		     << "\nSwaption (1)"
-		     << "\nCall on bond (2)"
-		     << "\nCall on zero coupon bond (3)" 
+		     << "\nBermudan swaption (2)"
+		     << "\nCall on bond (3)"
+		     << "\nCall on zero coupon bond (4)" 
 		     << "\nDerivative = ";
+		     
 		int derivative; cin>>derivative;
 		switch(derivative){
 			
 			case 0  : testCaplet(); break;
 			case 1  : testSwaption(); break;
-			case 2  : testCallOnBond(); break;
-			case 3  : testCallOnZeroCouponBond(); break;
+			case 2  : testBermudanSwaption(); break;
+			case 3  : testCallOnBond(); break;
+			case 4  : testCallOnZeroCouponBond(); break;
 			default : 
 			cout << "\nDerivative not recognized. Defaulting to swaption.";
 			testSwaption();

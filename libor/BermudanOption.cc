@@ -54,15 +54,14 @@ using std::endl;
 
 BermudanSwaption::
 BermudanSwaption
-(int p_, int q_, int paths, Real strike, LiborMarketModel* lmm, bool verbose) :
-// Libors L_j, j>=p needed until time q-1.
+(int a, int b, int paths, Real strike, LiborMarketModel* lmm, bool verbose) :
+// Libors L_j, j>=a needed until time b-1.
 LiborDerivative
-(lmm, new LiborPathsToTriggerTime(lmm,new PjTrigger(lmm,this,verbose),p_),
- q_-1,true,true,true,true
-),                                           
-p(p_), q(q_), nPath(paths),                              
-kappa(strike)
-{   } 
+(lmm, new LiborPathsToTriggerTime(lmm,b-1,a),b-1,false,true,true,false),                                           
+p(a), q(b), nPath(paths), kappa(strike)
+{   
+	LPG->setTrigger(new PjTrigger(lmm,this,verbose));
+}
 
 
 BermudanSwaption* 
@@ -79,21 +78,21 @@ bool
 BermudanSwaption::
 isExercisable(Real t)
 {
-	const RealArray1D T = LMM->getTenorStructure();
-	for(int i=p;i<q;i++) if(t==T[i]) return true;
+	const RealArray1D& T = LMM->getTenorStructure();
+	for(int i=q-1;i>=p;--i) if(t==T[i]) return true;
 	return false;
 }
 
 
 Real 
 BermudanSwaption::
-currentForwardPayoff(int t)
+currentForwardPayoff(int s)
 {
-	if(t==q) return 0.0;                          // never exercised
+	if(s==q) return 0.0;                          // never exercised
 	Real S_sqT,H_sqT,h;
-	S_sqT=LMM->swapRate(t,q,t);                   // swaprate S_{s,q}(T_s)
+	S_sqT=LMM->swapRate(s,q,s);                   // swaprate S_{s,q}(T_s)
 	if(S_sqT<kappa) return 0.0;
-    H_sqT=LMM->H_pq(t,q,t);
+    H_sqT=LMM->H_pq(s,q,s);
     return H_sqT*(S_sqT-kappa);                   // payoff at time T_s	
 }
 
@@ -102,30 +101,9 @@ Real
 BermudanSwaption::
 forwardPayoffAlongCurrentPath()
 {
-	int s=LPG->getTime();                         // exercise time
+	int s=LPG->getTime();                         // exercise time	
     return currentForwardPayoff(s);
 }
-
-
-Real 
-BermudanSwaption::
-controlVariateMean() 
-{ 
-	Real fp=LMM->H_i0(p),        // H_p(0)
-		 fq=LMM->H_i0(q);        // H_q(0)
-    return fp-fq;
-} 
- 
-	 
-Real
-BermudanSwaption::
-controlVariateAlongCurrentPath() 
-{ 
-    Real fp,fq;
-	fp=LMM->H_it(p,t),                            // H_p(T_t)
-	fq=LMM->H_it(q,t);                            // H_q(T_t)
-	return fp-fq;
-} 
 
 
 Real 

@@ -50,14 +50,14 @@ MTGL_BEGIN_NAMESPACE(Martingale)
       */
 	 void testDownhillSimplex(int n, int steps)
      {
-         Array1D<Real> x(n);
+         RealArray1D x(n);
          for(int i=0;i<n;i++)x[i]=1.6+(i%2)*0.6;
          
          Real delta=0.3;
          bool verbose=true;
 			 			 
          Optimizer* optimizer=new ConcreteDownhillSimplex
-		 (&(ObjectiveFunction::function_1),n,x,delta,steps,verbose);         
+		 (&(ObjectiveFunction::function_1),x,delta,steps,verbose);         
          optimizer->search();
 		 
      } // end test          
@@ -93,7 +93,7 @@ MTGL_BEGIN_NAMESPACE(Martingale)
          bool verbose=true;
 			 			 
          Optimizer* optimizer=new ConcreteBFGS
-		 (&(ObjectiveFunction::function_1),n,x,nVals,stepmax,h,nRestarts,verbose);          
+		 (&(ObjectiveFunction::function_1),x,nVals,stepmax,h,nRestarts,verbose);          
          optimizer->search();
 		 
      } // end test  
@@ -117,13 +117,13 @@ MTGL_BEGIN_NAMESPACE(Martingale)
       */
 	 void testSobolSearch(int n, int nVals)
      {
-         Array1D<Real> x(n), delta(n);
+         RealArray1D x(n), delta(n);
          for(int i=0;i<n;i++){ x[i]=1.6+(i%2)*0.6; delta[i]=0.5; }
          
          bool verbose=true;
 			 			 
          Optimizer* optimizer=new ConcreteSobolSearch
-		 (&(ObjectiveFunction::function_1),n,x,nVals,delta,verbose);         
+		 (&(ObjectiveFunction::function_1),x,nVals,delta,verbose);         
          optimizer->search();
 		 
      } // end test          

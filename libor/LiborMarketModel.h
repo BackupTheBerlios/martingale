@@ -244,31 +244,44 @@ public:
 
 // PATH COMPUTATION
 
+     /** Write a new set of standard normal increments driving a full
+	  *  Libor path to time t. Empty implementation to accommodate LMMs
+	  *  that are not based on such a mechanism. 
+	  *
+	  *  <p>All the concrete LMMs implemented here are based on this
+	  *  mechanism and forward the request to a {@link StochasticGenerator}
+	  */
+     virtual void newWienerIncrements(int t){   }
+
      /** Time step t-&gt;t+1 for Libors \f$X_j\f$ or 
 	  *  \f$U_j\f$ with \f$j\geq p\f$.
 	  */
 	 virtual void timeStep(int t, int p) = 0;
 	 
 	 
-	 /** A full Libor path to the horizon. */
-	 virtual void newPath() = 0;
+	 /** A full Libor path to the horizon. Default implementation
+	  *  using {@link timeStep(int,int)}.
+	  */
+	 virtual void newPath();
  
      
      /** Path of Libors
       *  \f[s\in[0,t]\mapsto (L_p(s),L_{p+1}(s),...,L_{n-1}(s))\f]
       *  ie. the Libors \f$L_j(s), j>=p\f$, are computed from discrete
-      *  time s=0 to discrete time s=t. Default is the full path.
+      *  time s=0 to discrete time s=t. Default implementation
+	  *  using {@link timeStep(int,int)}.
       *
       * @param t discrete time up to which Libors are computed.
       * @param p Libors evolved are \f$L_j, j=p,p+1,...,n-1\f$.
       */
-     virtual void newPath(int t, int p) = 0;
+     virtual void newPath(int t, int p);
 	 
 	 
 	 	
 	 /** <p>The effective dimension of the simulation, that is, the number of 
-	  *  standard normal deviates needed to compute one path from discrete time t
-	  *  to discrete time s.
+	  *  independent deviates of the distribution of the stochastic driver
+	  *  (typically standard normal) needed to compute one path from discrete 
+	  *  time t to discrete time s. See {@link StochasticGenerator}.
 	  *
 	  *  <p>Note: if this is too high (>623 for Mersenne Twister) a random number
 	  *  generator may not be able to ensure equidistribution in this dimension

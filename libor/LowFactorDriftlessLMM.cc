@@ -136,9 +136,14 @@ sample(int n, int volType, int corrType, int r=3)
 
     
 
-// WIENER INCREMENTS	
-	
+// WIENER INCREMENTS
 
+
+void 
+LowFactorDriftlessLMM:: 
+newWienerIncrements(int t){ SG->newWienerIncrements(0,t,Z); }
+
+	
 void 
 LowFactorDriftlessLMM::
 printWienerIncrements(int t, int s) const 
@@ -193,25 +198,6 @@ timeStep(int t, int p)
       
 }  // end timeStep
 
-
-// PATHS
-
-void 
-LowFactorDriftlessLMM::
-newPath()
-{
-    SG->newWienerIncrements(0,n-1,Z);
-    for(int t=0;t<n-1;t++)timeStep(t);
-}
-
-
-void 
-LowFactorDriftlessLMM::
-newPath(int t, int p)
-{
-    SG->newWienerIncrements(0,t,Z);
-    for(int s=0;s<t;s++)timeStep(s,p);
-}
 
 
 // LIBOR VOLATILITY

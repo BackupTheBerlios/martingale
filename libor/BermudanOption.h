@@ -55,7 +55,7 @@ class LmmNode;
  *  reset date \f$T_j,\ p\leq j<q\f$. No analytic pricing formula. We use the
  *  exercise trigger described in P. Jaeckel, "Monte Carlo Methods in Finance",
  *  12.7. This trigger is much faster than general convex exercise (book, 4.6.3)
- *  and produces slightly better results.
+ *  and produces slightly better results. No control variate is implemented.
  */ 
 class BermudanSwaption : public LiborDerivative {
 	
@@ -103,19 +103,14 @@ static BermudanSwaption* sample
     
 // FORWARD TRANSPORTED PAYOFF AND CONTROL VARIATE
 
-/** Swaption payoff if exercised at time \f$T_t\f$ in the current Libor path
+		    
+/** Swaption payoff compounded forward from time \f$T_t\f$ to time \f$T_n\f$.*/
+Real forwardPayoffAlongCurrentPath();
+
+/** Swaption payoff if exercised at time \f$T_s\f$ in the current Libor path
  *  compounded forward to time \f$T_n\f$.
  */
-Real currentForwardPayoff(int t);
-		    
-/** Swaption payoff compounded forward from exercise to time \f$T_n\f$.*/
-Real forwardPayoffAlongCurrentPath();
-	 
-/** This is \f$H_p(0)-H_q(0)\f$, see book, 6.9.2.*/
-Real controlVariateMean();
-	 
-/** Control variate is \f$H_p(T_t)-H_q(T_t)\f$, a \f$P_n\f$-martingale. See book, 6.9.2.*/
-Real controlVariateAlongCurrentPath();
+Real currentForwardPayoff(int s);
 
 /** Payoff at LmmNode compounded forward to time \f$T_n\f$.*/
 Real forwardPayoff(LmmNode* node);

@@ -31,7 +31,8 @@ void
 LiborPathsToTriggerTime:: 
 newPath()
 { 
-    s=0;
+	LMM->newWienerIncrements(t);
+	s=0;
 	while(!(trigger->isTriggered(0,s))){ LMM->timeStep(s,i); ++s; }
 }
 

@@ -98,6 +98,14 @@ controlledMonteCarloForwardPrice(int nPaths)
 
 Real
 Option::
+correlationWithControlVariate(int nPaths)
+{
+    return Pricing::correlationWithControlVariate(this,nPaths);
+}
+
+
+Real
+Option::
 latticeForwardPrice()
 {
 	cout << "\n\nGeneric Option::latticeForwardPrice(): "
@@ -180,21 +188,22 @@ latticeForwardPrice()
 
 void 
 LiborDerivative::
-testPrice()
+testPrice(int nPath)
 { 
 	 // all prices forward prices at time T_n
      Real aPrice,               // analytic price
           mcPrice,              // Monte carlo price
           cvmcPrice,            // Monte carlo price with control variate
 	      lPrice,               // Price in the default lattice
+	      corr,                 // correlation with control variate
 	      epsilon=0.00000001;   // replacement for zero denominator
-	
-	  int nPath=10000;
          
 	  // message
 	  cout << "\n\n\n\n\n" << *this << *LMM
-           << "\nEffective dimension of the simulation = " << effectiveDimension()
-	       << "\n\n\n\nFORWARD PRICES, "  << nPath << " paths:" << endl << endl;
+           << "\nEffective dimension of the simulation = " << effectiveDimension();
+	  if(hasMonteCarlo_)
+	  cout << "\nPaths for Monte Carlo simulation: " << nPath;
+	  cout << "\n\n\n\nFORWARD PRICES: " << endl << endl;  
 		
 	  // PRICES: 
 	
@@ -210,14 +219,17 @@ testPrice()
 		  
 	      LmmLattice* theLattice = getDefaultLattice();
 	      lPrice = Option::latticeForwardPrice(theLattice);
-	      cout << "Default lattice: " << lPrice 
-		       << "\nRelative error: " << relativeError(aPrice,lPrice,epsilon) << "%" 
-		       << endl << endl;
+	      cout << "Default lattice: " << lPrice;
+		  if(hasAnalytic_)
+		  cout << "\nRelative error: " << relativeError(aPrice,lPrice,epsilon) << "%" ;
+		  cout << endl << endl;
+		  
 		  theLattice->rescaleVols();
 		  lPrice = Option::latticeForwardPrice(theLattice);
-	      cout << "Default lattice (volatilities rescaled): " << lPrice 
-		       << "\nRelative error: " << relativeError(aPrice,lPrice,epsilon) << "%" 
-		       << endl << endl;
+	      cout << "Default lattice (volatilities rescaled): " << lPrice;
+		  if(hasAnalytic_)
+		  cout << "\nRelative error: " << relativeError(aPrice,lPrice,epsilon) << "%";
+		  cout << endl << endl;
 		  delete theLattice;
       }
 	  
@@ -225,18 +237,22 @@ testPrice()
 	  if(hasMonteCarlo_){
 		  
           mcPrice=monteCarloForwardPrice(nPath);
-	      cout << "Monte Carlo: " << mcPrice 
-		       << "\nRelative error: " << relativeError(aPrice,mcPrice,epsilon) << "%" 
-		       << endl << endl;
+	      cout << "Monte Carlo: " << mcPrice;
+		  if(hasAnalytic_)
+		  cout << "\nRelative error: " << relativeError(aPrice,mcPrice,epsilon) << "%"; 
+		  cout << endl << endl;
 	  }
 	  
 	  
 	  if(hasControlVariate_){
 		  
+		  corr = correlationWithControlVariate(1000);
 	      cvmcPrice=controlledMonteCarloForwardPrice(nPath);
-          cout << "Monte Carlo with control variate: " << cvmcPrice 
-		       << "\nRelative error: " << relativeError(aPrice,cvmcPrice,epsilon) << "%"
-		       << endl << endl;
+          cout << "Monte Carlo with control variate: " << cvmcPrice
+		       << "\nCorrelation with control variate: " << 100.0*corr << "%";
+		  if(hasAnalytic_)
+		  cout << "\nRelative error: " << relativeError(aPrice,cvmcPrice,epsilon) << "%";
+		  cout << endl << endl;
 	  }
 		   
 	  		   
@@ -246,9 +262,10 @@ testPrice()
 	  if(hasMonteCarlo_){
 		  
           mcPrice=monteCarloForwardPrice(nPath);
-          cout << "Quasi Monte Carlo: " << mcPrice 
-		       << "\nRelative error: " << relativeError(aPrice,mcPrice,epsilon) << "%" 
-		       << endl << endl;
+          cout << "Quasi Monte Carlo: " << mcPrice;
+		  if(hasAnalytic_)
+		  cout << "\nRelative error: " << relativeError(aPrice,mcPrice,epsilon) << "%"; 
+		  cout << endl << endl;
 	  }
 		   
 	  LMM->restartSobolGenerator();
@@ -256,9 +273,10 @@ testPrice()
 	  if(hasControlVariate_){
 		  
 	      cvmcPrice=controlledMonteCarloForwardPrice(nPath);		   
-		  cout << "Quasi Monte Carlo with control variate: " << cvmcPrice 
-		       << "\nRelative error: " << relativeError(aPrice,cvmcPrice,epsilon) << "%"
-		       << endl << endl;
+		  cout << "Quasi Monte Carlo with control variate: " << cvmcPrice;
+		  if(hasAnalytic_)
+		  cout << "\nRelative error: " << relativeError(aPrice,cvmcPrice,epsilon) << "%";
+		  cout << endl << endl;
 	  }
 
 } // end testPrice
@@ -406,8 +424,8 @@ Swaption::
 controlVariateAlongCurrentPath() 
 { 
     Real fp,fq;
-	fp=LMM->H_it(p,t),                            // H_p(T_t)
-	fq=LMM->H_it(q,t);                            // H_q(T_t)
+	fp=LMM->H_it(p,t),                            // H_p(T_m)
+	fq=LMM->H_it(q,t);                            // H_q(T_m)
 	return fp-fq;
 } 
 

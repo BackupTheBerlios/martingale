@@ -138,8 +138,9 @@ public:
     /** @param x starting point (initial simplex built around it).
      *  @param delta size of initial simplex.
      *  @param steps number of steps.
+     *  @param vbose messages during computation.
      */
-    DownhillSimplex(int n, RealArray1D& x, Real delta, int steps, bool _verbose);
+    DownhillSimplex(const RealArray1D& x, Real delta, int steps, bool vbose);
    
     ~DownhillSimplex();
 	
@@ -221,8 +222,8 @@ public:
 	
 	 /** @param _of pointer to objective function. */
 	 ConcreteDownhillSimplex
-	 (Real (*_of)(const RealArray1D&), int n, RealArray1D& x, Real delta, int steps, bool verbose) :
-     DownhillSimplex(n,x,delta,steps,verbose),
+	 (Real (*_of)(const RealArray1D&), RealArray1D& x, Real delta, int steps, bool verbose) :
+     DownhillSimplex(x,delta,steps,verbose),
 	 of(_of)
      {  
 		 // now we can call f
@@ -329,6 +330,9 @@ protected:
 public:
 
 // ACCESSORS
+
+    /** Dimension of the search space. */
+    int getDimension() const { return n; }
     
     /** Current gradient.*/
     const RealArray1D& getGrad() const { return grad; }
@@ -345,15 +349,15 @@ public:
 
 
     /** 
-     * @param x starting point of min search
-     * @param nVals maximum number of function evaluations allowed
-     * @param stepmax maximum step length in line search
-     * @param h variable increments dx_j in the gradient computation.
-	 * @param nRestarts number of times the optimizer is restarted.
-     * @param verbose messages about results, default is <code>false</code.
+     * @param u starting point of min search
+     * @param vals maximum number of function evaluations allowed
+     * @param maxstep maximum step length in line search
+     * @param k variable increments dx_j in the gradient computation.
+	 * @param resets number of times the optimizer is restarted.
+     * @param vbose messages about results, default is <code>false</code.
      */
-    BFGS(int _n, const RealArray1D& _x, int _nVals, Real _stepmax, 
-	     const RealArray1D& _h, int _nRestarts=3, bool _verbose=false);
+    BFGS(const RealArray1D& u, int vals, Real maxstep, 
+	     const RealArray1D& k, int resets=2, bool vbose=false);
 	
 		    	
     /** Sets function value, gradient and initial direction by making calls to {@link Optimizer#f}. 
@@ -367,7 +371,7 @@ public:
 // MIN SEARCH                
       
      /** Unconstrained search for the minimum of the function 
-      *  {@link Optimizer#f}. User must delete this vector.
+      *  {@link Optimizer#f}. Vector is owned by this. Do not delete.
       *
       * @returns the minimizing vector <code>x</code>.
       */
@@ -492,9 +496,9 @@ public:
 	 /** @param _of pointer to objective function. 
 	  */
 	 ConcreteBFGS
-	 (Real (*_of)(const RealArray1D&), int n, RealArray1D& x, int nVals, 
+	 (Real (*_of)(const RealArray1D&), RealArray1D& x, int nVals, 
       Real stepmax, RealArray1D& h, int nRestarts=3, bool verbose=false) :
-     BFGS(n,x,nVals,stepmax,h,nRestarts,verbose),
+     BFGS(x,nVals,stepmax,h,nRestarts,verbose),
 	 of(_of)
      {   
 		 // now we can call f
@@ -538,13 +542,12 @@ protected:
 	
 public:
 	
-	/** @param n dimension.
-	 *  @param x0 initial point.
+	/** @param x0 initial point.
 	 *  @param nPoints total number of function evaluations.
 	 *  @param delta initial window all u with \f$x0_j-\delta_j<u_j<x0_j+\delta_j\f$.
 	 *  @param _verbose announce each new min during search.
 	 */
-	SobolSearch(int n, const RealArray1D& x0, int nVals, const RealArray1D& delta, bool _verbose=false);
+	SobolSearch(const RealArray1D& x0, int nVals, const RealArray1D& delta, bool _verbose=false);
 	
 	/** Wether or not the vector u is in the search domain.
 	 *  This is the default implementation (true, unconstrained search).
@@ -570,9 +573,9 @@ public:
 	 /** @param _of pointer to objective function. 
 	  */
 	 ConcreteSobolSearch
-	 (Real (*_of)(const RealArray1D&), int n, RealArray1D& x, 
-	  int nVals, RealArray1D delta, bool verbose=false) :
-     SobolSearch(n,x,nVals,delta,verbose),
+	 (Real (*_of)(const RealArray1D&), const RealArray1D& x, 
+	  int nVals, const RealArray1D& delta, bool verbose=false) :
+     SobolSearch(x,nVals,delta,verbose),
 	 of(_of)
      {    }
 	 

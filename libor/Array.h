@@ -273,27 +273,16 @@ public:
 			
 		return sum;
     }
+	
+	std::ostream& printSelf(std::ostream& os) const
+    {
+	     os << endl << "Array1D of dimension " << n << ":" << endl;
+         for(int i=0;i<n-1;i++) os << dptr[i] << ", ";
+         return os << dptr[n-1] << endl << endl;
+    } 
 			 
 		   
 }; // end Array1D
-
-
-
-/** print vector
- */
-template<class S>
-std::ostream& operator << (std::ostream& os, const Array1D<S>& v)
-{
-	int d=v.getDimension();
-    S* vdptr=v.getData();
-	os << endl << "Array1D of dimension " << d << ":" << endl;
-    for(int i=0;i<d-1;i++) os << vdptr[i] << ", ";
-    os << vdptr[d-1];
-    return os << endl << endl;
-} // end operator <<
-
-
-
 
 
 
@@ -403,30 +392,23 @@ public:
 	      checkSubscript(i,b1,n1,"Array2D, row i");
 	   #endif	
 	   return dptr[i-b1];
-   }	   
+   }
+   
+   std::ostream& printSelf(std::ostream& os) const
+   {
+	    os << endl << "Rectangular " << n1 << " by " << n2 << " array:"
+	       << endl << endl;
+	    for(int i=0;i<n1;i++){
+		
+	        for(int j=0;j<n2-1;j++) os << dptr[i][j] << ", ";
+		    os << dptr[i][n2-1] << endl;
+	    }
+        return os << endl << endl;
+	}
 				
 
 }; // end Array2D
 
-
-
-/** print rectangular matrix
- */
-template<class S>
-std::ostream& operator << (std::ostream& os, const Array2D<S>& A)
-{
-	int rows=A.getSize(1), 
-	    cols=A.getSize(2);
-	S** D=A.getData();
-	os << endl << "Rectangular " << rows << " by " << cols << " array:"
-	   << endl << endl;
-	for(int i=0;i<rows;i++){
-		
-	    for(int j=0;j<cols-1;j++) os << D[i][j] << ", ";
-		os << D[i][cols-1] << endl;
-	}
-    return os << endl << endl;
-} // end operator <<
 
 
 

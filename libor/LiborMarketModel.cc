@@ -128,6 +128,28 @@ sample(int n, int lmmType, int volType, int corrType)
 	return lmm;
 }
 
+
+// PATH GNERATION
+
+
+void 
+LiborMarketModel::	
+newPath()
+{
+     newWienerIncrements(n-1);
+     for(int t=0;t<n-1;t++)timeStep(t,1);
+}
+
+
+void 
+LiborMarketModel::	
+newPath(int t, int p)
+{
+     newWienerIncrements(t);
+     for(int s=0;s<t;s++)timeStep(s,p);
+}
+
+
 	
 
 // LIBOR VOLATILITIES

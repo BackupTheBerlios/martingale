@@ -219,6 +219,33 @@ Real controlledMonteCarloForwardPrice(OptionType* theOption, int nPaths)
 } 
 
 
+
+/** The correlation of the forward payoff of theOption with its control variate
+ *  computed from N paths of thePathGenerator supplied by the option.
+ */
+template<class OptionType>
+Real correlationWithControlVariate(OptionType* theOption, int N)
+{
+    PathGenerator* thePathGenerator=theOption->getPathGenerator();
+	Real x,         // forward payoff
+	     y,         // corresponding control variate
+	     sum_x=0.0, sum_xx=0.0, 
+	     sum_y=0.0, sum_yy=0.0, sum_xy=0.0;
+	for(int n=0;n<N;n++)
+    {
+        thePathGenerator->newPath();
+		x = theOption->forwardPayoffAlongCurrentPath();
+		y = theOption->controlVariateAlongCurrentPath();            
+		sum_x+=x; sum_y+=y;
+        sum_xx+=x*x; sum_yy+=y*y; sum_xy+=x*y;
+    }
+    
+	//when divided by N^4: 
+    Real Var_xVar_y=((N*sum_xx-sum_x*sum_x)*(N*sum_yy-sum_y*sum_y));
+    return (N*sum_xy-sum_x*sum_y)/sqrt(Var_xVar_y);
+}
+
+
 }; // end Pricing
 
 

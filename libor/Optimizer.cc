@@ -21,7 +21,7 @@ spyqqqdia@yahoo.com
 */
 
 
-
+#include "Utils.h"
 #include "Optimizer.h"
 #include "Array.h"
 #include "QuasiMonteCarlo.h"
@@ -42,11 +42,11 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 // CONSTRUCTOR
     
 DownhillSimplex::
-DownhillSimplex(int n, RealArray1D& x, Real delta, int steps, bool _verbose) :
-Optimizer(n),
+DownhillSimplex(const RealArray1D& x, Real delta, int steps, bool vbose) :
+Optimizer(x.getDimension()),
 vertices(n+1), sum(n), newVertex(n), y(n+1),
 fx(0.0), min(0), max(0), max2(0), nStep(steps),
-verbose(_verbose)
+verbose(vbose)
 {
     for(int i=0;i<n+1;i++) vertices[i]=new RealArray1D(n);
 	// vertices[n]=x
@@ -209,14 +209,14 @@ Real BFGS::EPS=0.000000001;
 // CONSTRUCTOR
 
 BFGS::
-BFGS(int n, const RealArray1D& _x, int _nVals, Real _stepmax, 
-	 const RealArray1D& _h, int _nRestarts, bool _verbose=false) :
-Optimizer(n),
-stepmax(_stepmax),
-nVals(_nVals), fVals(0), restarts(0), nRestarts(_nRestarts),
+BFGS(const RealArray1D& u, int vals, Real maxstep, 
+	 const RealArray1D& k, int resets, bool vbose) :
+Optimizer(u.getDimension()),
+stepmax(maxstep),
+nVals(vals), fVals(0), restarts(0), nRestarts(resets),
 x0(n),
 grad0(n),
-x(_x),
+x(u),
 xDelta(n),
 grad(n),
 z(n),
@@ -224,10 +224,10 @@ d(n),
 gDelta(n),
 hdg(n),
 u(n),
-h(_h),
+h(k),
 fx0(0.0), fx(0.0),
 H(n,n),
-verbose(_verbose)
+verbose(vbose)
 {
      // approximate inverse Hessian intialized as identity matrix
      for(int i=0;i<n;i++)
@@ -243,7 +243,8 @@ BFGS::
 search()
 {
 	 setInitialConditions();
-	 if(fVals==nVals/nRestarts) resetHessian();
+	 if(nRestarts>0)
+     if(fVals==nVals/nRestarts) resetHessian();
      // main loop to termination
      while(true){
 			            
@@ -265,7 +266,7 @@ search()
        if(fVals>nVals){
                 
 			if(verbose)
-            std::cout << "\n\nBFGS.search(): number of function evaluations exhausted.";
+            cout << "\n\nBFGS.search(): number of function evaluations exhausted.";
             break;
         }
 
@@ -282,11 +283,11 @@ search()
 				
             if(restarts<nRestarts){ 
 					
-	     		if(verbose) std::cout << "\n\nBFGS.search(): restarting";
+	     		if(verbose) cout << "\n\nBFGS.search(): restarting";
 				resetHessian(); restarts++; 
 			}else{
 				
-                if(verbose) std::cout << "\n\nBFGS.search(): no movement in x, fVals=" << fVals;
+                if(verbose) cout << "\n\nBFGS.search(): no movement in x, fVals=" << fVals;
                 break;
 			} // end if
          } // endif
@@ -296,9 +297,8 @@ search()
 	if(verbose){
             
        // the state before the last step
-       std::cout << "\n\nBFGS::search(): function minimum: " << fx
-	             << "\nMinimizing vector:";
-       for(int j=0;j<n;j++) std::cout << endl << x[j];
+       cout << "\n\nBFGS::search(): function minimum: " << fx
+	        << "\nMinimizing vector:" << x;
     }
 		
     return x;
@@ -315,6 +315,9 @@ setInitialConditions()
     
     // initial line direction
     for(int j=0;j<n;j++)d[j]=-grad[j];
+	
+	if(verbose)
+	cout << "\n\nBFGS(): intialization complete.";
 
 } // end setInitialConditions
 
@@ -470,14 +473,14 @@ lineSearch()
     Real dNorm=d.norm(), f1=0.0, f2=0.0,
     // relative size of directional vector to current point
     rs=relativeSize(d,x);        
-         
+	
     // scale directional vector d to a maximum length of
     // stepmax, then do backward line search.
     // proper BFGS does not do that, only scales down to stepmax!!!!
     if(dNorm>stepmax)d.scale(stepmax/dNorm);
         
     Real k=grad.dotProduct(d);   // slope     
-    if(k>=0) std::cout << "\n\nBFGS.lineSearch(): no descent, roundoff errors.";
+    if(k>=0) cout << "\n\nBFGS.lineSearch(): no descent, roundoff errors.";
         
     Real t_min=EPSX/rs,     // terminate if t<t_min
          t1=1.0,            // current line parameter t 
@@ -543,9 +546,9 @@ lineSearch()
 
 
 SobolSearch::
-SobolSearch(int n, const RealArray1D& x0, int nVals, const RealArray1D& delta, bool _verbose=false) : 
-Optimizer(n),
-nPoints(nVals), q(4.0/5), xOpt(x0), x(x0), d(delta), verbose(_verbose),
+SobolSearch(const RealArray1D& u, int nVals, const RealArray1D& delta, bool vbose=false) : 
+Optimizer(u.getDimension()),
+nPoints(nVals), q(4.0/5), xOpt(u), x(u), d(delta), verbose(vbose),
 lds(new Sobol(n))
 {  	}
 
@@ -555,15 +558,15 @@ SobolSearch::
 search()
 {		
    if(verbose)
-   std::cout << "\n\nSobolSearch::search(): dimension = " << n
-             << ", nPoints = " << nPoints;
+   cout << "\n\nSobolSearch::search(): dimension = " << n
+        << ", nPoints = " << nPoints;
 		
    Real fx, fOpt=f(x);
    cout << "\n\nmin = " << fOpt;
 		
    while(nPoints>0){
 		
-	    if(verbose) std::cout << "\n\nPoints left to evaluate: "<< nPoints << endl << endl;
+	    if(verbose) cout << "\n\nPoints left to evaluate: "<< nPoints << endl << endl;
     	for(int k=0;k<nPoints/2;k++){
 				
 			// next quasi random point in the search window 
@@ -581,7 +584,7 @@ search()
 			if(fx<fOpt){
 					
 				fOpt=fx; xOpt=x;
-				if(verbose) std::cout << "\nmin = " << fx;
+				if(verbose) cout << "\nmin = " << fx;
 			}
 		} // end for k
 		nPoints/=2;
@@ -596,7 +599,7 @@ search()
         // the state before the last step
         std::cout << "\n\nFunction minimum: " << fx
 		          << "\nMinimizing vector:";
-        for(int j=0;j<n;j++) std::cout << endl << x[j];
+        for(int j=0;j<n;j++) cout << endl << x[j];
     }
 		
 	return xOpt;

@@ -240,6 +240,22 @@ general bonds work OK. Get to the root of this.
 
 
 
+<a name="8-20-03"></a>
+<h3>8-20-03:</h3>
+
+Monte Carlo prices of Berudan swaptions based on the PjTrigger are significantly less than 
+lattice computed prices. Find out what the reason is:
+<ul>
+<li>Is the trigger suboptimal?</li>
+<li>Is the bfgs optimizer computing the parameters for the exercise boundary not working well?
+There is some evidence for this: the verbose version shows that only the third variable is
+moved significantly.</li>
+<li>Is the lattice buggy for Bermudan exercise? Check if the exercise times are computed
+correctly.</li>
+</ul>
+
+
+
 </body>
 </html>
 

@@ -165,8 +165,13 @@ public:
 
     
 
-// WIENER INCREMENTS	
-	
+// WIENER INCREMENTS
+
+    /** Writes a new set of standard normal increments driving a full
+     *  Libor path to time t into the field Z.
+	 *  Forwards the request to the {@link StochasticGenerator}.
+	 */
+    void newWienerIncrements(int t);	
 	
 	/** Prints the matrix Z of current Wiener increments,
 	 *  method is used for testing only.
@@ -210,26 +215,6 @@ public:
       */
      void timeStep(int t){ timeStep(t,t+1); }
      
-     
-	 
-// PATH GENERATION
-	 
-     
-     /** Computes a full Libor path from time zero to the horizon.
-      *  Moves only the X-Libor path.
-      */
-     void newPath();
-     
-    
-     /** Path of Libors
-      *  \f[s\in[0,t]\mapsto (L_p(s),L_{p+1}(s),...,L_{n-1}(s))\f]
-      *  ie. the Libors \f$L_j(s), j>=p\f$, are computed from discrete
-      *  time s=0 to discrete time s=t.
-      *
-      * @param t discrete time up to which Libors are computed.
-      * @param p Libors evolved are \f$L_j, j=p,p+1,\dots,n-1\f$.
-      */
-     void newPath(int t, int p);
 	 
 	 
 // SWAPTION AND CAPLET AGGREGATE VOLATILITIES (SIGMA)

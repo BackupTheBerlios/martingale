@@ -85,7 +85,6 @@ virtual bool isTriggered(int t, int s) = 0;
  */
 class PjTrigger : public Trigger {
 	
-	friend class LocalOptimizer;
     
     LiborMarketModel* LMM;
     BermudanSwaption* bswpn;
@@ -114,6 +113,11 @@ public:
 	
 // ACCESSORS
 
+/** The number of training paths.*/
+int getPaths(){ return nPath; }
+/** Swap period ends at \f$T_q\f$.*/
+int get_q(){ return q; }
+/** Array storing the information from training path i.*/
 RealArray2D& getTrainingPath(int i){ return *(path[i]); }
 
 	
@@ -165,7 +169,7 @@ void computeCoefficients();
 
 class LocalOptimizer : public BFGS {
            
-	int t, nPath;
+	int t;                // time t at which the parameters are optimized
 	PjTrigger* trg;       // the trigger which contains the optimizer
 	
 public:
@@ -184,7 +188,7 @@ public:
     * @param verbose messages during optimization.
     */
     LocalOptimizer
-    (PjTrigger* pj_trg, int s, int paths, const RealArray1D x, int nVals, 
+    (PjTrigger* pj_trg, int s, const RealArray1D x, int nVals, 
      Real stepmax, const RealArray1D h, bool verbose);
        
     // the function we want to optimize

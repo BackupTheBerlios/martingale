@@ -306,6 +306,18 @@ tested yet on Bermudan swaptions. All other Libor derivatives are working.
 New files: Trigger.h,cc.
 
 
+<h3>8-20-03:</h3>
+
+Slight rewrite of LiborMarketModel. newWienerIncrements(int t) moved into this class with
+empty default implementation. Needed for Bermudan LiborPathGenerator.
+This also allows us to implement newPath(int, int p) 
+in LiborMarketModel rather than in the concrete subclasses.
+
+<p>Bermudan swaption implemented. Monte Carlo pricing based on PjTriggers and in the case
+of a DriftlessLMM lattice pricing are all working. Disparity between lattice and Monte Carlo prices
+remains to be <a href="ToDo.html#8-20-03">cleared up.</a>
+
+
 
 </body>
 </html>

@@ -74,9 +74,9 @@ public:
 	 *  @param cal the LMM calibrator.
 	 */
 	SobolLiborCalibrationOptimizer
-	(LmmCalibrator* _cal, const RealArray1D& x0, int nVals, const RealArray1D& delta) : 
-	SobolSearch(7,x0,nVals,delta,true),
-	cal(_cal)
+	(LmmCalibrator* clbr, const RealArray1D& x0, int nVals, const RealArray1D& delta) : 
+	SobolSearch(x0,nVals,delta,true),
+	cal(clbr)
 	{    }
 	
 	bool isInDomain(const RealArray1D& x) const;

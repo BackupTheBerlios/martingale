@@ -144,6 +144,11 @@ Real monteCarloForwardPrice(int nPaths);
  */
 Real controlledMonteCarloForwardPrice(int nPaths);
 
+/** The correlation of the forward payoff with its control variate
+ *  computed from N paths of thePathGenerator supplied by the option.
+ */
+Real correlationWithControlVariate(int N);
+
 /** Forward price computed in theLattice.*/
 // must be a template since Lattice is a class template not a class.
 template<class LatticeType>
@@ -192,7 +197,7 @@ protected:
 	LiborMarketModel* LMM;     // the underlying LMM
 	LiborPathGenerator* LPG;   // path generator, maintains reference to underlying LMM
 	int n;                     // number of Libors including L_0
-	int t;                     // Libors needed until time T_t for option payoff
+	int t;                     // Libors needed until time T_m for option payoff
 
 
 public:
@@ -247,12 +252,13 @@ std::ostream& printSelf(std::ostream& os) const;
 // TESTING PRICING ROUTINES
 
 /** Tests the analytic price against Lattice, Monte Carlo
- *  and Quasi Monte Carlo prices with and without control variates from
- *  a sample of 20000 paths of the underlying Libor process.
- *  Reports error relative to the analytic price. Note however that the 
- *  analytic price itself may be an approximation.
+ *  and Quasi Monte Carlo prices with and without control variates.
+ *  Reports error relative to the analytic price if this price is defined. 
+ *  Note however that the analytic price itself may be an approximation.
+ *
+ * @param nPath number of Libor paths in the simulation.
  */
-virtual void testPrice();
+virtual void testPrice(int nPath);
 
 		
 }; // end LiborDerivative

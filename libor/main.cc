@@ -31,7 +31,6 @@ spyqqqdia@yahoo.com
 // #include "TestProbability.h"
  #include "TestLMM.h"
 // #include "TestOptimizers.h"
- #include "Option.h"
 // #include "TestFormulas.h"
 // #include "Examples.h"
 // #include "DirichletProblem.h"
@@ -54,9 +53,9 @@ int main()
  *
 *******************************************************************************/
 	
-	// testDownhillSimplex(5,5000);
-	// testBFGS(5,500);
-	// testSobolSearch(50,5000);
+	 // testDownhillSimplex(5,5000);
+	 // testBFGS(5,500);
+	 // testSobolSearch(50,5000);
 	
 	
 /*******************************************************************************
@@ -127,6 +126,7 @@ int main()
 	// Libor derivatives in the driftless LMM with constant volatilities, 
 	// includes lattice pricing
 	Test_LMM::testLiborDerivative();
+	
 	
 
 	
