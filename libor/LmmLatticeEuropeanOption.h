@@ -24,6 +24,8 @@ spyqqqdia@yahoo.com
 #define martingale_lmmlattice_europeanoption_h
 
 #include "LiborTree2F.h"
+#include "Derivatives.h"
+#include <math.h>
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
@@ -102,13 +104,14 @@ private:
 			// the list is a list of pointers to Node, so *theNode is pointer to Node
 			LiborTree2F::Node* node=*theNode;      
 			node->pi=forwardPayoff(node);
+if(isnan(node->pi)) { node->printState(); exit(0); }
 		}
-		
+	
 		// backward computation through earlier nodes
 		for(int t=s-1; t>=0;t--){
-			
-			std::list<LiborTree2F::Node*>& nodes_s=theTree->getNodeList(t);	    
-	    	for(theNode=nodes_s.begin(); theNode!=nodes_s.end(); ++theNode)
+		
+			std::list<LiborTree2F::Node*>& nodes_t=theTree->getNodeList(t);	    
+	    	for(theNode=nodes_t.begin(); theNode!=nodes_t.end(); ++theNode)
 		    {
 			     LiborTree2F::Node* node=*theNode;
 				 Matrix<LiborTree2F::Edge*> edges=node->edges;
@@ -121,11 +124,13 @@ private:
 		         	 LiborTree2F::Edge* edge=edges(k,l);
 			         Real p=edge->probability;
 					 // E_{t+1}(h) at the node the edge points to.    
-					 Real E_t1h=edge->node->pi;    
+					 Real E_t1h=edge->node->pi; 
 					 E_th+=p*E_t1h;
 		         }	
 				 node->pi=E_th;
+if(isnan(node->pi)) { node->printState(); exit(0); }				 
 		    } // end for nodes
+			
 		} // end for t
 	} // computeConditionalExpectations
 	
@@ -148,7 +153,7 @@ private:
  */
 class LatticeSwaption : public LmmLatticeEuropeanOption {
 	
-	int s,    // swaption is exercisable at time T_s
+	int s,    // exercise time T_s
 	    p,    // swap begins at time T_p
 	    q;    // swap ends at time T_q
 	
@@ -162,8 +167,7 @@ public:
 	 *  @param q0  swap ends at time T_q, q=q0.
 	 */
 	LatticeSwaption(LiborTree2F* tree, int s0, int p0, int q0, Real strike) :
-	LmmLatticeEuropeanOption(tree,s),
-	s(s0), 
+	LmmLatticeEuropeanOption(tree,s0),
 	p(p0), q(q0),
 	kappa(strike)
     {  }
@@ -173,7 +177,7 @@ public:
 		Real swapRate=node->swapRate(p,q);
 		if(swapRate<=kappa) return 0.0;
 		// else, forward price of the annuity B_{p,q}
-	    Real Hpq=node->Hpq(p,q);              
+	    Real Hpq=node->Hpq(p,q); 
 		return (swapRate-kappa)*Hpq;
 	}
 
@@ -190,10 +194,19 @@ public:
 		LiborFactorLoading* fl=JR_FactorLoading::sample(q);
 		LiborTree2F theTree(fl,s);
 		LiborTree2F::Node* root=theTree.getRoot();
+		
 		Real strike=root->swapRate(p,q);
 		LatticeSwaption swpn(&theTree,s,p,q,strike);
+		Real treePrice=swpn.forwardPrice();
 		
-		cout << "Swaption forward price = " << swpn.forwardPrice();
+		cout << "\n\n\nSwaption forward price: " 
+		     << "\nTree: " << treePrice;
+		
+		LiborMarketModel* lmm=new LowFactorDriftlessLMM(fl,2);
+		Derivative* swpnLmm=new Swaption(p,q,s,strike,lmm);
+		Real mcPrice=swpnLmm->monteCarloForwardPrice(10000);
+		
+		cout << "\nMonte Carlo: " << mcPrice;
         
 		watch.stop();
 		watch.report("Time");
