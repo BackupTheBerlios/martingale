@@ -199,8 +199,8 @@ public:
 	
 // TEST
 	
-	/** Allocate a sample LMMTree2F of dimension q and compute the forward price
-	 *  of the at the money payer swaption exercisable at time \f$T_s\f$ into a swap 
+	/** Allocate a sample {@link LMMlattice3F} of dimension q and computes the forward 
+	 *  price of the at the money payer swaption exercisable at time \f$T_s\f$ into a swap 
 	 *  along \f$[T_p,T_q]\f$.
 	 */
 	static void test(int s, int p, int q)
@@ -208,20 +208,20 @@ public:
 		Timer watch; watch.start();
 		ConstVolLiborFactorLoading* fl=ConstVolLiborFactorLoading::sample(q); 
 		// number of time steps in each Libor accrual interval
-		int nSteps=3;
-		ConstVolLmmLattice2F theLattice(fl,s,3);
+		int nSteps=2;
+		ConstVolLmmLattice3F theLattice(fl,s,nSteps);
 		LmmNode* root=theLattice.getRoot();
 		
 		Real strike=root->swapRate(p,q);
-		LatticeSwaption<LmmNode2F> swpn(&theLattice,s,p,q,strike,nSteps);
+		LatticeSwaption<LmmNode3F> swpn(&theLattice,s,p,q,strike,nSteps);
 		Real treePrice=swpn.forwardPrice();
 		
 		cout << "\n\n\nSwaption forward price: " 
 		     << "\nTree: " << treePrice;
 		
-		LiborMarketModel* lmm=new LowFactorDriftlessLMM(fl,2);
+		LiborMarketModel* lmm=new LowFactorDriftlessLMM(fl,3);
 		Derivative* swpnLmm=new Swaption(p,q,s,strike,lmm);
-		Real mcPrice=swpnLmm->monteCarloForwardPrice(10000);
+		Real mcPrice=swpnLmm->monteCarloForwardPrice(50000);
 		
 		cout << "\nMonte Carlo: " << mcPrice;
         
@@ -232,8 +232,10 @@ public:
 }; // end LatticeSwaption
 
 
+/** Swaptions in two and three factor lattices for the {@link DriftlessLMM}.
+ */
 typedef LatticeSwaption<LmmNode2F> LatticeSwaption2F;
-	
+typedef LatticeSwaption<LmmNode3F> LatticeSwaption3F;	
 	
 	
 	

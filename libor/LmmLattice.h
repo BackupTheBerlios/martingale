@@ -35,8 +35,35 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 /*! \file LmmLattice.h
- *  Lattices for the Libor market model.
+ *  Lattices for the driftless Libor market model {@link DriftlessLMM}. 
+ *  Two and three factor lattices are implemented. It is assumed that the
+ *  volatilities \f$\sigma_j(t)\f$ of the forward transported Libors \f$U_j\f$
+ *  (see book, 6.8) are <i>constant</i> and that all Libor accrual intervals 
+ *  have equal length \f$\delta\f$.
+ *
+ * <p>Each {@link Node} stores the vector of accrual factors
+ *  \f[H=(H_t,...,H_n)\f]
+ *  as the most suitable way to store the state of the underlying Libor process since
+ *  all other quantities can be recovered from these with minimal computational effort.
+ *
+ * <p><a name="lmm-lattice-3f">Three factor LMM lattice:</a>
+ * <p>Nodes in a 3 factor lattice for the Libor market model {@link LmmLattice3F}
+ *  compute the \f$H_j\f$ from the volatility parts \f$V_j\f$ of the forward transported
+ *  Libors \f$U_j\f$ approximated as
+ *  \f[V_j(s)\simeq\sigma_j\left[R_{j1}Z_1(s)+R_{j2}Z_2(s)+R_{j3}Z_3(s)\right],\f]
+ *  where the matrix R is the approximate root of rank 3 of the correlation matrix 
+ *  \f$\rho\f$ of the underlying driftless LMM: \f$\rho\simeq RR'\f$.
+ *  See book, 8.1.2, for details and notation. 
+ *
+ * <p>The \f$Z_j(t)\f$ are independent standard Brownian motions which evolve from the state
+ *  \f$Z_j(0)=0\f$ and then tick up or down in ticks of size \f$a=\sqrt{dt}\f$ where dt is the 
+ *  size of the time step. The state at any node is then given by the triple of integers
+ *  (i,j,k) with
+ *  \f[Z_1=ia,\quad Z_2=ja,\quad Z_3=ka.\f]
+ *  Two factor lattices are completely similar but the implementation is kept separate for
+ *  greater clarity.
  */
+
 
 
 
@@ -48,10 +75,12 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  
 
 /** <p>Lattice of the driftless Libor market model. This is a lattice with nodes 
- *  of type {@link LmmNode}. Time steps equal Libor accrual periods. 
+ *  of type LmmNode, see {@link Node}. Time steps equal Libor accrual periods. 
  *  See book 6.8, 8.1.1 for the details and notation. 
  *  Interface and partial implementation. 
  *  No decision is made on number of factors and state variables.
+ *  For more details see the file reference for the file LmmLattice.h (click on
+ *  "File List").
  */
 template<typename LmmNode>
 class LmmLattice : public Lattice<LmmNode> {
@@ -167,22 +196,15 @@ private:
  *********************************************************************************/
 		
 
-/** <p>Two factor lattice for driftless Libor market model with constant 
- *  volatility functions \f$\sigma_j(t)=\sigma_j\f$. In this case the variables
- *  \f$V_j\f$ are given as
- *  \f[V_j(t)=\sigma_jv_j\cdot Z(t),\f]
- *  where the vectors $v_j$ are the rows $v_j=row_j(R)$ of the approximate root R of
- *  rank 2
- *  \f[\rho\simeq RR'\f]
- *  of the correlation matrix \f$\rho\f$ of the LiborFactorLoading of the underlying
- *  DriftlessLMM and \f$Z(t)=(Z_1(t),Z_2(t))\f$ is a standard two dimensional Brownian motion.
- *  The lattice evolves the variables \f$Z_1(t),Z_2(t)\f$ (called V1,V2 in the nodes).
- *  See FastLibor.pdf  8.1, 8.2, 8.3 for the details and notation.
+/** <p><a href="lmm-lattice-3f">Two factor lattice</a> for driftless Libor market model  
+ *  {@link DriftlessLMM} with constant volatility functions \f$\sigma_j(t)=\sigma_j\f$. 
  *
  * <p>It is assumed that all Libor accrual intervals have equal length \f$\delta\f$..
  *  The lattice makes nSteps time steps of equal length \f$dt=\delta/nSteps\f$ in 
  *  each accrual interval. Consequently discrete time t corresponds to continuous time
- *  \f[t*dt=T_{t/nSteps}+(t\;mod\;nSteps}*dt.\f]
+ *  \f[t*dt=T_{t/nSteps}+(t\;mod\;nSteps)*dt.\f]
+ *  For more details see the file reference for the file LmmLattice.h (click on
+ *  "File List").
  */
 class ConstVolLmmLattice2F : public LmmLattice<LmmNode2F> {
 
@@ -214,10 +236,10 @@ public:
 	 *  remains to make this step. Will fix this later.
 	 *
 	 *  @param fl factor loading of the underlying LMM.
-	 *  @param s lattice is built up to discrete time \f$t=s\leq n-2\f$ inclusively.
+	 *  @param t lattice is built up to time \f$T_t\f$.
 	 *  @param steps number of time seps in each accrual interval.
 	 */
-	ConstVolLmmLattice2F(ConstVolLiborFactorLoading* fl, int s, int steps=1);	
+	ConstVolLmmLattice2F(ConstVolLiborFactorLoading* fl, int t, int steps=1);	
 	
 
 
@@ -246,13 +268,98 @@ private:
 	 */
 	void setStateVariables(LmmNode2F* node);
 	
-	// build lattice up to discrete time t=m (inclusive)
+	// build lattice with m time steps
+	void buildLattice(int m);
+	
+
+}; // end LmmLattice2F
+
+
+
+/**********************************************************************************
+ *
+ *            CONSTANT VOLATILITY THREE FACTOR LMM LATTICE
+ *
+ *********************************************************************************/
+		
+
+/** <p><a href="lmm-lattice-3f">Three factor lattice</a> for driftless Libor market model  
+ *  {@link DriftlessLMM} with constant volatility functions \f$\sigma_j(t)=\sigma_j\f$. 
+ *
+ * <p>It is assumed that all Libor accrual intervals have equal length \f$\delta\f$..
+ *  The lattice makes nSteps time steps of equal length \f$dt=\delta/nSteps\f$ in 
+ *  each accrual interval. Consequently discrete time t corresponds to continuous time
+ *  \f[t*dt=T_{t/nSteps}+(t\;mod\;nSteps)*dt.\f]
+ */
+class ConstVolLmmLattice3F : public LmmLattice<LmmNode3F> {
+
+	
+    int nSteps;         // number of equal sized time steps in each accrual interval
+	
+	Real  delta,        // constant Libor accrual periods
+	      dt,           // size of time steps
+	      a;            // tick size of standard Brownian motion
+	
+	vector<Real> sg;    // constant Y_j - volatilities
+	
+	
+	// approximate rank two root of the correlation matrix rho
+	// row index base 1, column indices 0,1,2; natural indexation.
+	Matrix<Real>& R;
+	
+public:
+
+	
+// ACCESSORS
+	
+
+	
+// CONSTRUCTOR
+	
+	/** The lattice can only be built up to time \f$t=n-2\f$ at most.
+	 *  The last step must be handled differently since only one state variable
+	 *  remains to make this step. Will fix this later.
+	 *
+	 *  @param fl factor loading of the underlying LMM.
+	 *  @param t lattice is built up to time \f$T_t\f$.
+	 *  @param steps number of time seps in each accrual interval.
+	 */
+	ConstVolLmmLattice3F(ConstVolLiborFactorLoading* fl, int t, int steps=1);	
+	
+
+
+// ERROR IN THE RANK 2 FATCORIZATION OF THE COVARIANCE MATRICES
+	
+    /** Computes the relative errors in the trae norm of the approximate rank two 
+     *  factorization rho=RR' of the correlation matrix rho. See FastLibor.pdf 8.3.
+     */
+    void testFactorization();
+
+	
+	
+	
+// TEST
+
+/** Sets up a ConstVolLmmLattice3F in dimension n and runs the {@link #selfTest}.
+ */
+static void test(int n);
+		
+		
+
+private:
+	
+	
+	/** Computes the vector H of accrual factors on the node node.
+	 */
+	void setStateVariables(LmmNode3F* node);
+	
+	// build lattice with m time steps.
 	void buildLattice(int m);
 	
 
 
 
-}; // end LmmLattice2F
+}; // end LmmLattice3F
 
 
 	

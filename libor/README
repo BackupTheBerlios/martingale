@@ -85,4 +85,11 @@ Move SubscriptCheck to Utils.h to make Matrices.h independent of Array.h
 and avoid recompilation of Matrices.h whenever Array.h is changed.
 Three factor constant volatility LmmLattice and associated options.
 
+7-4-03:
+
+Files changed: LmmLattice.h,cc; Node.h,cc; LatticeOption.h
+
+Three factor lattice for the driftless LMM with constant U_j - volatilities
+implemented. Test: 2 time steps per Libor accrual interval work as well as three time steps.
+
 

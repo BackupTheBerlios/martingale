@@ -57,16 +57,25 @@ using namespace Martingale;
 	 
 		
 	LmmNode::
-	LmmNode(LiborFactorLoading* fl, int t) : Node(t),
+	LmmNode(LiborFactorLoading* fl, int s, int steps) : Node(s),
 	factorLoading(fl), 
 	n(factorLoading->getDimension()),
-	H(n-t+1,t) 
+	nSteps(steps),
+	H(n-get_t()+1,get_t()) 
 	{  }
 	 
 
 	Real LmmNode::
 	Hpq(int p, int q)
     {
+		int t=get_t();            // node in (T_{t-1},T_t]
+		if((p<t)||(q<=p)){
+		
+			cout <<	"\n\nLmmNode::Hpq(p,q): t = " << t << ", p = " << p << ", q = " << q
+			     << "\n Incompatible indices, terminating.";
+			exit(0);
+		}
+		
 		Real* delta=factorLoading->getDeltas();
 		Real sum=0.0;
 		for(int j=p;j<q;j++) sum+=delta[j]*H[j+1];
@@ -76,43 +85,6 @@ using namespace Martingale;
 	
 	
 
-/**********************************************************************************
- *
- *            LMM NODES 
- *
- *********************************************************************************/
-	
-	
-	
-
-	void LmmNode2F::
-	checkState(int t, vector<Real>& V, vector<Real>& Z, Matrix<Real>& RQt)
-    {
-        bool we_have_a_problem=false;
-		
-		if(fabs(V[n-1]-V1)+fabs(V[n-2]-V2)>0.000001){
-			
-			we_have_a_problem=true;
-			cout << "\n\n\nInversion failure"
-			     << "\nMatrix RQt: " << RQt
-			     << "\n V[n-1] = " << V[n-1] << ", V1 = " << V1
-			     << "\n V[n-2] = " << V[n-2] << ", V2 = " << V2;
-		}
-		
-		for(int j=t;j<n;j++)
-        if(V[j]>10.0){ 
-			
-			we_have_a_problem=true;
-			cout << "\n\n\nLarge V_j, t = " << t 
-	               << "\nj = " << j << ", V_j = " << V[j]
-	               << "\n V1 = " << V1 << ", V2 = " << V2
-			       << "\n\nMatrix RQt: " << RQt
-	               << "Vector Zt: " << Z;
-			break;
-		}
-	            
-	    if(we_have_a_problem) exit(0);
-	} // checkState()
 	
 
 	

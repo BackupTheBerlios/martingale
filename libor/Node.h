@@ -36,6 +36,30 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 /*! \file Node.h
  *  Nodes in a stochastic lattice in general and in lattices 
  *  for the Libor market model in particular.
+ *
+ * <p><a name="lmm-node">Nodes for a general LMM lattice:</a>
+ *  A node in a lattice for the Libor market model lives at a time in some
+ *  accrual interval \f$(T_{t-1},T_t]\f$. At this time the surviving Libors are
+ *  \f$X_t,X_{t+1},\dots,X_{n-1}\f$, where n is the number of accrual intevals.
+ *  The node however stores the vector of accrual factors
+ *  \f[H=(H_t,...,H_n)\f]
+ *  as the most suitable way to store the state of the underlying Libor process since
+ *  all other quantities can be recovered from these with minimal computational effort.
+ *
+ * <a name="lmm-node-3f">Nodes for a 3 factor LMM lattice:</a>
+ * <p>Nodes in a 3 factor lattice for the Libor market model {@link LmmLattice3F}
+ *  compute the \f$H_j\f$ from the volatility parts \f$V_j\f$ of the forward transported
+ *  Libors \f$U_j\f$ (book, 6.8) approximated as
+ *  \f[V_j(s)\simeq\sigma_j\left[R_{j1}Z_1(s)+R_{j2}Z_2(s)+R_{j3}Z_3(s)\right],\f]
+ *  See book, 8.1.2, for details and notation. 
+ *
+ * <p>The \f$Z_j(t)\f$ are independent standard Brownian motions which evolve from the state
+ * \f$Z_j(0)=0\f$ and then tick up or down in ticks of size \f$a=\sqrt{dt}\f$ where dt is the 
+ * size of the time step. The state at any node is then given by the triple of integers
+ * (i,j,k) with
+ * \f[Z_1=ia,\quad Z_2=ja,\quad Z_3=ka.\f]
+ * Two factor nodes are completely similar but the implementation is kept separate
+ * for greater clarity.
  */
  
  
@@ -137,9 +161,12 @@ public:
  *********************************************************************************/
 
 
-/** Single node in an {@link LmmLattice} containing the vector \f$H=(H_t(T_t),...,H_n(T_t))\f$ 
+/** Single <a href="lmm-node">node</a> in an {@link LmmLattice} containing the vector 
+ *  \f[H=(H_t(T_t),...,H_n(T_t))\f] 
  *  and methods to compute Libors, swaprates, bonds, etc from these. The mechanics of evolving the
  *  \f$H_j\f$ is left to derived classes.
+ *  For more details see the file reference for the file Node.h (click on
+ *  "File List").
  *  
  */
 class LmmNode : public Node {
@@ -256,27 +283,21 @@ public:
 
 
 
-/** Node in a 2 factor {@link LmmLattice2F}.
- *  Contains the vector \f$V(T_t)=(V_t(T_t),...,V_{n-1}(T_t))\f$
- *  as well as the variables \f$V1=V_{n-1}, V2=V_{n-2}-V_{n-1}\f$ which the lattice 
- *  evolves.
+/** <p><a href="lmm-node-3f">Node</a> in a 2 factor lattice for the Libor market 
+ *  model {@link LmmLattice2F}.
+ *  For more details see the file reference for the file Node.h (click on
+ *  "File List").
  */
-struct LmmNode2F : public LmmNode {
+class LmmNode2F : public LmmNode {
 	
-	
-	Real V1, V2;            // the variables which are evolved
-	int i,                  // V1=V1(0)+ia_1
-		j;                  // V2=V2(0)+ja_2,
-
+	int i,                  // Z1=ia
+		j;                  // Z2=ja,
+    // a=sqrt(dt) the tick size of a standard Brownian motion over an interval of length dt.
 	
 public:
 		
 // ACCESSORS
 	
-	Real getV1(){ return V1; }
-	Real getV2(){ return V2; }
-	void setV1(Real v){ V1=v; }
-	void setV2(Real v){ V2=v; }
 	int get_i(){ return i; }
 	int get_j(){ return j; }
 	
@@ -285,28 +306,67 @@ public:
 	
 	/** @param s number of time steps to reach this node from time zero.
 	 *  @param nSteps number of time steps in each Libor acrual interval.
-	 *  @param k state V_1=V_1(0)+ka
-	 *  @param l state V_2=V_2(0)+la
+	 *  @param k state Z_1=ka
+	 *  @param l state Z_2=la
 	 */
 	LmmNode2F(LiborFactorLoading* fl, int s, int nSteps, int k, int l) : LmmNode(fl,s,nSteps),
     i(k), j(l)
 	{	}
-				 
-	
-	 
-	 
-// COMPUTATION OF THE STATE	 
-
-	
-	
-	/** Diagnostic. Checking the vector V computed at a node at time t.
-	 */
-	void checkState(int t, vector<Real>& V, vector<Real>& Z, Matrix<Real>& RQt);	
 	
 
 }; // end LmmNode2F
 	
 
+
+
+/**********************************************************************************
+ *
+ *            NODE IN 3 FACTOR LMM LATTICE
+ *
+ *********************************************************************************/
+
+
+
+
+/** <p><a href="lmm-node-3f">Node</a> in a 3 factor lattice for the Libor market model 
+ *  {@link LmmLattice3F}.
+ *  For more details see the file reference for the file Node.h (click on
+ *  "File List").
+ */
+class LmmNode3F : public LmmNode {
+	
+
+	int i,                  // state Z1=ia
+		j,                  // state Z2=ja
+	    k;                  // state Z3=ka,  
+    // a=sqrt(dt) the tick size of a standard Brownian motion over an interval of length dt.
+
+	
+public:
+		
+// ACCESSORS
+	
+	int get_i(){ return i; }
+	int get_j(){ return j; }
+	int get_k(){ return k; }
+	
+// CONSTRUCTOR
+	
+	/** @param s number of time steps to reach this node from time zero.
+	 *  @param nSteps number of time steps in each Libor acrual interval.
+	 *  @param p state Z1=pa.
+	 *  @param q state Z2=qa.
+	 *  @param r state Z3=ra.
+	 */
+	LmmNode3F(LiborFactorLoading* fl, int s, int nSteps, int p, int q, int r) : LmmNode(fl,s,nSteps),
+    i(p), j(q), k(r)
+	{	}
+				 
+	
+	
+
+}; // end LmmNode3F
+	
 
 	
 	
