@@ -299,6 +299,18 @@ Classes <code>Node, Lattice, LmmLattice, BasketLattice, LiborFunctional</code>
 to reflect the new setup. Elaborate on the reason for the templatization.
 
 
+<h3>9-10-03:</h3>
+
+Check why in single computations of caplet prices in the predictor corrector model
+the use of control variates seems to have an adverse effect despite the extremely high 
+correlation. Run the same computation 20 times and check the results.
+<p>
+<b>Ownership:</b> for each matrix function returning a reference document if the user 
+has to deallocate the resource. Generally in classes prefer direct members to reference or pointer
+members. Direct members are deallocated automatically by the class destructor.
+
+
+
 
 
 </body>

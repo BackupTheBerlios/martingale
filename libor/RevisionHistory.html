@@ -370,6 +370,24 @@ Rerun of the Bermudan exercise boundary computation with better resolution.
 <b>State:</b> Option pricing tested. Code runs and is working.
 
 
+<h3>9-10-03:</h3>
+
+First release finalized. All tests pass. 
+<p>
+<b>Flaws detected:</b>
+<ul> 
+<li>Quasi Monte Carlo computation with control variate does not reset the Sobol generator
+after computation of the beta coefficient. Seemingly difficult to rectify. Compensated for as follows:
+the beta coefficient is computed from N=1024 samples. Use a power of two as a sample size
+for Quasi Monte Carlo computation.</li>
+<li><code>Lattice.h</code> The pure virtual function <code>transitionProbability(int i)</code> makes
+subsequent inlining in the concrete subclasses impossible.  Slowdown. We need this only for
+the general lattice <code>selfTest()</code>. For pricing the concrete classes themselves are used
+as template parameters and not accessed via the interface base. To no avail however as 
+<code>transitionProbability(int i)</code> remains virtual in all the derived classes.</li>
+</ul>
+
+
 
 </body>
 </html>

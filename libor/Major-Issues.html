@@ -16,12 +16,18 @@ The following need ultimately to be resolved:
 
 Why do caplet prices blow up in dimension n&gt;=70 when predictor-corrector
 simulation is used. Is this a bug or a weakness in the predictor-corrector approximation?
+<p>
+Resolved. Phenomenon disappeared after code rewrite. 
 
 
 <H3>Memory Leak</H3>
 
 Check the matrix, vector and array classes for proper deallocation of resources.
 The old calibration code (7-17-03) exhibits a catastrophic memory leak.
+<p>
+Resolved. 
+
+
 
  
 
