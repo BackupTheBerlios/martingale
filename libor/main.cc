@@ -30,6 +30,7 @@ spyqqqdia@yahoo.com
 // #include "TestMatrix.h"
 // #include "TestProbability.h"
  #include "TestLMM.h"
+// #include "ExercisePlot.h"
 // #include "TestOptimizers.h"
 // #include "TestFormulas.h"
 // #include "Examples.h"
@@ -125,7 +126,7 @@ int main()
 	
 	// Libor derivatives in the driftless LMM with constant volatilities, 
 	// includes lattice pricing
-	Test_LMM::testLiborDerivative();
+    Test_LMM::testLiborDerivative();
 	
 	
 
@@ -167,6 +168,7 @@ int main()
 
      // testLmmLattice();
 	 // testLatticeSwaption(true);
+	 // plotBermudanExercise();
 	 
 	
 /*******************************************************************************

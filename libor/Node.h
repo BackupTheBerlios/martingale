@@ -179,6 +179,11 @@ virtual ~LmmNode(){ delete[] k_; }
  *  of size dt.
  */
 int* getIntegerTicks(){ return k_; }
+
+/** Returns t such that the node lives in the accrual interval 
+ * \f$(T_{t-1},T_t]\f$.
+ */
+int get_t() const;
 	
 /** <p>The vector \f$H=(H_p,\dots,H_n)\f$ of accrual factors at the node.
  *  Natural indices j=p,...,n.
@@ -187,6 +192,9 @@ int* getIntegerTicks(){ return k_; }
  *  which overwrite the workspace.
  */
 const RealArray1D& Hvect(int p);
+
+/** Libor \f$L_j\f$ at this node. */
+Real L(int j);
 	
 /** The forward price \f$H_{p,q}\f$ of the annuity \f$B_{p,q}\f$ over the 
  *  interval [T_p,T_q] at this node.
@@ -225,10 +233,6 @@ private:
 	int* k_;                         // Z_j=k[j]*a, state of the Brownian driver
 	                                 // a=sqrt(dt) the tick size of a standard Brownian 
 	                                 // motion over an interval of length dt.
-	
-/** Returns t such that the node lives in the accrual interval \f$(T_{t-1},T_t]\f$.
- */
-int get_t() const;
 
 
 }; // end LmmNode

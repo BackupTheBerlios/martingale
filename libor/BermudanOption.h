@@ -67,6 +67,9 @@ class BermudanSwaption : public LiborDerivative {
 		     
 public:
 
+/** The srike rate. */
+Real getStrike(){ return kappa; }
+
 /** Wether or not the option can be exercised at continuous time t.*/
 bool isExercisable(Real t);
 
@@ -74,7 +77,7 @@ bool isExercisable(Real t);
 
 /** 
  * @param p,q period of swap \f$[T_p,T_q]\f$.
- * @param nPath number of training paths for the exercise trigger.
+ * @param paths number of training paths for the exercise trigger.
  * @param strike strike rate.
  * @param lmm underlying Libor market model.
  * @param verbose messages during trigger optimization
@@ -93,7 +96,8 @@ BermudanSwaption
  * @param corrType type of correlations, Correlations::CS, JR.
  */
 static BermudanSwaption* sample
-(int p, int q, int paths, bool verbose,
+(int p, int q, int paths, 
+ bool verbose=false,
  int lmmType = 0,    // LiborMarketModel::DL, we use literals to avoid includes 
  int volType = 2,    // VolSurface::CONST
  int corrType =1     // Correlations::CS

@@ -192,11 +192,11 @@ protected:
 	
 public:
 
-// ACCESSORS
-
-    /** The factor loading of the underlying LMM.
-	 */
+    /** The factor loading of the underlying LMM.*/
     LiborFactorLoading* getFactorLoading(){ return factorLoading; } 
+	
+	/** The number of time steps per Libor compounding period. */
+	int getSteps(){ return nSteps; }
 	
 	/** The size of the time step.*/
 	Real getTimeStep(){ return delta/nSteps; }

@@ -165,13 +165,12 @@ getDefaultLattice()
 {
 	LiborFactorLoading* fl = LMM->getFactorLoading();
 	Real delta=LMM->getDeltas()[0];
-	// size of time step: 
-	int steps=50;                               // minimum
-	while((steps<LATTICE_MAX_STEPS)&&(t*delta/steps>0.04)) steps++;
-	Real dt = t*delta/steps;
-	int nSteps = (int)(delta/dt);
+	// time steps per accrual interval: 
+	int steps=1;                               
+	// lattice built up to time T_t, total time steps: t*nSteps
+	while(t*steps+t<LATTICE_MAX_STEPS) steps++;
 	bool verbose = false;
-	return new LmmLattice2F(fl,t,nSteps,verbose);
+	return new LmmLattice2F(fl,t,steps,verbose);
 }
 
 

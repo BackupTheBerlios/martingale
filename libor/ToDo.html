@@ -177,7 +177,7 @@ source files instead. In headers declare
 <p>
 class std::ostream;
 <p>
-Insource files include &lt;iostream&gt; and declare
+In source files include &lt;iostream&gt; and declare
 <p>
 using std::ostream;<br>
 using std::cout;<br>
@@ -253,6 +253,28 @@ moved significantly.</li>
 <li>Is the lattice buggy for Bermudan exercise? Check if the exercise times are computed
 correctly.</li>
 </ul>
+
+
+<h3>8-26-03:</h3>
+
+Fix file descriptions: BasketLattice.h, LiborFactorLoading.h, generally link to the class description
+with {@link classname} in all file descriptions. Check BrownianMotionInBall runs correctly.
+
+<h3>9-1-03:</h3>
+
+<p>Simplify the Monte Carlo pricing of options as follows: no explicit mentioning of path computations
+Indeed some options might use direct sampling). The fundamental virtual method becomes</p>
+
+<code>
+nextForwardPayoff()<br>
+nextForwardPayoffControlVariatePair()
+</code>
+
+<p>Get rid of PathGenerators. Write a note about include paths and linker options needed to 
+compile the project, credits for libraries used.</p>
+
+
+ 
 
 
 

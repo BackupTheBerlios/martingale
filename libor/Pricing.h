@@ -112,8 +112,8 @@ Real latticeForwardPrice(LatticeType* theLattice, OptionType* theOption)
 	// backward computation through earlier nodes
 	for(int t=expiry-1; t>=0;t--){
 		
-	    // can we exercise at time t?
-		bool exercise_t = theOption->isExercisable(t);
+	    // can we exercise at time t (continuous time!)
+		bool exercise_t = theOption->isExercisable(t*dt);
 		
 		vector<NodeType*>* nodes_t=theLattice->getNodeList(t);
 	    theNode=nodes_t->begin();

@@ -110,7 +110,8 @@ Real
 BermudanSwaption::
 forwardPayoff(LmmNode* node)
 { 
-	return node->forwardSwaptionPayoff(p,q,kappa); 
+	int t=node->get_t();                // node lives in (T_{t-1},T_t]
+	return node->forwardSwaptionPayoff(t,q,kappa); 
 }
  
 

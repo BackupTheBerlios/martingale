@@ -327,6 +327,16 @@ Significantly it often underestimates the Bermudan swaption price relative to a 
 by one third.
 
 
+<h3>9-1-03:</h3>
+
+ExercisePlot.h implemented. Graphic representation of Bermudan swaption exercise boundary
+in Jaeckel coordinates in directory <code>ExerciseBoundaries</code>.
+
+Several bugs in Bermudan swaption lattice pricing removed (mix up continuous versus discrete
+time in <code>isExercisable(Real t)</code> and bug in 
+<code>BermudanSwaption::forwardPayoff(LmmNode* node)</code>.
+Monte Carlo and lattice prices for Bermudan swaptions now in excellent agreement.
+
 
 </body>
 </html>

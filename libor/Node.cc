@@ -159,6 +159,17 @@ Hvect(int p)
 
 Real 
 LmmNode:: 
+L(int j)
+{
+	const RealArray1D& H=Hvect(j);
+	Real delta = lattice->delta;
+	return (H[j]/H[j+1]-1)/delta;
+}
+	
+
+
+Real 
+LmmNode:: 
 H_pq(int p, int q)
 {
 	const RealArray1D& H=Hvect(p);
