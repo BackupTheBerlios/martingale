@@ -198,9 +198,9 @@ std::ostream& printSelf(std::ostream& os) const
 {
 	os << "LMM lattice, node type: ";
 	LmmNode::printType(os);
-	os << "\nNumber of time steps in each accrual interval: " << nSteps << endl;
-	factorLoading->printSelf(os);
-	return os << endl;
+	return
+	os << "\nNumber of time steps in each accrual interval: " << nSteps 
+	   << endl << *factorLoading;
 }
 	
 
@@ -220,7 +220,8 @@ private:
 }; // end LmmLattice
 
 
-
+template<typename LmmNode>
+std::ostream& operator << (std::ostream& os, const LmmLattice<LmmNode>& ltt);
 
 
 /**********************************************************************************

@@ -521,6 +521,8 @@ public:
  */
 class SobolSearch: public Optimizer {
 	
+protected:
+	
 	int nPoints;                       // total number of search points
 	Real q;                            // window contraction factor
 	RealArray1D xOpt;                  // current best point

@@ -38,9 +38,24 @@ spyqqqdia@yahoo.com
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
+/*! \file LiborMarketModel.h
+ * Interface and partial implementation for all Libor market models based on
+ * factorloadings {@link LiborFactorLoading} with a deterministic volatility 
+ * {@link VolSurface} and constant correlations {@link Correlations}.
+ */
+
+
 // we are using
 class LiborFactorLoading;
 class Bond;  // defined below
+
+
+
+/*******************************************************************************
+ *
+ *                    LIBOR MARKET MODEL
+ *
+ ******************************************************************************/
 
 /**<p>Libor Market Model based on state variables with Gaussian {@link FactorLoading}.
  * See book, Chapter 6. The state variables need not be the Libors \f$X_j\f$ themselves. 

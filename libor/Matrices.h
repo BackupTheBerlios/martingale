@@ -44,6 +44,15 @@ spyqqqdia@yahoo.com
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
+
+/*! \file Matrices.h
+ * Vectors, upper and lower triangular square matrices and rectangular matrices
+ * parametrized by type of entry. Functionality BLAS like, indexation from arrbitrary 
+ * base, bounds checking via preprocessor macro (can be disabled) exponentials, pseudo 
+ * square roots. Also contains matrix sequence structures useful in Libor modelling.
+ */
+
+// forward declarations
 template<class S> class LTRMatrix;
 template<class S> class UTRMatrix;
 template<class S> class Matrix;
@@ -1312,10 +1321,11 @@ LTRMatrix<S>& ltrRoot() const
 		S Aij=dptr[j][i-j], R=Aij-sum;                // R-L_ijL_jj=A_ij-r_i(L).r_j(L)=0
         if(j<i) L[i][j]=R/L[j][j];                    // L[j][j] already computed, compute L[i][j]
         else if(R>0) L[j][j]=sqrt(R);
-        else{ cerr<<endl<<endl<<"Dimension "<<dim
-                  <<", C["<<j<<"]["<<j<<"]-S="<<R<<endl
-                  <<"ltrRoot(): Matrix not positive definite:" << endl
-				  << *this << endl << "Terminating.";
+        else{ 
+			
+			 cerr << "\n\nUTRMatrix::ltrRoot(): matrix not positive definite:" 
+			     << "\nDimension "<< dim <<", A["<<j<<"]["<<j<<"]-S="<< R << endl  
+			     << "\n\nMatrix:\n\n" << *this << endl << "Terminating.";
                exit(1); 
         } // end else
     } //end for i
@@ -1353,10 +1363,11 @@ UTRMatrix<S>& utrRoot() const
    		S Aij=dptr[i][j-i], R=Aij-sum;           // R-U_ijU_jj=A_ij-r_i(U).r_j(U)=0    
         if(j>i) U[i][j-i]=R/U[j][0];             // U[j][0]=U[j][j-j]=U_jj              
         else if(R>0) U[j][0]=sqrt(R);
-        else{ cerr<<endl<<endl<<"Dimension "<<dim
-                  <<", A["<<j<<"]["<<j<<"]-S="<<R<<endl
-                  <<"utrRoot(): Matrix not positive definite:" << endl
-				  << *this << endl << "Terminating.";
+        else{ 
+			
+			cerr << "\n\nUTRMatrix::utrRoot(): matrix not positive definite:" 
+			     << "\nDimension "<< dim <<", A["<<j<<"]["<<j<<"]-S="<< R << endl  
+			     << "\n\nMatrix:\n\n" << *this << endl << "Terminating.";
                exit(1); 
         } // end else
     } //end for i
