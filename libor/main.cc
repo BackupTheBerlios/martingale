@@ -119,7 +119,7 @@ int main()
          int corrType=Correlations::CS;     // JR, CS
 
 	// testCapletPrice(n,lmmType,volType,corrType); 
-	 testSwaptionPrice(n,lmmType,volType,corrType);
+	// testSwaptionPrice(n,lmmType,volType,corrType);
 	// testCallOnBondPrice(n,lmmType,volType,corrType);
 	// testCallOnZeroCouponBondPrice(n,lmmType,volType,corrType);
 	
@@ -162,7 +162,7 @@ int main()
 	
 	 
 	 // LatticeSwaption3F::test(15,19,30);
-     // ConstVolLmmLattice2F::test(50);
+     testLmmLattice();
 	 
 	 
 	

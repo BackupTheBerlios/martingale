@@ -22,7 +22,7 @@ spyqqqdia@yahoo.com
 
 #include "Node.h"
 #include "LiborFactorLoading.h"
-#include "Lmmlattice.h"
+#include "LmmLattice.h"
 #include "BasketLattice.h"
 #include "Matrix.h"
 #include <iostream>
@@ -39,12 +39,6 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  *
  *********************************************************************************/
  
-Node:: 
-~Node()
-{
-	std::list<Edge>::const_iterator theEdge;         // pointer to Edge
-	for(theEdge=edges.begin(); theEdge!=edges.end(); ++theEdge)  delete &(*theEdge); 
-}
 
 
 void 
@@ -71,48 +65,58 @@ printTransitionProbabilities() const
 // LITE-LMM-NODES
 
 // out of class initialization necessary
-LiteLmmNode::H_(LMM_MAX_DIM); 
-LiteLmmNode::V_(LMM_MAX_DIM);
+RealArray1D LiteLmmNode::H_(LMM_MAX_DIM); 
+RealArray1D LiteLmmNode::V_(LMM_MAX_DIM);
 
 
 LiteLmmNode::
-LiteLmmNode(int s, const IntArray1D& k, int LmmLatticeData* latticeData) : 
-s_(s), lattice(latticeData), k_(new int[info->r]) 
-{  
+LiteLmmNode(int s, const IntArray1D& k, LmmLatticeData* latticeData) : Node(s), 
+lattice(latticeData), k_(new int[latticeData->r]) 
+{
 	// set the state
-	int r=lattice->r;  // number of factors
+	int r=latticeData->r;  // number of factors
 	for(int i=0;i<r;i++) k_[i]=k[i];
 }
 
 	
+
+const RealArray1D& 
 LiteLmmNode::
-const RealArray1D& Hvect(int p)
+Hvect(int p)
 {
-	int n=lattice->n,                          // dimension of Libor process
-	    r=lattice->r;                          // number of factors
+	int n=lattice->n,                           // dimension of Libor process
+	    r=lattice->r;                           // number of factors
 	Real dt = lattice->timestep,         
-	     a  = lattice->ticksize;               // tick size a over one time step
-	const RealArray1D& U0=lattice->U0;         // U_j(0), initial values
-	const RealArray1D& sg=lattice->sg;         // constant vols sigma_j, see book, 6.11.1
-	const RealArray1D& mu=lattice->driftUnit;  // drifts over one time step
-	const RealMatrix& R=lattice->R;            // r factor pseudo square root of correlation matrix
+	     a  = lattice->ticksize;                // tick size a over one time step
+	const RealArray1D& log_U0=lattice->log_U0;  // U_j(0), initial values
+	const RealArray1D& sg=lattice->sg;          // constant vols sigma_j, see book, 6.11.1
+	const RealArray1D& mu=lattice->driftUnit;   // drifts over one time step
+	const RealMatrix& R=lattice->R;             // r factor pseudo square root of correlation matrix
 
 	
-	// the volatility parts V_j of log(U_j), j=t,...,n-1
-	V_.setDimension(n-p);
+	if(s==0){          // needs special treatment since R starts with row index 1
+		
+		H_[n]=1.0;
+        for(int j=n-1;j>=0;j--) H_[j]=std::exp(log_U0[j])+H_[j+1]; 
+		return H_;
+	}
+			
+    // the volatility parts V_j of log(U_j), j=t,...,n-1
+    V_.setDimension(n-p);
 	V_.setIndexBase(p);
 	for(int j=p;j<n;j++){
 		
-		V_[j]=0.0;
-		for(int u=0;u<r;u++) V_[j]+=R(j,u)*k[u];
-		V_[j]*=a*sg[j];
-	}
+	    V_[j]=0.0;
+		for(int u=0;u<r;u++) V_[j]+=R(j,u)*k_[u];
+	    V_[j]*=a*sg[j];
+	}                                                       // now V_=V
 		 
     // add the initial value log(U_j(0) and drift mu_j(s)
-	for(int j=p;j<n;j++) V_[j]+=log(U0[j])+s*mu[j];         // now V=log(U)
-				 
-	// move from log(U_j) to U_j
-	for(int j=p;j<n;j++) V_[j]=std::exp(V_[j]);              // now V=U
+	for(int j=p;j<n;j++) {
+		
+        V_[j]+=log_U0[j]+s*mu[j];          // now V=log(U)
+		V_[j]=std::exp(V_[j]);             // now V=U
+	}
 				 
 	// write the  H_n=1, H_j=U_j+H_{j+1}, j=t,...,n-1
 	// into the static workspace H_:
@@ -126,8 +130,10 @@ const RealArray1D& Hvect(int p)
 } // Hvect
 
 
+
+int 
 LiteLmmNode:: 
-int get_t() const
+get_t() const
 {
 	int nSteps=lattice->nSteps;
 	if(s%nSteps==0) return s/nSteps;
@@ -135,16 +141,20 @@ int get_t() const
 }
 
 
+
+std::ostream& 
 LiteLmmNode:: 
-std::ostream& printType(std::ostream& os)
+printType(std::ostream& os) 
 {
 	return
 	os << "Lightweight LmmNode";
 }
 
 
+
+std::ostream& 
 LiteLmmNode:: 
-std::ostream& printSelf(std::ostream& os)
+printSelf(std::ostream& os)
 {
 	int t=get_t();
 	return
@@ -159,21 +169,22 @@ std::ostream& printSelf(std::ostream& os)
 // HEAVY-LMM-NODES
 
 // out of class initialization necessary
-HeavyLmmNode::V_(LMM_MAX_DIM);
+RealArray1D HeavyLmmNode::V_(LMM_MAX_DIM);
 	
 HeavyLmmNode::
-HeavyLmmNode(int s, const IntArray1D& k, LmmLatticeData* latticeData) : 
-s_(s), k_(new int[info->r]), lattice(latticeData), H(n-get_t()+1,get_t())
-{  
-	int n=lattice->n,                          // dimension of Libor process
-	    r=lattice->r;                          // number of factors
+HeavyLmmNode(int s, const IntArray1D& k, LmmLatticeData* latticeData) : Node(s),
+lattice(latticeData),                        // get_t() needs this for nSteps
+k_(new int[latticeData->r]), 
+H_((latticeData->n)-get_t()+1,get_t()) 
+{ 
+	int n=lattice->n,                           // dimension of Libor process
+	    r=lattice->r;                           // number of factors
 	Real dt = lattice->timestep,         
-	     a  = lattice->ticksize;               // tick size a over one time step
-	const RealArray1D& U0=lattice->U0;         // U_j(0), initial values
-	const RealArray1D& sg=lattice->sg;         // constant vols sigma_j, see book, 6.11.1
-	const RealArray1D& mu=lattice->driftUnit;  // drifts over one time step
-	const RealMatrix& R=lattice->R;            // r factor pseudo square root of correlation matrix
-
+	     a  = lattice->ticksize;                // tick size a over one time step
+	const RealArray1D& log_U0=lattice->log_U0;  // log(U_j(0)), initial values
+	const RealArray1D& sg=lattice->sg;          // constant vols sigma_j, see book, 6.11.1
+	const RealArray1D& mu=lattice->driftUnit;   // drifts over one time step
+	const RealMatrix& R=lattice->R;             // r factor pseudo square root of correlation matrix
 	
 	// set the state of the Brownian driver
 	for(int i=0;i<r;i++) k_[i]=k[i];
@@ -181,30 +192,40 @@ s_(s), k_(new int[info->r]), lattice(latticeData), H(n-get_t()+1,get_t())
 	// compute the accrual factors H_j
 	
 	int t=get_t();             // node lives in (T_{t-1},T_t].
-	// the volatility parts V_j of log(U_j), j=t,...,n-1.
-	RealVector V(n-t,t);       
-	for(int j=t;j<n;j++){
+	if(t==0){                  // needs special treatment since R starts with row index 1
 		
-		V[j]=0.0;
-		for(int u=0;u<r;u++) V[j]+=(R(j,0)*k_[u];
-		V[j]*=sg[j]*a;
-	}
-		 
-	// add the initial value log(U_j(0) and drift mu_j(s)
-	for(int j=t;j<n;j++) V[j]+=log(U0[j])+s*mu[j];           // now V=log(U)      
-				 
-	// move from log(U_j) to U_j
-	for(int j=t;j<n;j++) V[j]=std::exp(V[j]);                 // now V=U
-				 
-	// write the  H_n=1, H_j=U_j+H_{j+1}, j=t,...,n-1, 
-	H[n]=1.0; 
-    for(int j=n-1;j>=t;j--) H[j]=V[j]+H[j+1]; 
+		H_[n]=1.0;
+        for(int j=n-1;j>=t;j--) H_[j]=std::exp(log_U0[j])+H_[j+1]; 
+			
+	} else {                   // computation from the dynamics
+	   
+		// the volatility parts V_j of log(U_j), j=t,...,n-1.  
+	    for(int j=t;j<n;j++){
+		
+	    	V_[j]=0.0;
+		    for(int u=0;u<r;u++) V_[j]+=R(j,0)*k_[u];
+		    V_[j]*=sg[j]*a;
+	    }                                        // now V_=V
+	 
+	    // add the initial value log(U_j(0) and drift mu_j(s)
+	    for(int j=t;j<n;j++){
+		
+		    V_[j]+=log_U0[j]+s*mu[j];             // now V=log(U)      
+		    V_[j]=std::exp(V_[j]);                // now V=U
+	    }
+			 
+	    // write the  H_n=1, H_j=U_j+H_{j+1}, j=t,...,n-1, 
+	    H_[n]=1.0; 
+        for(int j=n-1;j>=t;j--) H_[j]=V_[j]+H_[j+1];
+	} // end else
 
 } // end constructor
 
 
+
+int 
 HeavyLmmNode:: 
-int get_t() const
+get_t() const
 {
 	int nSteps=lattice->nSteps;
 	if(s%nSteps==0) return s/nSteps;
@@ -212,22 +233,26 @@ int get_t() const
 }
 
 
+
+std::ostream& 
 HeavyLmmNode:: 
-std::ostream& printType(std::ostream& os)
+printType(std::ostream& os) 
 {
 	return
 	os << "Heavyweight LmmNode";
 }
 
 
+
+std::ostream& 
 HeavyLmmNode:: 
-std::ostream& printSelf(std::ostream& os)
+printSelf(std::ostream& os) const
 {
 	int t=get_t();
 	return
 	os << "\n\nHeavy LmmNode, factors: " << lattice->r
 	   << "\nAccrual interval: (T_"<<t-1<<",T_"<<t<<"], time step s = " << s
-	   << "\nVector of accrual factors:" << H;
+	   << "\nVector of accrual factors:" << H_;
 }
 
 
@@ -243,13 +268,13 @@ std::ostream& printSelf(std::ostream& os)
 // LITE-BASKET-NODES
 
 // out of class initialization necessary
-LiteBaskeNode::S_(BASKET_MAX_DIM); 
-LiteBasketNode::V_(BASKET_MAX_DIM);
+RealArray1D LiteBasketNode::S_(BASKET_MAX_DIM); 
+RealArray1D LiteBasketNode::V_(BASKET_MAX_DIM);
 
 
-LiteBaskeNode::
-LiteBaskeNode(int s, const IntArray1D& k, int BasketLatticeData* latticeData) : 
-s_(s), lattice(latticeData), k_(new int[info->r]) 
+LiteBasketNode::
+LiteBasketNode(int s, const IntArray1D& k, BasketLatticeData* latticeData) : Node(s),
+lattice(latticeData), k_(new int[latticeData->r])
 {  
 	// set the state
 	int r=lattice->r;  // number of factors
@@ -257,53 +282,57 @@ s_(s), lattice(latticeData), k_(new int[info->r])
 }
 
 	
-LiteBaskeNode::
-const RealArray1D& Svect(int p)
+
+const RealArray1D& 
+LiteBasketNode::
+Svect(int p)
 {
-	int n=lattice->n,                          // dimension of Libor process
-	    r=lattice->r;                          // number of factors
-	Real dt = lattice->timestep;         
-	     a  = lattice->ticksize;               // tick size a over one time step
-	const RealArray1D& S0=lattice->S0;         // initial asset prices
-	const RealArray1D& sg=lattice->sg;         // volatilities, see ConstVolFactorLoading.
-	const RealArray1D& mu=lattice->driftUnit;  // drifts over one time step
-	const RealMatrix& R=lattice->R;            // r factor pseudo square root of correlation matrix
+	int n=lattice->n,                           // dimension of Libor process
+	    r=lattice->r;                           // number of factors
+	Real dt = lattice->timestep,         
+	     a  = lattice->ticksize;                // tick size a over one time step
+	const RealArray1D& log_S0=lattice->log_S0;  // initial asset price logs
+	const RealArray1D& sg=lattice->sg;          // volatilities, see ConstVolFactorLoading.
+	const RealArray1D& mu=lattice->driftUnit;   // drifts over one time step
+	const RealMatrix& R=lattice->R;             // r factor pseudo square root of correlation matrix
 
 	
 	// the volatility parts V_j of log(S_j), j=p,...,n-1
-	V_.setDimension(n-p);
-	V_.setIndexBase(p);
-	for(int j=p;j<n;j++){
-		
-		V_[j]=0.0;
-		for(int u=0;u<r;u++) V_[j]+=R(j,u)*k[u];
-		V_[j]*=a*sg[j];
-	}
-		 
-    // add the initial value log(S_j(0) and drift mu_j(s)
-	for(int j=p;j<n;j++) V_[j]+=log(S0[j])+s*mu[j];          // now V=log(S)
-				 
-	// write the  H_n=1, H_j=U_j+H_{j+1}, j=t,...,n-1
-	// into the static workspace H_:
 	S_.setDimension(n-p);
 	S_.setIndexBase(p);
-    for(int j=n-p;j<p;j++) S_[j]=std::exp(V_[j]); 
+	for(int j=p;j<n;j++){
+		
+		S_[j]=0.0;
+		for(int u=0;u<r;u++) S_[j]+=R(j,u)*k_[u];
+		S_[j]*=a*sg[j];
+	}                                                       // now S_=V
+		 
+    // add the initial value log(S_j(0) and drift mu_j(s)
+	for(int j=p;j<n;j++){
+		
+		S_[j]+=log_S0[j]+s*mu[j];           // now S_=log(S)
+        S_[j]=std::exp(S_[j]);              // now S_=S
+	}
 
     return S_;
 	
 } // Svect
 
 
+
+std::ostream& 
 LiteBasketNode:: 
-std::ostream& printType(std::ostream& os)
+printType(std::ostream& os) 
 {
 	return
 	os << "Lightweight BasketNode";
 }
 
 
-LiteBaskeNode:: 
-std::ostream& printSelf(std::ostream& os)
+
+std::ostream& 
+LiteBasketNode:: 
+printSelf(std::ostream& os) 
 {
 	return
 	os << "\n\nLightweight BasketNode, factors: " << lattice->r
@@ -316,22 +345,20 @@ std::ostream& printSelf(std::ostream& os)
 // HEAVY-BASKET-NODES
 
 // out of class initialization necessary
-HeavyBasketNode::V_(BASKET_MAX_DIM);
-	
-
+RealArray1D HeavyBasketNode::V_(BASKET_MAX_DIM);
 	
 HeavyBasketNode::
-HeavyBasketNode(int s, const IntArray1D& k, BasketLatticeInfo* info) : 
-s_(s), k_(new int[info->r]), lattice(info), S(n)
+HeavyBasketNode(int s, const IntArray1D& k, BasketLatticeData* latticeData) : Node(s), 
+lattice(latticeData), k_(new int[latticeData->r]), S_(latticeData->n)
 {  
-	int n=lattice->n,                   // dimension of Libor process
-	    r=lattice->r;                   // number of factors
-	Real dt = lattice->timestep;         
-	     a  = lattice->ticksize;               // tick size a over one time step
-	const RealArray1D& S0=lattice->S0;         // initial asset prices
-	const RealArray1D& sg=lattice->sg;         // volatilities, see ConstVolFactorLoading.
-	const RealArray1D& mu=lattice->driftUnit;  // drifts over one time step
-	const RealMatrix& R=lattice->R;            // r factor pseudo square root of correlation matrix
+	int n=lattice->n,                            // dimension of Libor process
+	    r=lattice->r;                            // number of factors
+	Real dt = lattice->timestep,         
+	     a  = lattice->ticksize;                 // tick size a over one time step
+	const RealArray1D& log_S0=lattice->log_S0;   // initial asset price logs
+	const RealArray1D& sg=lattice->sg;           // volatilities, see ConstVolFactorLoading.
+	const RealArray1D& mu=lattice->driftUnit;    // drifts over one time step
+	const RealMatrix& R=lattice->R;              // r factor pseudo square root of correlation matrix
 
 		
 	// set the state of the Brownian driver
@@ -342,39 +369,39 @@ s_(s), k_(new int[info->r]), lattice(info), S(n)
 	// volatility parts V_j of log(S_j)
 	for(int j=0;j<n;j++){
 		
-		V[j]=0.0;
-		for(int u=0;u<r;u++) V[j]+=(R(j,0)*k_[u];
-		V[j]*=sg[j]*a;
-	}
+		S_[j]=0.0;
+		for(int u=0;u<r;u++) S_[j]+=R(j,0)*k_[u];
+		S_[j]*=sg[j]*a;
+	}                                                          // now S_=V
 		 
 	// add the initial value log(U_j(0) and drift mu_j(s)
-	for(int j=t;j<n;j++) V[j]+=log(U0[j])+s*mu[j];           // now V=log(U)      
-				 
-	// move from log(U_j) to U_j
-	for(int j=t;j<n;j++) V[j]=std::exp(V[j]);                 // now V=U
-				 
-	// write the  H_n=1, H_j=U_j+H_{j+1}, j=t,...,n-1, 
-	H[n]=1.0; 
-    for(int j=n-1;j>=t;j--) H[j]=V[j]+H[j+1]; 
+	for(int j=0;j<n;j++){
+		
+		S_[j]+=log_S0[j]+s*mu[j];              // now S_=log(S)      
+		S_[j]=std::exp(S_[j]);                 // now S_=S
+	}
 
 } // end constructor
 
 
+
+std::ostream& 
 HeavyBasketNode:: 
-std::ostream& printType(std::ostream& os)
+printType(std::ostream& os) 
 {
 	return
 	os << "Heavyweight BasketNode";
 }
 
 
+
+std::ostream& 
 HeavyBasketNode:: 
-std::ostream& printSelf(std::ostream& os)
+printSelf(std::ostream& os) const
 {
-	int t=get_t();
 	return
 	os << "\n\nHeavyweight BaskeNode, factors: " << lattice->r
-	   << "\nAsset vector:" << S;
+	   << "\nAsset vector:" << S_;
 }
 
 

@@ -22,8 +22,7 @@ spyqqqdia@yahoo.com
 
 
 #include "FactorLoading.h"
-//#include <string>
-//#include <iostream>
+
 
 
 MTGL_BEGIN_NAMESPACE(Martingale)
@@ -41,7 +40,7 @@ const UTRRealMatrix&
 FactorLoading::
 correlationMatrix() const
 {
-	UTRRealMatrix& corr=*(new UTRRealMatrix(n);
+	UTRRealMatrix& corr=*(new UTRRealMatrix(n));
 
     for(int i=0;i<n;i++)
     for(int j=i;j<n;j++) corr(i,j)=rho(i,j);
