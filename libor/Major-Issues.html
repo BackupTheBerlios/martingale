@@ -1,0 +1,30 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<link rel="stylesheet" href="SyntheticData/html-info.css" type="text/css">
+</head>
+<body>
+
+
+
+<h1>Major Unresolved Issues</h1>
+
+The following need ultimately to be resolved:
+
+<H3>Predictor corrector blowup</H3>
+
+Why do caplet prices blow up in dimension n&gt;=70 when predictor-corrector
+simulation is used. Is this a bug or a weakness in the predictor-corrector approximation?
+
+
+<H3>Memory Leak</H3>
+
+Check the matrix, vector and array classes for proper deallocation of resources.
+The old calibration code (7-17-03) exhibits a catastrophic memory leak.
+
+ 
+
+
+</body>
+</html>

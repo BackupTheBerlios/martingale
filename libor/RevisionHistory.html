@@ -1,0 +1,192 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<link rel="stylesheet" href="SyntheticData/html-info.css" type="text/css">
+</head>
+<body>
+
+<H1>REVISION HISTORY</H1>
+
+<h3>5-17-03:</h3>
+
+LMMs working on swaptions and caplets,
+Book swaption formula verified.
+
+<h3>5-30-03:</h3>
+
+Most files split into .cc and .h files.
+templatization of boost::random random number generators
+causes problems, reverted to Random::U01 in all nonessentail applications.
+Standard normal deviates are still Mersenne twister mt19937 based.
+<p>
+LiborProcess, LognormalLiborVector, EmpiricalRandomVariable (is part of
+RandomVariables) deleted.
+
+
+<h3>6-2-03:</h3>
+
+Massive linking problems when splitting StochasticProcesses, TestLMM, 
+TestProbabiliy, TestMatrix into .h and .cc files.
+"Undefined reference foo" although foo is defined in the .cc file
+and no templates are involved. Cannot understand what's going on.
+<p>
+Matrix class expanded to encompass non square matrices.
+Matrix multiply and exponential tests still pass.
+
+
+<h3>6-15-03:</h3>
+
+Working on LiborTree2F.h
+TnT.h can be eliminated. Integrated into Matrices.h as global functions.
+
+
+<h3>6-20-03:</h3>
+
+LiborTree2F: 
+
+Matrix inversion of the last two rows of the rank 2 root of the covariation matrix
+is ill conditioned because of the high correlation of V_{n-2}, V_{n-1}.
+Decorrelate these from the beginning.
+<p>
+Swaption valuation in a LiborTree2F runs but produces an incorrect result.
+The value H[t] in the nodes is too large (much larger than the remaining H[j]).
+<p>
+NEW CLASS: LowfactorDriftlessLMM, DriftlessLMM with number of factors reduced
+to r, that is, the covariation matrices C(t) controlling the time steps are factored
+as C(t) = R(t)R(t)' with R(t) of rank r. Tested on swaption and seems to be working.
+<p>
+SobolVectorDriver inefficient for this LMM since it is allocated in a dimension which 
+assumes that full Libor paths are computed. This dimension may be too high.
+No other effect but inefficiency. Cannot be resolved unless a new driver is written.
+
+
+<h3>6-21-03:</h3>
+
+LiborTree2F: decorrelation V_{n-2}, V_{n-1}  -->  V_{n-2}-V_{n-1}, V_{n-1} implemented.
+No improvement.
+
+<h3>6-23-03:</h3>
+
+Split up Libortree2F into Lattice.h, Node.h, LmmLattice.h, LatticeOption.h
+Two factor lattice for the Libor market model is working in the case of constant
+Libor volatilities (ConstVolLmmLattice2F). Swaption priced correctly.
+<p>
+Next: implement lattices for asset baskets, American lattice options.
+
+
+<h3>7-3-03:</h3>
+
+Files changed: Matrices.h, Lmmlattice.h, Lattice.h, LatticeOption.h,
+Node.h.
+<p>
+Eliminated general 2 factor LmmLattice since the recovery of the V_j from 
+two of these variables is not sound in the context of a stochastic process. 
+Recover this file for the implementation of asset baskets with 1,2 or 3 assets and 
+nonconstant volatilities.
+<p>
+Generalized constant volatility Lmmlattices to more than one time step per Libor accrual interval.
+Added Array.h, lightweight array classes in dimension 1,2,3 and LiborArray2D an array
+adapted to Libor simulation with more than one time step per Libor accrual interval.
+<p>
+NEXT: Move SubscriptCheck to Utils.h to make Matrices.h independent of Array.h
+and avoid recompilation of Matrices.h whenever Array.h is changed.
+Three factor constant volatility LmmLattice and associated options.
+
+<h3>7-4-03:</h3>
+
+Files changed: LmmLattice.h,cc; Node.h,cc; LatticeOption.h
+<p>
+Three factor lattice for the driftless LMM with constant U_j - volatilities
+implemented. Test: 2 time steps per Libor accrual interval work as well as three time steps.
+
+
+<h3>7-7-03:</h3>
+
+Files changed: Optimizers.h, Lattice.h, LmmLattice.h, Utils.h, Utils.cc, Array.h
+               BasketLattice.h, BasketLattice.cc;
+<p>
+New: Optimizers.h, BasketLattice.h.
+<p>
+Write html file about linking issues, eg. whatever is included from a header file
+is dragged everywhere the header file is included, thus better to move includes into the
+.cc files unless the header really needs the include. Likewise remark on problems with 
+implementations in headers (for example problems with forward declarations).
+
+
+<h3>7-8-03:</h3>
+
+Files changed:  Optimizer.h,cc; LiborCalibrator.h; LiborFactorLoading.h; TestOptimizers.h,cc.
+<p>
+Added restarts to BFGS Optimizers. No improvement on the sample function.
+Added TypeID to LiborFactorloading (integer flag).
+<p>
+New: LiborCalibrator, reads and writes data. 
+Check if the list are correctly freed (most likely not) or a destructor has to be written.
+
+
+<h3>7-11-03: MAJOR REWRITE</h3>
+
+Replaced Real* with RealArray1D throughout, 
+LiborFactorLoading: separated vol-functions and correlations out as separate classes
+so they can be combined arbitrarily to form more factor loadings.
+LiborFactorLoading becomes a concrete class, vol-surface and correlations are
+handed to the constructor as parameters.
+<p>
+New data structures: RealArray1D,2D, RealVector, RealMatrix instead of Real*, Real**.
+Use of "const" wherever possible.
+<p>
+Files affected: Array.h; LiborMarketModel.h,cc; LiborFactorLoading.h,cc; 
+DriftlessLMM.h,cc; LowFactorDriftlessLMM.h,cc; PredictorCorrectorLMM.h,cc;
+FastPredictorCorrectorLMM.h,cc; Derivatives.h;
+<p>
+NEW:  LiborCorrelation, VolatilitySurface: !! check if integral formulas transcribed correctly.
+Mistakes should show up as nonpositive definite log-Libor covariation matrices. 
+<p>
+REMOVED: LognormalLMM and corresponding radical simplification of LiborFactorLoading.
+
+
+<h3>7-17-03:</h3>
+
+Rewrite largely complete. Caplet test works, LatticeSwaption test works.
+VolSurface integrals tested and pass.
+Now working on Calibration.
+Calibrator is able to write synthetic data.
+
+<h3>7-18-03:</h3>
+
+General Calibration finished but not tested.
+Special case of DriftlessLMM largely finished but still buggy. See ToDo.
+
+
+<h3>7-19-03:</h3>
+
+Walled off implementations in namespace Martingale 
+(ie. namespace martingale { ........} instead of #using namespace Martingale in the *.cc files).
+This resolved linker errors for the global operators 
+std::ostream operator << (std::ostream& os, const SomeType& x).  <br>
+Will probably resolve name conflict with boost::Random. 
+<p>
+Separated out the VolSurface and Correlations classes into separate files
+VolatilityAndCorrelations.h,cc.
+<p>
+Calibration is implemented and operational for DriftlessLMM but atrocious performance
+on caplets (excellent performance on swaptions --- probably a bug).
+Changed calibration from all swaptions to coterminal swaptions terminating at the horizon only.
+Ran caplet, swaption price tests, volsurface integral tests, lattice-swaption price test,
+everything works.
+<p>
+MEMORY LEAK detected. Before everything was confined to a well defined workspace
+calibration ate up ALL the memory. Check where the leak comes from. 
+Candidates: matrices: pseudo square roots, covariation matrices.
+
+
+
+
+</body>
+</html>
+
+
+
+
+
