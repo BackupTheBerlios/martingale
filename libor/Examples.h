@@ -28,9 +28,8 @@ spyqqqdia@yahoo.com
 #include "Utils.h"
 #include "Random.h"
 #include "RandomObject.h"
-#include "LiborProcess.h"
-#include "LognormalLiborVector.h"
 #include "LiborMarketModel.h"
+#include "LiborFactorLoading.h"
 #include "PredictorCorrectorLMM.h"
 #include "FastPredictorCorrectorLMM.h"
 #include "StochasticProcesses.h"
@@ -172,7 +171,7 @@ void matrixExponentials()
 	for(int i=0;i<dim;i++)
 	for(int j=0;j<=i;j++){ 
 		
-		A(i,j)=Random::u01();
+		A(i,j)=Random::U01();
 		Q(i,j)=dt*A(i,j); R(i,j)=-Q(i,j);
 		if(i==j){ Q(i,j)+=1; R(i,j)+=1; }
 	}
@@ -200,127 +199,35 @@ void matrixExponentials()
 
 
 
-/*******************************************************************************    
-    
-   MATRIX EXPONENTIALS exp(B(t)) from the Gaussian log-Libor approximation
-	
-*******************************************************************************/
-	
-/** Sets up a sample CS_FactorLoading in dimension n and then times the 
- *  computation of 5n matrix exponentials exp(B(t)), where t=T_j, j=5.
- *  We also print the matrices exp(B(t))exp(-B(s), where s=T_k, k=7.
- */
-void expBt(int n)
-{
-    LiborFactorLoading* fl=CS_FactorLoading::sample(n);
-	Timer watch;
-     
-	Real* Tc=fl->getTenorStructure();
-	int j=5, k=7;
-	
-	UTRRealMatrix& Bt=fl->B(Tc[j],k);
-	UTRRealMatrix& Bs=fl->B(Tc[k],k);
-    UTRRealMatrix& eBt=Bt.exp();
-    Bs*=(-1.0);
-	UTRRealMatrix& eBsInv=Bs.exp();
-	eBt*=eBsInv;
-	cout << "\nThe matrix exp(B(t))exp(-B(s)):\n" << eBt;
-	
-	watch.start();
-	for(int k=0;k<5*n;k++) Bt.exp();
-	watch.stop();
-	watch.report("n exponentials eBt:");
-
-} // end expBt
-
-
              
 /*******************************************************************************
  *
- *                    LIBOR PROCESS
+ *                    LMM PATH TIMING
  *
  ******************************************************************************/
 
 
 // PATH TIMING
     
-    /** <p>Allocates sample Libor process in dimension n
-     *  then times the computation of N full Libor paths.</p>
-     *
-     *  <p>Sample size: 50,000 paths.</p>
+    /** Allocates sample Libor process in dimension n
+     *  then times the computation of N full Libor paths.
+     *  Note the dramatic speedup if SUBSCRIPT_CHECK is undefined
+     *  in Array.h and Matrices.h.
      */   
     void liborPathTiming(int n, int N)
     {
         Timer watch;
-   		LiborFactorLoading* fl = CS_FactorLoading::sample(n);
-		
-        LiborMarketModel* LP=new PredictorCorrectorLMM(fl);
-        cout << "\nPredictor-corrector LMM\n"
-		     << N << " full Libor paths in dimension " << n;
-        watch.start();
-		for(int i=0;i<N;i++) LP->newPath();
-		watch.stop();
-		watch.report("");
-		
-		delete LP;
-		LP=new FastPredictorCorrectorLMM(fl);
-        cout << "\nAccelerated predictor-corrector LMM\n"
-		     << N << " full Libor paths in dimension " << n;
-        watch.start();
-		for(int i=0;i<N;i++) LP->newPath();
-		watch.stop();
-		watch.report("");
-		
-		
+		for(int lmmType=0;lmmType<4;lmmType++){
+			
+            int volType=VolSurface::JR,
+			    corrType=Correlations::CS;
+			LiborMarketModel* lmm=LiborMarketModel::sample(n,lmmType,volType,corrType);
+            watch.start();
+		    for(int i=0;i<N;i++) lmm->newPath();
+		    watch.stop();
+		    watch.report(lmm->modelType());
+		}		
     } // end liborPathTiming
-	
-	
-// X1 APPROXIMATION ERROR
-	
-    /** <p>Allocates sample Libor process in dimension n, then
-     *  computes the error <code>X1_j(t)-X_j(t)</code> of the
-	 *  X1 approximation from a sample of N Libor paths.</p>
-     */   
-    void liborApproximationError(int n, int j, int t, int N)
-    {
-		LiborFactorLoading* fl = CS_FactorLoading::sample(n);
-        LiborProcess* LP=new LiborProcess(fl);
-        
-		cout << (LP->toString()) << endl << endl
-		     << "Libor process in dimension " << n << endl
-		     <<"Relative error of the X1-approximation 100*(|X1-X|/X)_"<< j <<"("<< t <<"):";
-		
-		RandomVariable* error=LP->approximationError(j,t);
-
-		Real* mv=error->meanAndVariance(N);
-		Real mean=mv[0], variance=mv[1];
-		
-		cout << endl << "Mean: " << mean << "%"
-		     << endl << "Standard deviation: " << sqrt(variance) << "%";
-		
-    } // end liborPathTiming
-	
-	
-// TIMING THE SETUP OF A LOGNORMAL LIBOR VECTOR
-
-	
-    /** Allocates a LognormalLiborVector in dimension
-	 *  n and times how long this takes.
-     */   
-    void liborVectorTiming(int n)
-    {
-        Timer watch;
-        
-		LiborFactorLoading* fl = CS_FactorLoading::sample(n);
-		watch.start();
-		cout << endl 
-		     << "Allocating lognormal Libor vector in dimension " << n;
-        LognormalLiborVector<MC>* LV=new LognormalLiborVector<MC>(fl);
-		watch.stop();
-		string message="Setup";
-		watch.report(message);
-		
-    } // end liborVectorTiming
 	
 	
             

@@ -128,6 +128,18 @@ public:
     {  return integral_sgsg(t,T_1,T_2)-integral_sgsg(s,T_1,T_2); }
 	
 	
+	
+    /** Diagnostic. Monte Carlo test of the volatility integrals 
+     *  {@link integral_sgsg(Real,Real,Real,Real)}.
+     *  Analytic formulas tested against Monte Carlo over a range of
+     *  integration intervals.
+     *
+	 * @param N number of Monte Carlo sample points.
+     * @param precision maximal acceptable relative error in percent.
+     */
+    void testVolSurfaceIntegrals(int N, Real precision);
+	
+	
 					
 	/** Sets the parameters (calibration).
 	 */

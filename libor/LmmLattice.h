@@ -27,13 +27,13 @@ spyqqqdia@yahoo.com
 #include "TypedefsMacros.h"
 #include "Lattice.h"
 #include "Matrices.h"
-#include "LiborFactorLoading.h"         
+#include "LiborFactorLoading.h" 
+#include <iostream>
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 // we are using
-class LiborFactorLoading;       // LiborFactorLoading.h
 class LmmNode;                  // Node.h
 class LmmNode2F;                
 class LmmNode3F;
@@ -191,6 +191,16 @@ mu(n,nSteps)
 		mu(s,j)=-0.5*factorLoading->integral_sgi_sgj_rhoij(j,j,0.0,tau(s));
 	}
 } // end constructor
+
+
+std::ostream& printSelf(std::ostream& os) const
+{
+	os << "LMM lattice, node type: ";
+	LmmNode::printType(os);
+	os << "\nNumber of time steps in each accrual interval: " << nSteps << endl;
+	factorLoading->printSelf(os);
+	return os << endl;
+}
 	
 
 	

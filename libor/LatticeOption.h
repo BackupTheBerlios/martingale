@@ -216,7 +216,7 @@ static void test(int s, int p, int q)
 {
 	Timer watch; watch.start();
 	LiborFactorLoading* 
-	fl=LiborFactorLoading::sample(q,VolSurface::CONST,Correlations::CS); 
+	fl=LiborFactorLoading::sample(q,VolSurface::CONST,Correlations::JR); 
 	// number of time steps in each Libor accrual interval
 	int nSteps=2;
 	ConstVolLmmLattice3F theLattice(fl,s,nSteps);

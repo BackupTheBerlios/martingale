@@ -220,7 +220,10 @@ public:
 	/** Diagnostic. Prints the time t, vector H and field pi.
 	 */
 	void printState() const;
-	 
+	
+	/** What type of LMM node it is (2 or 3 factors).*/
+	static std::ostream& printType(std::ostream& os);
+
 	
 	
 // LIBORS, SWAPRATES, ANNUITY (PBV)
@@ -298,6 +301,9 @@ public:
     i(k), j(l)
 	{	}
 	
+	/** What type of LMM node it is (2 or 3 factors).*/
+	static std::ostream& printType(std::ostream& os);
+	
 
 }; // end LmmNode2F
 	
@@ -347,7 +353,8 @@ public:
     i(p), j(q), k(r)
 	{	}
 				 
-	
+	/** What type of LMM node it is (2 or 3 factors).*/
+	static std::ostream& printType(std::ostream& os);
 	
 
 }; // end LmmNode3F
@@ -403,6 +410,9 @@ public:
 	/** Diagnostic. Prints the time t, vector H and field pi.
 	 */
 	void printState() const;
+		
+	/** What type of LMM node it is (2 or 3 factors).*/
+	static std::ostream& printType(std::ostream& os);
 	 	
 
 }; // end BasketNode
@@ -445,6 +455,9 @@ public:
 	BasketNode2F(int n, int s, int k, int l) : BasketNode(n,s),
     i(k), j(l)
 	{	}
+	
+	/** What type of node it is (2 or 3 factors).*/
+	static std::ostream& printType(std::ostream& os);
 	
 
 }; // end LmmNode2F
@@ -491,6 +504,9 @@ public:
 	BasketNode3F(int n, int s, int p, int q, int r) : BasketNode(n,s),
     i(p), j(q), k(r)
 	{	}
+	
+	/** What type of node it is (2 or 3 factors).*/
+	static std::ostream& printType(std::ostream& os);
 				 
 	
 }; // end BasketNode3F

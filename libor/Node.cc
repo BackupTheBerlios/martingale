@@ -119,6 +119,23 @@ printState() const
 }
 
 
+std::ostream& 
+LmmNode::
+printType(std::ostream& os) { return os << "general LMM node."; }
+
+
+std::ostream& 
+LmmNode2F::
+printType(std::ostream& os) { return os << "2 factor LMM node."; }
+
+
+std::ostream& 
+LmmNode3F::
+printType(std::ostream& os) { return os << "3 factor LMM node."; }
+
+
+
+
 /**********************************************************************************
  *
  *            ASSET BASKET NODES 
@@ -134,6 +151,21 @@ printState() const
 	           << "\nVector S: " << S
 	           << "\nPrice pi = " << pi;
 }
+
+
+std::ostream& 
+BasketNode::
+printType(std::ostream& os) { return os << "general asset basket node."; }
+
+
+std::ostream& 
+BasketNode2F::
+printType(std::ostream& os) { return os << "2 factor asset basket node."; }
+
+
+std::ostream& 
+BasketNode3F::
+printType(std::ostream& os) { return os << "3 factor asset basket node."; }
 	
 
 	

@@ -1,4 +1,4 @@
-5-17-03: 
+5-17-03:
 
 LMMs working on swaptions and caplets,
 Book swaption formula verified.
@@ -125,9 +125,12 @@ Intermediate backup, not compiled yet.
 
 Replaced Real* with RealArray1D throughout, 
 LiborFactorLoading: separated vol-functions and correlations out as separate classes
-so they can be combined arbitrarily to form more factorloadings.
+so they can be combined arbitrarily to form more factor loadings.
 LiborFactorLoading becomes a concrete class, vol-surface and correlations are
 handed to the constructor as parameters.
+
+New data structures: RealArray1D,2D, RealVector, RealMatrix instead of Real*, Real**.
+Use of "const" wherever possible.
 
 Files affected:
 
@@ -144,10 +147,13 @@ Mistakes should show up as nonpositive definite log-Libor covariation matrices.
 REMOVED: LognormalLMM and corresponding radical simplification of LiborFactorLoading.
 
 
-7-15-03
+7-17-03:
 
-Split into headers and source files nearly complete.
-CapletPrice LMM test fails.
+Rewrite largely complete. Caplet test works, LatticeSwaption test works.
+VolSurface integrals tested and pass.
+Now working on Calibration.
+Calibrator is able to write synthetic data.
+
 
 
 

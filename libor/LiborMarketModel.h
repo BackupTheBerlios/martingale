@@ -49,12 +49,12 @@ class Bond;  // defined below
  * fact the fastest model uses the forward transported Libors
  *\f[U_j=X_j(1+X_{j+1})\dots(1+X_{n-1})\f] 
  * as state variables since these are local martingales and hence driftless in the 
- * forward martingale measure at $t=T_n$, see {@link LightSpeedLMM}.</p>
+ * forward martingale measure at $t=T_n$, see {@link DriftlessLMM}.</p>
  *
  * <p> If the state variables have a state dependent drift they will not follow a 
  * log-Gaussian process despite the Gaussian factor loadings. In fact the distribution of 
- * the process will most likely be unknown. This motivates the attempts to make the drift
- * deterministic ({@link LognormalLMM}) or to get rid of it alltogether ({@link LightSpeedLMM}).
+ * the process will most likely be unknown. This motivates the attempts to get rid of the
+ * drift term ({@link DriftlessLMM}).
  * </p>
  *
  * <p>Provides interface to Libor path generation and Libors and convenience

@@ -28,10 +28,10 @@ spyqqqdia@yahoo.com
 // #include "FinMath.h"
 // #include "TestMatrix.h"
 // #include "TestProbability.h"
- #include "TestLMM.h"
+// #include "TestLMM.h"
 // #include "TestOptimizers.h"
 // #include "LatticeOption.h"
-// #include "TestFormula.h"
+ #include "TestFormulas.h"
 // #include "Examples.h"
 // #include "DirichletProblem.h"
 // #include "LiborCalibrator.h"
@@ -84,25 +84,27 @@ int main()
  *
 *******************************************************************************/
 	
+	
+	testVolSurfaceIntegrals(1000000,0.5);
+	
 	// testFactorLoading(20);
 	// testLiborFactorLoadingFactorization(60,3);    // rank 3 factorization
 	
 	// testLmmPaths(20);
 
-	// Examples::liborPathTiming(80,10000);         // 10000 paths in dimension 80
-	// Examples::liborApproximationError(124, 120, 120, 20000);
+	// Examples::liborPathTiming(30,20000);         // 5000 paths in dimension 30
+	
 	
 	// anomalies in high dimensions (n>=70) for all but DriftlessLMM,
-	   int lmmType=LiborMarketModel::DL;  // DL, LFDL, PC, FPC
-	   int volType=VolSurface::M;        // JR, M, CONST
-	   int corrType=Correlations::CS;     // JR, CS
-	testCapletPrice(lmmType,volType,corrType); 
-	//testSwaptionPrice(lmmType,volType,corrType);
-	//testCallOnBondPrice(lmmType,volType,corrType);
-	//testCallOnZeroCouponBondPrice(lmmType,volType,corrType);
+	//   int lmmType=LiborMarketModel::DL;  // DL, LFDL, PC, FPC
+	//   int volType=VolSurface::M;        // JR, M, CONST
+	//   int corrType=Correlations::CS;     // JR, CS
+	// testCapletPrice(lmmType,volType,corrType); 
+	// testSwaptionPrice(lmmType,volType,corrType);
+	// testCallOnBondPrice(lmmType,volType,corrType);
+	// testCallOnZeroCouponBondPrice(lmmType,volType,corrType);
 	
-	// testLiborMeans(30,25,20,50000);
-	// testLognormalLMM(20);
+
 	
 	
 	
@@ -147,7 +149,8 @@ int main()
  *                       SOBOL
  *
 *******************************************************************************/
-	
+
+//<---------------missing-------------->
 	// testSobolSequence(5,16383);
 	// testSobolInit(30);
 
@@ -158,10 +161,10 @@ int main()
  *
 *******************************************************************************/	
 
-	
-	// int dim=10, T=10000, nPath=10000; 
-	// Real dt=0.01;
-	// Examples::brownianMotionInBall(dim,T,dt,nPath);
+
+	 // int dim=10, T=10000, nPath=10000; 
+	 // Real dt=0.01;
+	 // Examples::brownianMotionInBall(dim,T,dt,nPath); <------------Subscript out of range exception--------->	
 	
 	// int t=20, T=100, nPath=500000;
 	// VectorBrownianMotion::testPathFunctional(t,T,nPath);

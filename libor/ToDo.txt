@@ -23,8 +23,22 @@ All files have been rewritten in this way and there is only one problem left bef
 linkage:
 No method Random::sTN()...
 
-7-15-03
+Check if unwanted ifndef in source files.
 
-Linkage obtained.
-Caplet price test fails on PC, DL LMMs (others not tested).
-Investigate Libor path computation.
+
+State 7-17-03:
+
+Include structure is still sloppy.
+Why don't we have to qualify "cout" as "std::cout"??
+Should we simply include <string> and <iostream> in TypedefsMacros.h (and hence everywhere)?
+Explore the difference between <math.h> and <cmath>.
+
+LmmLattice2F,3F: implement a choice of wether we rescale the covariation matrix root to preserve
+volatilities or not so we can test what works better.
+
+Known problems:
+
+a) std::ostream operator << (std::ostream& os, const SomeType& x)
+doesn't link but x->printSelf(os) works. Why is that?
+
+b) Examples::brownianMotionInBall(dim,T,dt,nPath) dies on array index out of bounds error.

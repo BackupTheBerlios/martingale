@@ -116,15 +116,14 @@ public:
 		for(int t=0;t<=m;t++)
 		nodeList[t]=new std::list<Node_t*>(); // empty list
 	}
+
 	
 	~Lattice()
     {
 		// the lists of nodes at each time t
 		for(int t=0;t<=m;t++) getNodeList(t).~list<Node_t*>();
 	}
-			 
-		   
-		
+		   		
 	
 	/** Goes through all the nodes in the lattice and checks if the transition 
 	 *  probabilities are in [0,1] and sum to 1. Note however that this class does 

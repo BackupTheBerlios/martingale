@@ -30,6 +30,7 @@ spyqqqdia@yahoo.com
 #include "Random.h"
 #include "RandomVariables.h"
 #include "QuasiMonteCarlo.h"
+#include "LiborFactorLoading.h"
 
 
 MTGL_BEGIN_NAMESPACE(Martingale)
@@ -63,7 +64,7 @@ void testExponentialIntegralFormulas()
 	for(int i=0;i<N;i++){
 					   
 			Real X=Random::sTN(), 
-		         A=exp(a*X+b), 
+		         A=std::exp(a*X+b), 
 		         B=Random::N(alpha*X+beta);
 			sum+=A*B;
 	}
@@ -72,7 +73,7 @@ void testExponentialIntegralFormulas()
 	// analytic expectation
 	N1=beta+a*alpha;
 	D=sqrt(1+alpha*alpha);
-	analytic=exp(b+0.5*a*a)*Random::N(N1/D);
+	analytic=std::exp(b+0.5*a*a)*Random::N(N1/D);
 
 	cout << "\nAnalytic: " << analytic
 	     << "\nMonte Carlo: " << montecarlo;	
@@ -86,16 +87,16 @@ void testExponentialIntegralFormulas()
 	sum=0;
 	for(int i=0;i<N;i++){
 					   
-			Real Y=Random::sTN(), A=exp(a*Y);
+			Real Y=Random::sTN(), A=std::exp(a*Y);
 			sum+=(A>K)? A-K : 0.0;
 	}
 	montecarlo=sum/N;
 	
 	// analytic expectation
-	N1=a*a-log(K);
-	N2=-log(K);
+	N1=a*a-std::log(K);
+	N2=-std::log(K);
 	D=a;
-	analytic=exp(0.5*a*a)*Random::N(N1/D)-K*Random::N(N2/D);
+	analytic=std::exp(0.5*a*a)*Random::N(N1/D)-K*Random::N(N2/D);
 
 	cout << "\nAnalytic: " << analytic
 	     << "\nMonte Carlo: " << montecarlo;	
@@ -114,7 +115,7 @@ void testExponentialIntegralFormulas()
 			     z2=Random::sTN(),
 			Y=y+a*z1+b*z2,
 			Z=z+c*z2,
-			A=exp(Y), B=K*exp(Z);
+			A=std::exp(Y), B=K*std::exp(Z);
 			
 			sum+=(A>B)? A-B : 0.0;
 	}
@@ -124,10 +125,10 @@ void testExponentialIntegralFormulas()
 	Real C11=a*a+b*b, C12=b*c, C22=c*c;
 	cout << "\nCorrelation: " << C12/sqrt(C11*C22);
 	// analytic expectation
-	N1=C11-C12-log(K)+y-z;
-	N2=C12-C22-log(K)+y-z;
+	N1=C11-C12-std::log(K)+y-z;
+	N2=C12-C22-std::log(K)+y-z;
 	D=sqrt(C11+C22-2*C12);
-	analytic=exp(y+0.5*C11)*Random::N(N1/D)-K*exp(z+0.5*C22)*Random::N(N2/D);
+	analytic=std::exp(y+0.5*C11)*Random::N(N1/D)-K*std::exp(z+0.5*C22)*Random::N(N2/D);
 
 	cout << "\nAnalytic: " << analytic
 	     << "\nMonte Carlo: " << montecarlo;
@@ -135,6 +136,24 @@ void testExponentialIntegralFormulas()
 } // end testExponentialIntegralFormulas
 	
 
+
+/** Monte Carlo test of the volatility integrals for the samples of the 
+ *  2 volatility surface types JR and M.
+ *
+ * @param N number of Monte Carlo sample points.
+ * @param precision maximal acceptable relative error in percent.
+ */
+
+void testVolSurfaceIntegrals(int N, Real precision)
+{
+	VolSurface* vol;
+	
+	vol=VolSurface::sample(VolSurface::JR);
+	vol->testVolSurfaceIntegrals(N,precision);
+	
+	vol=VolSurface::sample(VolSurface::M);
+    vol->testVolSurfaceIntegrals(N,precision);
+}
 	
 	
 	     

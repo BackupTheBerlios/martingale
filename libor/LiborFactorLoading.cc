@@ -79,6 +79,60 @@ std::ostream& operator <<
 (std::ostream& os, const VolSurface& vols){ return vols.printSelf(os); }
 
 
+// TEST OF VOLATILITY INTEGRALS
+
+void 
+VolSurface::
+testVolSurfaceIntegrals(int N, Real precision)
+{
+	std::cout << "\n\n\n\nTesting volatility integrals: ";
+	printSelf(std::cout);
+		
+	Real analytic, montecarlo, sum, ft, u, t,
+	     sg_tT1, sg_tT2;  // sigma(t,T)
+	
+	// loop over some integration intervals [a,b] (b=a+i*0.3)
+	for(Real a=1.0;a<7.0;a+=0.5)
+	for(int i=1;i<5;i++){
+		
+		Real b=a+i*0.3,
+		     T1=b+1.23, T2=b+2.13;
+	    // Monte  carlo expectation
+	    sum=0;
+	    for(int i=0;i<N;i++){
+					   
+		    u=Random::U01();
+			t=a+u*(b-a);
+			sg_tT1=sigma(t,T1);
+			sg_tT2=sigma(t,T2);
+			ft=sg_tT1*sg_tT2;
+		        
+			sum+=ft;
+	    }
+	    montecarlo=(b-a)*sum/N;
+		analytic=integral_sgsg(a,b,T1,T2);
+		
+		Real error=100*abs(montecarlo-analytic)/analytic;
+		if(error>precision){
+			
+		     std::cout << "\n\nTest failed."
+			           << "\nAnalytic integral: " << analytic
+			           << "\nMonte Carlo integral: " << montecarlo
+			           << "\nRelative error (%): " << error
+			           << "Aborting.";
+			exit(1);
+		}
+	} // end main loop
+	std::cout << "\n\n Test passed.";
+} // end testVolSurfaceIntegrals
+			    
+			         
+			
+
+
+
+
+
 
 // M_VolSurface
 

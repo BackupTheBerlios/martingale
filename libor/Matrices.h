@@ -22,7 +22,7 @@ spyqqqdia@yahoo.com
 
 #ifndef martingale_matrices_h
 #define martingale_matrices_h
-#define SUBSCRIPT_CHECK
+#define SUBSCRIPT_CHECK                   // comment this out for risky significant speedup
 
 #include <string>
 #include <sstream>

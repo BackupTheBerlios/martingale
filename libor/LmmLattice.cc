@@ -65,7 +65,7 @@ R(fl->getRho().rankReducedRoot(2))
 	// check if volatilities are constant
 	if(fl->getVolSurfaceType()!=VolSurface::CONST) {
 			
-	   std::cout << "\n\nConstVolLmmLattice2F(): volatilties not constant."
+	   std::cout << "\n\nConstVolLmmLattice2F(): volatilities not constant."
 	             << "\nTerminating.";
 	   exit(1);
     }
@@ -108,8 +108,9 @@ void
 ConstVolLmmLattice2F::
 buildLattice(int m)
 {
-	std::cout << "\n\n\nBuilding lattice until time step s = " << m << endl << endl;
-		  
+	printSelf(std::cout);
+	std::cout << "\nTime steps: " << m << endl << endl;
+	          		  
 	std::list<LmmNode2F*>& nodes_0=*(nodeList[0]);               // list of nodes at time t
 		
 	// the initial node, i=j=0.
@@ -217,7 +218,7 @@ test(int n) const
 	ConstVolLmmLattice2F lattice(fl,n-3);
 	lattice.selfTest();
 	watch.stop();
-	watch.report("Libor tree construction and self test");
+	watch.report("3 factor LMM lattice construction and self test");
 }
 
 
@@ -251,7 +252,7 @@ R(fl->getRho().rankReducedRoot(3))
 	// check if volatilities are constant
 	if(fl->getVolSurfaceType()!=VolSurface::CONST) {
 			
-	   std::cout << "\n\nConstVolLmmLattice2F(): volatilties not constant."
+	   std::cout << "\n\nConstVolLmmLattice2F(): volatilities not constant."
 	             << "\nTerminating.";
 	   exit(1);
     }
@@ -298,7 +299,8 @@ void
 ConstVolLmmLattice3F::
 buildLattice(int m)
 {
-	cout << "\n\n\nBuilding lattice until time step s = " << m << endl << endl;
+	printSelf(std::cout);
+	std::cout << "\nTime steps: " << m << endl << endl;
 		  
 	std::list<LmmNode3F*>& nodes_0=*(nodeList[0]);               // list of nodes at time t
 		
@@ -409,7 +411,7 @@ test(int n) const
 	ConstVolLmmLattice3F lattice(fl,n-3);
 	lattice.selfTest();
 	watch.stop();
-	watch.report("Libor tree construction and self test");
+	watch.report("3 factor LMM lattice construction and self test");
 }
 
 
