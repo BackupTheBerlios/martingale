@@ -27,13 +27,14 @@ spyqqqdia@yahoo.com
 #include "TypedefsMacros.h"
 #include "Utils.h"
 #include "Array.h"
-#include <list>
+#include "LiborFunctional.h"
+#include <vector>
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
-using std::list;
+using std::vector;
 
-// we are using
+// forward declarations
 class LiborFactorLoading;             // LiborFactorLoading.h
 
 
@@ -46,10 +47,11 @@ class LiborFactorLoading;             // LiborFactorLoading.h
  *  A node in a lattice for the Libor market model lives at a time in some
  *  accrual interval \f$(T_{t-1},T_t]\f$. At this time the surviving Libors are
  *  \f$X_t,X_{t+1},\dots,X_{n-1}\f$, where n is the number of accrual intervals.
- *  The node however stores the vector of accrual factors
+ *  Heavyweight nodes store the vector of accrual factors
  *  \f[H=(H_t,...,H_n)\f]
- *  as the most suitable way to store the state of the underlying Libor process since
- *  all other quantities can be recovered from these with minimal computational effort.
+ *  while lightweight nodes compute this vector from the state of the Brownian 
+ *  (see below). All other functionals of the Libor process are computed from 
+ *  this vector with minimal computational effort. 
  *
  * <a name="lmm-node-3f">Nodes for a 3 factor LMM lattice:</a>
  * <p>Nodes in a 3 factor lattice for the Libor market model {@link LmmLattice3F}
@@ -61,10 +63,13 @@ class LiborFactorLoading;             // LiborFactorLoading.h
  * <p>The \f$Z_j(t)\f$ are independent standard Brownian motions which evolve from the state
  * \f$Z_j(0)=0\f$ and then tick up or down in ticks of size \f$a=\sqrt{dt}\f$ where dt is the 
  * size of the time step. The state at any node is then given by the triple of integers
- * (i,j,k) with
- * \f[Z_1=ia,\quad Z_2=ja,\quad Z_3=ka.\f]
- * Two factor nodes are completely similar but the implementation is kept separate
- * for greater clarity.
+ * (k0,k1,k2) with
+ * \f[Z_1=k0*a,\quad Z_2=k1*a,\quad Z_3=k2*a.\f]
+ * Each node stores the integer vector k as the basic state.
+ *
+ * <p>The case of nodes for an asset basket is similar except that the fundamental
+ * vector which is either computed or stored is the vector S of asset prices at this 
+ * node. 
  */
  
  
@@ -86,7 +91,7 @@ struct Edge {
 	 /** Node we transition to along this edge */
 	 Node* node; 
 	 /** Transition probability along this edge */
-	 Real probability;        
+	 Real probability;  
 
 }; // end Edge	
 	
@@ -117,7 +122,7 @@ protected:
 	Real  pi;               
 	
 	/** List of edges originating at this node. */
-	list<Edge> edges;  
+	vector<Edge*> edges;  
 		                    
 		
 public:
@@ -130,7 +135,7 @@ public:
 	void setPi(Real x){ pi=x; }
 	
 	/** List of edges */
-	list<Edge>& getEdges() { return edges; }
+	vector<Edge*>* getEdges() { return &edges; }
 	
 	
 // CONSTRUCTOR
@@ -138,10 +143,11 @@ public:
 	/** @param s_ number of time steps to reach the node from time zero.
 	 */
 	Node(int s_) : s(s_), edges() {  }
-			 		
-    ~Node(){ getEdges().~list<Edge>(); }
-		
-
+	
+	// manual deallocation is necessary since we are dealing with
+	// lists of pointers. Make sure the pointees are deallocated
+	// before the pointers disappear
+	~Node();
 	
 // DIAGNOSTIC
 	
@@ -164,21 +170,17 @@ public:
 // forward declaration
 class LmmLatticeData;
 
+	
 
-/** <p>Lightweight nodes in an {@link LmmLattice}.
+/** <p>Lightweight base for nodes in an {@link LmmLattice}.
  *  Stores only the two state variables from which the accrual factors
  *  \f$H_j\f$ are computed. Here we store as little as possible in each node.
- *
- * <p>The only service provided is the computation of the vector H
- * of accrual factors at this node. This vector is the most efficient way
- * to store the state of the Libor process at this node.
- *
- * <p>The other functionals of the Libor process such as 
- * swaprates, swaption payoffs, caplet payoffs, annuities, bonds,...
- * are computed from the vector H by global functions which take H as a 
- * parameter. Reason: avoid the repeated computation of H.
  */
-class LiteLmmNode : public Node {
+class LmmNode_LiteBase : public Node {
+	
+protected:
+	
+   LmmLatticeData* lattice;   // information about the LmmLattice the node lives in.
 
 public:	
 /** 
@@ -186,9 +188,9 @@ public:
  *  @param k state Z_j=k[j]*a of the driving Brownian motion Z.
  *  @param info object encapsulating information about the lattice the node lives in.
  */
-LiteLmmNode(int s, const IntArray1D& k, LmmLatticeData* latticeData);
+LmmNode_LiteBase(int s, const IntArray1D& k, LmmLatticeData* latticeData);
 
-~LiteLmmNode(){ delete[] k_; }
+~LmmNode_LiteBase(){ delete[] k_; }
 
 
 /** The state Z_j=k[j]*a of the Brownian driver at this node.
@@ -218,7 +220,6 @@ private:
 	static RealArray1D V_;           // workspace for volatility parts V_j of the log(U_j)
 	                                 // book, 8.1
 
-	LmmLatticeData* lattice;         // information about the LmmLattice the node lives in.
 	int* k_;                         // Z_j=k[j]*a, state of the Brownian driver
 	                                 // a=sqrt(dt) the tick size of a standard Brownian 
 	                                 // motion over an interval of length dt.
@@ -228,7 +229,7 @@ private:
 int get_t() const;
 
 
-}; // end LiteLmmNode
+}; // end LmmNode_LiteBase
 	
 	
 
@@ -236,17 +237,12 @@ int get_t() const;
  *  Stores the entire vector \f$H=(H_j,\dots,H_n)\f$ of accrual factors
  *  still alive at the time at which the node lives. The values are computed
  *  in the constructor of the node.
- *
- * <p>The only service provided is the computation of the vector H
- * of accrual factors at this node. This vector is the most efficient way
- * to store the state of the Libor process at this node.
- *
- * <p>The other functionals of the Libor process such as 
- * swaprates, swaption payoffs, caplet payoffs, annuities, bonds,...
- * are computed from the vector H by global functions which take H as a 
- * parameter. Reason: conformity with the case of LiteLmmNodes.
  */
-class HeavyLmmNode : public Node {
+class LmmNode_HeavyBase : public Node {
+	
+protected:
+	
+   LmmLatticeData* lattice;   // information about the LmmLattice the node lives in.
 
 public:
 /** 
@@ -254,8 +250,8 @@ public:
  *  @param k state Z_j=k[j]*a, a=sqrt(dt), of the Brownian driver Z.
  *  @param info object encapsulating information about the lattice the node lives in.
  */
-HeavyLmmNode(int s, const IntArray1D& k, LmmLatticeData* latticeData);	
-~HeavyLmmNode(){ delete[] k_; }
+LmmNode_HeavyBase(int s, const IntArray1D& k, LmmLatticeData* latticeData);	
+~LmmNode_HeavyBase(){ delete[] k_; }
 
 
 /** The state Z_j=k[j]*a of the Brownian driver at this node.
@@ -278,7 +274,6 @@ std::ostream& printSelf(std::ostream& os) const;
 
 private:
 
-	LmmLatticeData* lattice;         // information about the LmmLattice the node lives in.
 	int* k_;                           // Z_j=k[j]*a, a=sqrt(dt) the tick size of a standard Brownian 
 	                                   // motion over an interval of length dt.
 	RealArray1D H_;                    // the vector H=(H_j,...,H_n) of accrual factors still alive
@@ -291,7 +286,88 @@ private:
 int get_t() const;
 
 
-}; // end HeavyLmmNode
+}; // end LmmNode_HeavyBase
+
+
+
+
+/** <p>General node in an {@link LmmLattice}. Heavy or lightweight according as to 
+ *  which base class is chosen as the template parameter:
+ *
+ * <p><b>LmmNodeBase=LmmNode_LiteBase.</b> This results in lightweight nodes which
+ * use less memory but increase the computational burden. The preferred approach
+ * since it allows us to have lattices with 2,500,000 nodes.
+ * Two factor lattices can be built for about 230 time steps (1GB main memory).
+ *
+ * <p><b>LmmNodeBase=LmmNode_HeavyBase.</b> This results in heavyweight nodes which
+ * use much more memory but decrease the computational burden.
+ * Two factor lattices can be built for about 50 time steps (1GB main memory).
+ * Unclear if this memory - computation tradeoff is worth it since processor
+ * to main memory communication is so slow.
+ *
+ * <p>The Barton-Nachman trick (derivation from template parameter) is used to
+ * avoid making a virtual function call to the basic method Hvect(int).
+ *
+ */
+template<class LmmNodeBase>
+class LmmNode : public LmmNodeBase {
+	
+public :
+	
+/** The parameter signature is that of the base class constructors 
+ *  LmmNodeBase(...).
+ *  
+ *  @param s number of time steps to reach the node from time zero.
+ *  @param k state Z_j=k[j]*a, a=sqrt(dt), of the Brownian driver Z.
+ *  @param info object encapsulating information about the lattice the node lives in.
+ */
+LmmNode(int s, const IntArray1D& k, LmmLatticeData* latticeData) :
+LmmNodeBase(s,k,latticeData)
+{   }
+
+	
+/** The forward price \f$H_{p,q}\f$ of the annuity \f$B_{p,q}\f$ over the 
+ *  interval [T_p,T_q] at this node.
+ */
+Real H_pq(int p, int q)
+{
+	const RealArray1D& H=Hvect(p);
+	return LiborFunctional::H_pq(p,q,H);
+}
+	
+	
+/** The swaprate \f$S_{p,q}\f$ for a swap on the interval [T_p,T_q] at this node.
+ */
+Real swapRate(int p, int q)
+{
+	const RealArray1D& H=Hvect(p);
+	return LiborFunctional::swapRate(p,q,H);
+}
+	
+	
+/** Payoff of a forward swaption with strike rate kappa exercising into a swap on 
+ *  the interval [T_p,T_q] at this node. Payoff is accrued forward to the horizon T_n. 
+ */
+Real forwardSwaptionPayoff(int p, int q, Real kappa)
+{
+	const RealArray1D& H=Hvect(p);
+	return LiborFunctional::forwardSwaptionPayoff(p,q,kappa,H);
+}
+
+/** Forward accrued payoff of a caplet with strike rate kappa at this node. 
+ *  Assumes that the node lives at the Libor reset point at which Libor for
+ *  this caplet is set.
+ */
+Real forwardCapletPayoff(Real kappa)
+{
+	const RealArray1D& H=Hvect(p);
+	int i=get_t();
+	return LiborFunctional::forwardCapletPayoff(i,kappa,H);
+}
+
+
+}; // end LmmNode
+
 		
 	
 	

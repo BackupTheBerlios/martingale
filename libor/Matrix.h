@@ -125,7 +125,7 @@ template<typename S,typename MatrixType> class Matrix;
  * </p>
  */
 template<class S>
-class vector {
+class Vector {
 
 protected:
 
@@ -168,11 +168,11 @@ public:
    
    
    // CONSTRUCTION - DESTRUCTION
-   ~vector(){ delete[] dptr; }
+   ~Vector(){ delete[] dptr; }
    
    /** Constructor initializes with zeroes
     */
-   explicit vector(int d, int base=0) : 
+   explicit Vector(int d, int base=0) : 
    dim(d), b(base), dptr(new S[d]) 
    { 
 	   for(int i=0;i<dim;i++) dptr[i]=0; 
@@ -180,7 +180,7 @@ public:
 
    
    // shallow copy not good enough if we return from function
-   vector(const vector& v) : 
+   Vector(const Vector& v) : 
    dim(v.getDimension()), b(v.getIndexBase()), dptr(new S[dim])
    {
 	   S* vdptr=v.getData(); 
@@ -194,7 +194,7 @@ public:
    * @param d dimension
    * @param v constant entry
    */
-   vector(int n, S& v) : 
+   Vector(int n, S& v) : 
    dim(n), b(0), dptr(new S[n])
    {
 	    for(int i=0;i<dim;i++) dptr[i]=v;
@@ -206,7 +206,7 @@ public:
    * @param n dimension
    * @param a data array
    */
-   vector(int n, S* a) : dim(n), b(0), dptr(new S[n])
+   Vector(int n, S* a) : dim(n), b(0), dptr(new S[n])
    {
 	    for(int i=0;i<dim;i++) dptr[i]=a[i];
    }
@@ -216,7 +216,7 @@ public:
    * @param a data array
    */
    template<int n>
-   vector(S a[n]) : dim(n), dptr(new S[n])
+   Vector(S a[n]) : dim(n), dptr(new S[n])
    {
 	    for(int i=0;i<dim;i++) dptr[i]=a[i];
    }
@@ -225,7 +225,7 @@ public:
    /** Dimension of x must be less than or equal to the dimension
     *  of <code>this</code>, no new memory allocated.
     */
-   vector& operator=(const vector& x)
+   Vector& operator=(const Vector& x)
    {
        dim=x.getDimension(); 
 	   b=x.getIndexBase();
@@ -241,7 +241,7 @@ public:
    /** Switch components i,j. Indexing based on the index
     *  base of the vector.
     */
-   vector& switchComponents(int i, int j)
+   Vector& switchComponents(int i, int j)
    { 
        S tmp=dptr[i-b]; dptr[i-b]=dptr[j-b]; dptr[j-b]=tmp; 
    }
@@ -250,7 +250,7 @@ public:
    /** dimension must be same (not checked), index bases need not be same,
     *  index base remains unchanged.
     */
-   vector& operator +=(const vector& x)
+   Vector& operator +=(const Vector& x)
    { 
 	   S* xdptr=x.getData();
 	   for(int i=0;i<dim;i++) dptr[i]+=xdptr[i];
@@ -260,7 +260,7 @@ public:
    /** dimension must be same (not checked), index bases need not be same,
     *  index base remains unchanged.
     */
-   vector& operator -=(const vector& x)
+   Vector& operator -=(const Vector& x)
    { 
 	   S* xdptr=x.getData();
 	   for(int i=0;i<dim;i++) dptr[i]-=xdptr[i];
@@ -269,7 +269,7 @@ public:
    
    /** division by integer (for use with class RandomObject)
     */
-   vector& operator /=(int N)
+   Vector& operator /=(int N)
    { 
 	   Real f=1.0/N;
 	   for(int i=0;i<dim;i++) dptr[i]*=f;
@@ -279,7 +279,7 @@ public:
    
    /** multiplication by scalar
     */
-   vector& operator *=(const S& lambda)
+   Vector& operator *=(const S& lambda)
    { 
 	   for(int i=0;i<dim;i++) dptr[i]*=lambda;
 	   return *this;
@@ -289,7 +289,7 @@ public:
    /** Left multiplication by matrix A
     */
    template<typename MatrixBaseType>
-   vector& operator *=(const Matrix<S,MatrixBaseType>& A)
+   Vector& operator *=(const Matrix<S,MatrixBaseType>& A)
    { 
 	   int d=A.rows();        // new dimension
 	   S* Ax=new Real[d];         // new memory
@@ -342,7 +342,7 @@ public:
  * smaller than relevant orders of magnitude.
  * @param test string printed to identify test.
  */
-void testEquals(const vector<S>& v, S precision, S epsilon, string test) const
+void testEquals(const Vector<S>& v, S precision, S epsilon, string test) const
 {
 	int vdim=v.getDimension(), vbase=v.getIndexBase(); 
 	if((vdim!=dim)||(vbase!=b)){
@@ -377,19 +377,19 @@ std::ostream&  printSelf(std::ostream& os) const
 } // end operator <<
 	
 	      
-}; // end vector
+}; // end Vector
 
 
-/** print vector
+/** print Vector
  */
 template<class S>
-std::ostream& operator << (std::ostream& os, const vector<S>& v)
+std::ostream& operator << (std::ostream& os, const Vector<S>& v)
 {
 	return v.printSelf(os);
 } 
 
 
-typedef vector<Real> RealVector;
+typedef Vector<Real> RealVector;
 	
 
 
@@ -977,7 +977,7 @@ Matrix& scaleCol(int j, Real f)
 /** The quadratic form \f$(Cx,x)\f$ where C is the symmetric matrix of 
  *  which this is the upper half.
  */
-S quadraticForm(const vector<S>& x) const
+S quadraticForm(const Vector<S>& x) const
 {
 	int dim_x=x.getDimension(), 
 	    b_x=x.getIndexBase();

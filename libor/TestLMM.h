@@ -28,6 +28,7 @@ spyqqqdia@yahoo.com
 #include "LiborFactorLoading.h"
 #include "LiborMarketModel.h"            // for inclusion to main.cc
 #include "LmmLattice.h"
+#include "LatticeOption.h"
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
@@ -261,6 +262,45 @@ void testLmmLattice()
 		std::cin >> do_again;
 	}
 } // end testLmmlattice
+
+
+/** Swaption price in a lattices for the driftless Libor Market Model compared to 
+ *  analytic and Monte Carlo prices.
+ *  Asks for the type of lattice (light/heavy), number of factors, number of time steps per 
+ *  Libor accrual interval and swap period [T_p,T_q]. Then sets up sample swaption 
+ *  (constant volatility and JR correlations, book, 6.11.2) and computes the forward price.
+ */
+void testLatticeSwaption()
+{
+	int do_again=1;
+	// main loop
+	while(do_again==1){
+	
+	    std::cout << "\n\nSwaption price in a lattice for the driftless libor market model:"
+	              << "\nSwap interval: [T_p,T_q]."
+		          << "\nEnter p = ";
+	    int p; std::cin >> p;
+		std::cout << "Enter q = ";
+		int q; std::cin >> q;
+	    std::cout << "Enter number r of factors (2 or 3): r = ";
+	    int r; std::cin >> r;
+	    std::cout << "Light (h=5) or heavyweight (h=7) lattice? h = ";
+     	int h; std::cin >> h;
+		std::cout << "Number of time steps in each Libor accrual interval = ";
+		int nSteps; std::cin >> nSteps;
+	    switch(r*h){
+		
+		    case 10 : LiteLatticeSwaption2F::test(p,q,nSteps); break;
+	        case 15 : LiteLatticeSwaption3F::test(p,q,nSteps); break;
+		    case 14 : HeavyLatticeSwaption2F::test(p,q,nSteps); break;
+	        case 21 : HeavyLatticeSwaption3F::test(p,q,nSteps); break;
+			default : std::cout << "\n\n\nYou did not enter the parameters right.";
+		}
+		
+		std::cout << "\n\nDo another run (yes = 1, no = 0) do_again = ";
+		std::cin >> do_again;
+	}
+} // end testLatticeSwaption
 
 
 	

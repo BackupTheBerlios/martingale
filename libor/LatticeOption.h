@@ -31,10 +31,12 @@ spyqqqdia@yahoo.com
 #include "LowFactorDriftlessLMM.h"
 #include "Derivatives.h"
 #include <math.h>
+#include <vector>
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
+using std::vector;
 
 
 /**********************************************************************************
@@ -69,12 +71,17 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  * <p>We only need the type of the lattice nodes as a template parameter since this then 
  * dtermines the lattice type as Lattice<Node>.
  *
- * @param Node type of node used in the underlying lattice.
+ * @param Lattice type of the underlying lattice.
  */
-template<typename Node>
+template<typename Lattice>
 class LatticeEuropeanOption {
 	
-	Lattice<Node>* theLattice; // underlying lattice
+protected:
+	
+	Lattice* theLattice;       // underlying lattice
+	
+	// the type of nodes in the lattice
+	typedef typename Lattice::NodeType NodeType;
 	
 	int s;                     // time at which the values of the payoff h are known
 	                           // typically time of option expiration
@@ -82,19 +89,25 @@ class LatticeEuropeanOption {
 public:
 	
 	
+	/** The underlying lattice. */
+	Lattice* getLattice(){ return theLattice; }
+	
+	
 	/** @param lattice the underlying {@link Lattice}.
 	 *  @param t number of time steps to option exercise.
 	 */
-	LatticeEuropeanOption(Lattice<Node>* lattice, int t) : 
+	LatticeEuropeanOption(Lattice* lattice, int t) : 
     theLattice(lattice), s(t) 
     {  }
+	
+	~LatticeEuropeanOption(){ delete theLattice; }
 		
 		
 	/** The option payoff h at time t=s accrued forward to the horizon of the underlying
 	 *  asset price process evaluated at all nodes at time t=s. Applies only to nodes at time s and this is 
      *  not checked. The time s when the option pays off is a property of this class.
 	 */
-	virtual Real forwardPayoff(Node* node) = 0;
+	virtual Real forwardPayoff(NodeType* node) = 0;
 		
 		
 	/** The forward price at time t=0.
@@ -102,7 +115,7 @@ public:
 	Real forwardPrice()
     {
 	    computeConditionalExpectations();
-	    Node* root=theLattice->getRoot();
+	    NodeType* root=theLattice->getRoot();
 	    return root->getPi();
     }	
 
@@ -116,35 +129,40 @@ private:
 void computeConditionalExpectations()
 {
 	// run through the list of nodes at time t=s and set the known value pi_s=h
-	std::list<Node*>& nodes_s=theLattice->getNodeList(s);	    
-    std::list<Node*>::const_iterator theNode;
-	for(theNode=nodes_s.begin(); theNode!=nodes_s.end(); ++theNode)
-	{
-		// the list is a list of pointers to Node, so *theNode is pointer to Node
-		Node* node=*theNode;      
+	vector<NodeType*>* nodes_s=theLattice->getNodeList(s);
+	// *theNode is pointer to Node
+    vector<NodeType*>::const_iterator theNode=nodes_s->begin();
+	while(theNode!=nodes_s->end()) {
+	
+		NodeType* node=*theNode;
 		node->setPi(forwardPayoff(node));
+		theNode++;
 	}
 	
 	// backward computation through earlier nodes
 	for(int t=s-1; t>=0;t--){
 		
-		std::list<Node*>& nodes=theLattice->getNodeList(t);	    
-    	for(theNode=nodes.begin(); theNode!=nodes.end(); ++theNode)
-	    {
-		     Node* node=*theNode;
-			 std::list<Edge>& edges=node->getEdges();
+		vector<NodeType*>* nodes_t=theLattice->getNodeList(t);
+	    theNode=nodes_t->begin();
+    	while(theNode!=nodes_t->end()) {
+	    
+			NodeType* node = *theNode; 
+			vector<Edge*>* edges=node->getEdges();
 				
 			 Real E_th=0.0;
-			 std::list<Edge>::const_iterator theEdge;
-			 for(theEdge=edges.begin(); theEdge!=edges.end(); ++theEdge)
-	         {	
-		         Real p=theEdge->probability;
+			 vector<Edge*>::const_iterator theEdge=edges->begin();
+			 while(theEdge!=edges->end()) {
+	        
+		         Edge* edge = *theEdge;
+				 Real p=edge->probability;
 				 // E_{t+1}(h) at the node the edge points to.    
-				 Real E_t1h=theEdge->node->getPi(); 
+				 Real E_t1h=edge->node->getPi(); 
 				 E_th+=p*E_t1h;
+				 ++theEdge;
 	         }	
-			 node->setPi(E_th);			 
-	    } // end for nodes
+			 node->setPi(E_th);	
+			 ++theNode;
+	    } // end while(theNode)
 			
 	} // end for t
 } // end computeConditionalExpectations	
@@ -166,17 +184,17 @@ void computeConditionalExpectations()
  * evaluated in a lattice for the driftless Libor market model
  * {@link DriftlessLMM}.
  *
- * @param Node must extend LmmNode.
+ * @param Lmm_Lattice the type of lattice used to price the swaption.
  */
-template<typename Node>
-class LatticeSwaption : public LatticeEuropeanOption<Node> {
+template<typename Lmm_Lattice>
+class LatticeSwaption : public LatticeEuropeanOption<Lmm_Lattice> {
 	
 	int s,          // swaption exercises at time T_s
-	    nSteps,     // number of time steps in each Libor accrual interval
 	    p,          // swap begins at time T_p
 	    q;          // swap ends at time T_q
 	
 	Real kappa;     // the strike rate
+	
 	
 public:
 	
@@ -184,11 +202,11 @@ public:
 	 *  @param s swaption is exercisable at time T_s, s=s0.
 	 *  @param p_ swap begins at time T_p, p=p0.
 	 *  @param q_  swap ends at time T_q, q=q0.
-	 *  @param steps number of time steps in each Libor accrual interval.
 	 */
-	LatticeSwaption(Lattice<Node>* lattice, int s, int p_, int q_, Real strike, int steps=1) :
-	LatticeEuropeanOption<Node>(lattice,s*steps),          // m=s*nSteps time steps needed until time T_s 
-	nSteps(steps),
+	LatticeSwaption
+	(Lmm_Lattice* lattice, int s, int p_, int q_, Real strike) :
+	// m=s*nSteps time steps needed until time T_s 
+	LatticeEuropeanOption<Lmm_Lattice>(lattice,s*(lattice->getData()->nSteps)),          
 	p(p_), q(q_),
 	kappa(strike)
     {  }
@@ -197,61 +215,72 @@ public:
 	 *  accrued forward to the horizon \f$T_n\f$ of the underlying Libor process.
 	 */ 
 	//the NodeType extends LmmNode
-	Real forwardPayoff(Node* node)
-    {
-	     Real swapRate=node->swapRate(p,q);
-	     if(swapRate<=kappa) return 0.0;
-	     // else, forward price of the annuity B_{p,q}
-         Real Hpq=node->Hpq(p,q); 
-	     return (swapRate-kappa)*Hpq;
-    }
+	Real forwardPayoff(NodeType* node){ return node->forwardSwaptionPayoff(p,q,kappa); }
 	
-// TEST
+// SAMPLE AND TEST
 	
-/** Allocate a sample {@link LMMlattice3F} of dimension q and computes the forward 
- *  price of the at the money payer swaption exercisable at time \f$T_s\f$ into a swap 
- *  along \f$[T_p,T_q]\f$.
- */
-static void test(int s, int p, int q)
+/** Sample at the money swaption in dimension q on accrual interval [T_p,T_q]
+ *  with nSteps time steps in each accrual period. 
+ *  @param rescaleVols <a href="LmmLattice.h#rescale">rescale</a> the correlation 
+ *  matrix root.
+ */	
+static LatticeSwaption* sample(int p, int q, int nSteps, bool rescaleVols)
 {
+    Lmm_Lattice* lattice = Lmm_Lattice::sample(q,p,nSteps,rescaleVols);
+	NodeType* root=lattice.getRoot();
+	Real strike=root->swapRate(p,q);           // swap rate at time zero	
+	
+	return new LatticeSwaption(lattice,p,p,q,strike);
+}
+	
+	
+/** Allocates a sample at the money LatticeSwaption along \f$[T_p,T_q]\f$
+ *  exercisable at time \f$T_p\f$ and computes the forward price both in
+ *  the lattice and in a driftless Libor market model with the same number of 
+ *  factors.
+ */
+static void test(int p, int q, int nSteps)
+{	
+	cout << "\n\nComputing swaption price:";
+	
 	Timer watch; watch.start();
-	LiborFactorLoading* 
-	fl=LiborFactorLoading::sample(q,VolSurface::CONST,Correlations::JR); 
-	// number of time steps in each Libor accrual interval
-	int nSteps=2;
-	
-	// lattices and at the money strike rate
-	
-	// correlation matrix root rescaled
-	ConstVolLmmLattice3F theLattice(fl,s,nSteps);
-	// correlation matrix root rescaled
-	ConstVolLmmLattice3F theLattice_nr(fl,s,nSteps,false);
-	LmmNode* root=theLattice.getRoot();
-	Real strike=root->swapRate(p,q);           // swap rate at time zero
-	
-	// LMM and Monte carlo
-	LiborMarketModel* lmm=new LowFactorDriftlessLMM(fl,3);
-	Derivative* swpnLmm=new Swaption(p,q,s,strike,lmm);
-	Real mcPrice=swpnLmm->monteCarloForwardPrice(20000),
-	     aPrice =swpnLmm->analyticForwardPrice();
-		
-	cout << "\n\n\nSwaption forward price: "
-	     << "\nAnalytic: " << aPrice
-	     << "\nMonte Carlo, 3 factors: " << mcPrice;
-		
-
-	// correlation matrix root rescaled
-	LatticeSwaption<LmmNode3F> swpn(&theLattice,s,p,q,strike,nSteps);
-	// correlation matrix root not rescaled
-	LatticeSwaption<LmmNode3F> swpn_nr(&theLattice_nr,s,p,q,strike,nSteps);
-	Real treePrice=swpn.forwardPrice();
-	Real treePrice_nr=swpn_nr.forwardPrice();
-		
-	cout << "\nTree, covariation matrix root rescaled: " << treePrice
-	     << "\nTree, covariation matrix root not rescaled: " << treePrice_nr;
-        
+	bool rescaleVols=true;
+    LatticeSwaption* latticeSwaption = sample(p,q,nSteps,rescaleVols);
+	Real latticePrice=swpn.forwardPrice();
+	cout << "\n\nLattice price with volatility rescaling: " << latticePrice;
 	watch.stop();
 	watch.report("Time");
+	
+	delete latticeSwaption;
+	
+	watch.start();
+	rescaleVols=false;
+    latticeSwaption = sample(p,q,nSteps,rescaleVols);
+	latticePrice=swpn.forwardPrice();
+	cout << "\n\nLattice price without volatility rescaling: " << latticePrice;
+	watch.stop();
+	watch.report("Time");
+	
+	delete latticeSwaption;
+		
+	// LMM and Monte carlo
+	int r = getLattice()->nFactors();                         // number of factors
+	LiborFactorLoading* fl = lattice->getFactorLoading();
+	
+	watch.start();
+	LiborMarketModel* lmm=new LowFactorDriftlessLMM(fl,r);
+	Derivative* swpnLmm=new Swaption(p,q,p,strike,lmm);
+	Real aPrice =swpnLmm->analyticForwardPrice();
+		
+	cout << "\nAnalytic: " << aPrice
+	     << "\nMonte Carlo price, 20000 paths: ";
+		 
+	Real mcPrice=swpnLmm->monteCarloForwardPrice(20000);	
+	cout << mcPrice;
+	
+	watch.stop();
+	watch.report("Time");
+
 }	
 	
 	
@@ -261,11 +290,15 @@ static void test(int s, int p, int q)
 
 
 
-/** Swaptions in two and three factor lattices for the {@link DriftlessLMM}.
- */
-typedef LatticeSwaption<LmmNode2F> LatticeSwaption2F;
-typedef LatticeSwaption<LmmNode3F> LatticeSwaption3F;	
-	
+/** Swaption in two factor lightweight Lmmlattice.*/
+typedef LatticeSwaption<LiteLmmLattice2F> LiteLatticeSwaption2F;
+/** Swaption in three factor lightweight Lmmlattice.*/
+typedef LatticeSwaption<LiteLmmLattice3F> LiteLatticeSwaption3F;
+/** Swaption in two factor heavyweight Lmmlattice.*/
+typedef LatticeSwaption<HeavyLmmLattice2F> HeavyLatticeSwaption2F;
+/** Swaption in three factor heavyweight Lmmlattice.*/
+typedef LatticeSwaption<HeavyLmmLattice3F> HeavyLatticeSwaption3F;
+		
 	
 	
 

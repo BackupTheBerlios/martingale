@@ -31,12 +31,16 @@ spyqqqdia@yahoo.com
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 	
-/** Free standing functions to computing various functionals F of the
+/** <p>Free standing functions to computing various functionals F of the
  *  Libor process as deterministic functions 
  *  \f[F=F(H)\hbox{ of a vector } H=(H_p(t),\dots,H_n(t))\f] 
  *  of accrual factors at time \f$t\f$. It is assumed that the vector
  *  H has natural indexation \f$H[j]=H_j(t),\ j=p,\dots,n\f$ and of course
  *  that it contains all the accrual factors whih are needed.
+ *  It is also assumed that all Libor accrual periods have the same length.
+ *
+ *  <p>Note that the time t does not explicitly enter in any of the
+ *  computations. This information is in the vector H.
  */
 namespace LiborFunctional {
 	
@@ -47,15 +51,36 @@ namespace LiborFunctional {
 	
 	/** Forward annuity (forward price of a basis point) on [T_p,T_q].
 	 * @param H vector of accrual factors.
-	 * @param delta vector of accrual periods.
+	 * @param delta length of all Libor accrual periods.
 	 */
-	Real H_pq(int p, int q, const RealArray1D& H, const RealArray1D& delta);	
+	Real H_pq(int p, int q, const RealArray1D& H, Real delta);	
 		
 	/** Swaprate for swap on [T_p,T_q].
 	 * @param H vector of accrual factors.
-	 * @param delta vector of accrual periods.
+	 * @param delta length of all Libor accrual periods.
 	 */
-	Real S_pq(int p, int q, const RealArray1D& H, const RealArray1D& delta);
+	Real swapRate(int p, int q, const RealArray1D& H, Real delta);
+		
+		
+	/** Payoff of a forward swaption with strike rate kappa exercising into a 
+     *  swap on the interval [T_p,T_q]. Payoff is accrued forward to the horizon T_n. 
+	 *
+	 * @param H vector of accrual factors.
+	 * @param delta length of all Libor accrual periods.
+     */
+    Real forwardSwaptionPayoff
+	(int p, int q, Real kappa, const RealArray1D& H, Real delta);
+	
+	
+	/** Payoff of a caplet with strike rate kappa on the interval [T_i,T_{i+1}]. 
+	 *  Payoff is accrued forward to the horizon T_n. It is assumed that the
+	 *  vector H is compute at time T_i.
+	 *
+	 * @param H vector of accrual factors.
+	 * @param delta length of all Libor accrual periods.
+     */
+    Real forwardCapletPayoff
+	(int i, Real kappa,const RealArray1D& H, Real delta);
 
 };
 
