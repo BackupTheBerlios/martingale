@@ -154,6 +154,11 @@ VolSurface integrals tested and pass.
 Now working on Calibration.
 Calibrator is able to write synthetic data.
 
+7-18-03:
+
+General Calibration finished but not tested.
+Special case of DriftlessLMM largely finished but still buggy. See ToDo.
+
 
 
 

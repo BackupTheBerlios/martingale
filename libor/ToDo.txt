@@ -42,3 +42,14 @@ a) std::ostream operator << (std::ostream& os, const SomeType& x)
 doesn't link but x->printSelf(os) works. Why is that?
 
 b) Examples::brownianMotionInBall(dim,T,dt,nPath) dies on array index out of bounds error.
+
+
+State 7-18-03:
+
+Fix the bug in the calibration of a DriftlessLMM.
+Note: the matrix for caplet i needs the vols of all U_j with i<=j<n.
+So if there are missing (=zero) vols we end up with a nonpositive definite matrix.
+But check if this is the real reason since the only mising caplets are these
+for i=0,1. 
+
+
