@@ -27,19 +27,16 @@ spyqqqdia@yahoo.com
  * Created on March 21, 2003, 12:45 PM
  */
  
- 
-#ifndef martingale_derivatives_h    
-#define martingale_derivatives_h
 
 #include <string>
 #include <iostream>
 #include <cstdlib>
+#include "Derivatives.h"
 #include "FinMath.h"
 #include "RandomObject.h"
 #include "ControlledRandomVariable.h"
 #include "PredictorCorrectorLMM.h"
 #include "FastPredictorCorrectorLMM.h"
-#include "LognormalLMM.h"
 #include "DriftlessLMM.h"
 #include "LowFactorDriftlessLMM.h"
 
@@ -56,13 +53,13 @@ using namespace Martingale;
 
 RandomVariable* 
 Derivative::
-forwardPayoff() const { return new ForwardPayoff(this); } 
+forwardPayoff() { return new ForwardPayoff(this); } 
      
 
     
-virtual Real 
+Real 
 Derivative::
-controlVariateMean() const
+controlVariateMean() 
 {
       cout << "Derivative.controlVariateMean():"
 		   << endl << "no control variate implemented, aborting.";
@@ -70,10 +67,11 @@ controlVariateMean() const
       return 0.0;    // keeps the compiler happy
 } 
       
-     
-virtual 
+  
+
+RealVector 
 Derivative::
-RealVector nextControlledForwardPayoff() const
+nextControlledForwardPayoff() 
 {
      cout << "Derivative.nextControlledForwardPayoff():"
 		  << endl << "no control variate implemented, aborting.";
@@ -86,12 +84,12 @@ RealVector nextControlledForwardPayoff() const
 
 ControlledRandomVariable* 
 Derivative::
-controlledForwardPayoff(){ return new ControlledForwardPayoff(this); } 
+controlledForwardPayoff() { return new ControlledForwardPayoff(this); } 
 
      
-virtual Real 
+Real 
 Derivative::
-analyticForwardPrice() const
+analyticForwardPrice() 
 {
      cout << endl 
           << "Derivative.analyticForwardPrice():" << endl
@@ -114,9 +112,30 @@ monteCarloForwardPrice(int nPath, string message){ return forwardPayoff()->expec
 Real 
 Derivative::
 controlledMonteCarloForwardPrice(int nPath){ return controlledForwardPayoff()->expectation(nPath); }
+
+
+Real 
+Derivative::ForwardPayoff::
+nextValue() 
+{ 
+	return LD->nextForwardPayoff(); 
+}
       
      
+RealVector 
+Derivative::ControlledForwardPayoff::
+nextValue() 
+{ 
+	return LD->nextControlledForwardPayoff(); 
+}   
+		 
 
+Real 
+Derivative::ControlledForwardPayoff::
+getControlVariateMean() 
+{ 
+	return LD->controlVariateMean(); 
+}
 
 
 /*******************************************************************************
@@ -134,16 +153,16 @@ LMM(lmm), n(lmm->getDimension()), horizon(t)
 
 int 
 LiborDerivative::
-effectiveDimension(){ return LMM->effectiveDimension(0, horizon); }
+effectiveDimension() const { return LMM->effectiveDimension(0, horizon); }
 	
 	
 std::ostream& 
 LiborDerivative::
-printSelf(std::ostream& os){ return os << "Generic Libor Derivative"; } 
+printSelf(std::ostream& os) const { return os << "Generic Libor Derivative"; } 
 	
 		
 
-virtual void 
+void 
 LiborDerivative::
 testPrice()
 { 
@@ -154,8 +173,8 @@ testPrice()
 	      epsilon=0.00000001;   // replacement for zero denominator in relError
          
 	 // correlation with control variate
-     cout << toString() << endl
-	      << LMM->toString() << endl
+     cout << *this << endl
+	      << LMM << endl
 	      << endl << "Effective dimension of the simulation = " 
 	      << effectiveDimension()
 	      << endl;
@@ -194,33 +213,26 @@ testPrice()
 
 void 
 LiborDerivative::
-priceTest(Real delta, bool LS=true, bool PC=false, bool FPC=false) 
+priceTest(int volType, int corrType, bool DL=true) 
 {
      Timer watch;
 
-	 if(LS){
+	 if(DL){
 		 watch.start();
-		 setLMM(DriftlessLMM::sample(n,delta)); 
+		 setLMM(DriftlessLMM::sample(n,volType,corrType)); 
          testPrice();
 	     watch.stop();
 	     watch.report("DriftlessLMM");
-	} // end if
-	 
-	 if(PC){
+		 
+	} else {
+		
 		 watch.start();
-	     setLMM(PredictorCorrectorLMM::sample(n,delta));   
+	     setLMM(PredictorCorrectorLMM::sample(n,volType,corrType));   
          testPrice();
     	 watch.stop();
 	     watch.report("PredictorCorrectorLMM");
 	 } // end if
-	
-	 if(FPC){
-		 watch.start();
-	     setLMM(FastPredictorCorrectorLMM::sample(n,delta));   
-         testPrice();
-    	 watch.stop();
-	     watch.report("FastPredictorCorrectorLMM");
-	 } // end if
+
 
 } // end priceTest
 	
@@ -268,7 +280,7 @@ sample(int n, int volType, int corrType)
 
 Real 
 Caplet::
-nextForwardPayoff() const 
+nextForwardPayoff()
 { 
 	LMM->newPath(horizon,i);                      // needed Libors L_j, j>=i.
 	Real X_iT_i,h,f;
@@ -283,12 +295,12 @@ nextForwardPayoff() const
 
 Real 
 Caplet::
-controlVariateMean() const{ return (LMM->X_i0(i))*(LMM->H_i0(i+1)); }
+controlVariateMean(){ return (LMM->X_i0(i))*(LMM->H_i0(i+1)); }
  
 	
 RealVector 
 Caplet::	
-nextControlledForwardPayoff() const
+nextControlledForwardPayoff() 
 {
 	LMM->newPath(horizon,i);            // needed Libors L_j, j>=i
 		 
@@ -319,7 +331,7 @@ analyticForwardPrice() const
 
 std::ostream& 
 Caplet::
-printSelf(std::ostream& os)
+printSelf(std::ostream& os) const
 { return os << "Caplet Cplt([T_"<<i<<",T_"<<i+1<<"],"<<kappa<<")" << endl; }
 
 
@@ -354,7 +366,7 @@ Swaption* sample(int n, int volType, int corrType)
 
 Real 
 Swaption::
-nextForwardPayoff() const 
+nextForwardPayoff()
 {
     LMM->newPath(horizon,t);                      // needed Libors L_j, j>=t
 	Real S_pqT,B_pqT,h,f;
@@ -369,7 +381,7 @@ nextForwardPayoff() const
 	 
 Real 
 Swaption::
-controlVariateMean() const
+controlVariateMean() 
 { 
 	Real fp=LMM->H_i0(p),        // H_p(0)
 		 fq=LMM->H_i0(q);        // H_q(0)
@@ -379,7 +391,7 @@ controlVariateMean() const
 	 
 RealVector 
 Swaption::
-nextControlledForwardPayoff() const
+nextControlledForwardPayoff() 
 {
 	LMM->newPath(horizon,t);            // needed Libors L_j, j>=t
 		 
@@ -415,7 +427,7 @@ analyticForwardPrice() const
 
 std::ostream& 
 Swaption::
-printSelf(std::ostream& os)
+printSelf(std::ostream& os) const
 {  return os << "Swaption Swpn(T_"<<t<<",[T_"<<p<<",T_"<<q<<"],"<<kappa<<")" << endl; }
 
 	
@@ -450,11 +462,11 @@ K(strike), t(s)
 	
 BondCall* 
 BondCall::
-sample(int n, int volType, int corryType)
+sample(int n, int volType, int corrType)
 {
 	LiborMarketModel* lmm=DriftlessLMM::sample(n,volType,corrType);
 	int p=n/3, q=2*n/3, t=p;
-	RealVector c(q-p,p);
+	RealArray1D c(q-p,p);
 	for(int j=p;j<q;j++) c[j]=0.5+Random::U01();
 	Bond* B=new Bond(p,q,c,lmm);
 	Real K=B->cashPrice();
@@ -465,9 +477,9 @@ sample(int n, int volType, int corryType)
 
 BondCall* 
 BondCall::
-sampleCallOnZeroCouponBond(int n, int volType, int corryType)
+sampleCallOnZeroCouponBond(int n, int volType, int corrType)
 {
-	LiborMarketModel* lmm=DriftlessLMM::sample(n,volType,corryType);
+	LiborMarketModel* lmm=DriftlessLMM::sample(n,volType,corrType);
 	int i=n/2, t=i-1;
 	Bond* B=new Bond(i,lmm);
 	Real K=B->cashPrice();
@@ -478,7 +490,7 @@ sampleCallOnZeroCouponBond(int n, int volType, int corryType)
      
 Real 
 BondCall::
-nextForwardPayoff() const 
+nextForwardPayoff() 
 {  
 	LiborMarketModel* lmm=B->getLMM();
 	lmm->newPath(horizon,t);             // needed Libors L_j, j>=t
@@ -494,12 +506,12 @@ nextForwardPayoff() const
 	 
 Real 
 BondCall::
-controlVariateMean() const { return B->forwardPrice(); }
+controlVariateMean() { return B->forwardPrice(); }
 
 
 RealVector 
 BondCall::
-nextControlledForwardPayoff() const
+nextControlledForwardPayoff() 
 {
 	LiborMarketModel* lmm=B->getLMM();
     lmm->newPath(horizon,t);              // needed Libors L_j, j>=t
@@ -532,13 +544,9 @@ analyticForwardPrice() const
   
    
 std::ostream& 
-Swaption::
-printSelf(std::ostream& os)
+BondCall::
+printSelf(std::ostream& os) const
 {  return os << "Call on bond B with strike K =: " << K << endl << "Bond B:" << B << endl; }
 
 
 
-
-MTGL_END_NAMESPACE(Martingale)
-
-#endif

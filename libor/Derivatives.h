@@ -31,15 +31,18 @@ spyqqqdia@yahoo.com
 #ifndef martingale_derivatives_h    
 #define martingale_derivatives_h
 
-#include <iostream>
+#include "TypedefsMacros.h"
+#include "Matrices.h"
+#include "RandomObject.h"
+#include "ControlledRandomVariable.h"
 
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
-// forward declarations
+// we are using
 class LiborMarketModel;
-class RealVector;             // Matrices.h
+class Bond;
 
 
 
@@ -111,7 +114,7 @@ public:
 	  * This is the cleanest approach which applies to Libor derivatives and also
 	  * to all other derivatives.</p>
       */
-     virtual Real nextForwardPayoff() const =0;
+     virtual Real nextForwardPayoff() = 0;
      
 
      /** The forward transported payoff as a random variable.
@@ -121,7 +124,7 @@ public:
 		 Derivative* LD;    // pointer to containing class
 	 public:	 
 		 ForwardPayoff(Derivative* LD0) : LD(LD0) {  }
-		 Real nextValue() { return LD->nextForwardPayoff(); }
+		 Real nextValue();
 
 	 }; // end ForwardPayoff
 		 
@@ -162,8 +165,8 @@ public:
 			 // subclass must set beta coefficient
 			 setBeta(); 
 		 }
-		 RealVector nextValue() { return LD->nextControlledForwardPayoff(); }   
-		 Real getControlVariateMean() { return LD->controlVariateMean(); }
+		 RealVector nextValue(); 
+		 Real getControlVariateMean();
          
      }; // end ControlledForwardPayoff
 	 
@@ -291,15 +294,16 @@ virtual void testPrice();
  *  and Quasi Monte Carlo prices with and without control variates from
  *  a sample of 20000 paths of the underlying Libor process.
  *  Choice of Libor market models: PredictorCorrector,
- *  FastPredictorCorrector, DriftlessLMM. Changes the underlying Libor
+ *  DriftlessLMM. Quarterly accrual. Changes the underlying Libor
  *  market model but does not restore the original state (model).
  *
- * @param delta length of each accrual period (will be reset).
- * @param PC use a {@link PredictorCorrectorLMM} Libor market model.
+ * @param volType type of volatility surface: VolSurface::CONST, JR, M.
+ * @param corrType type of correlations: Corrleations::JR, CS.
  * @param FPC use a {@link FastPredictorCorrectorLMM} Libor market model.
- * @param LS use a {@link DriftlessLMM} Libor market model.
+ * @param DL use a {@link DriftlessLMM} Libor market model (otherwise
+ * the {@link PredictorCorrectorLMM} is used.
  */
-void priceTest(Real delta, bool LS=true, bool PC=false, bool FPC=false);	
+void priceTest(int volType, int corrType, bool DL=true);
 
 		
 }; // end LiborDerivative
@@ -350,6 +354,7 @@ public:
     /** Sample at the money caplet with i=n/3, ie. one third of the way out to the horizon.
 	 *  Based on a {@link DriftlessLMM}.
 	 *
+	 * @param n dimension (number of Libor accrual intervals).
 	 * @param volType type of volatility surface, VolSurface::CONST, JR, M.
 	 * @param corrType type of correlations, Correlations::CS, JR.
 	 */
@@ -364,13 +369,13 @@ public:
      /** Payoff computed from current state of the Libor generator and transported 
 	  *  forward from time \f$T_{i+1}\f$ to time \f$T_n\f$.
       */
-     Real nextForwardPayoff() const;
+     Real nextForwardPayoff();
 
 	 
      /** Mean of the control variate. This is \f$X_i(0)*H_{i+1}(0)\f$,
 	  *  see book, 6.9.2.
       */
-     Real controlVariateMean() const;
+     Real controlVariateMean();
  
 	 
     /** Control variate is forward transported Libor 
@@ -446,7 +451,8 @@ public:
     /** Sample at the money swaption with p=n/3, q=n, t=p.
 	 *  Based on a {DriftlessLMM}.
 	 *	 
-     * @param volType type of volatility surface, VolSurface::CONST, JR, M.
+ 	 * @param n dimension (number of Libor accrual intervals).
+	 * @param volType type of volatility surface, VolSurface::CONST, JR, M.
 	 * @param corrType type of correlations, Correlations::CS, JR.
 	 */
 	static Swaption* sample(int n, int volType, int corrType);
@@ -460,18 +466,18 @@ public:
      /** Payoff computed from current state of the Libor generator and transported 
 	  *  forward from time \f$T_t\f$ to time \f$T_n\f$.
       */
-     Real nextForwardPayoff() const;
+     Real nextForwardPayoff();
 
 	 
      /** Mean of the control variate. This is \f$(B_p(0)-B_q(0))/B_n(0)\f$, see book, 6.9.2.
       */
-     Real controlVariateMean() const;
+     Real controlVariateMean();
 	 
 	 
     /** Control variate is \f$H_p(T_t)-H_q(T_t)\f$, a \f$P_n\f$-martingale.
 	 *  See book, 6.9.2.
      */
-    RealVector nextControlledForwardPayoff() const;
+    RealVector nextControlledForwardPayoff();
     
     
          
@@ -541,16 +547,24 @@ public:
 	 *  Call on this bond with strike rate = cash price of the bond
 	 *  at the horizon exercisable at time \f$T_p\f$. 
 	 *  Based on a {DriftlessLMM} with a {@link CS_FactorLoading}.
+	 *	 
+	 * @param n dimension (number of Libor accrual intervals).
+	 * @param volType type of volatility surface, VolSurface::CONST, JR, M.
+	 * @param corrType type of correlations, Correlations::CS, JR.
 	 */
-	static BondCall* sample(int n, Real delta);
+	static BondCall* sample(int n, int volType, int corrType);
 	
 	 
 	/** Sample call on zero coupon bond with i=n/2, strike price = cash price 
 	 *  of the bond at the horizon exercisable at time \f$T_{i-1}\f$. 
 	 *  Based on a {DriftlessLMM} with a {@link CS_FactorLoading}.
 	 *  This is a worst case for the assumptions of the analytic price formulas.
+	 *	 
+	 * @param n dimension (number of Libor accrual intervals).
+	 * @param volType type of volatility surface, VolSurface::CONST, JR, M.
+	 * @param corrType type of correlations, Correlations::CS, JR.
 	 */
-	static BondCall* sampleCallOnZeroCouponBond(int n, Real delta);
+	static BondCall* sampleCallOnZeroCouponBond(int n, int volType, int corrType);
 
      
 	 
@@ -563,17 +577,17 @@ public:
 	  *  \f[h/B_n(T_t)=h*H_t(T_t)=\left(\sum_{j=p}^{q-1}c_jH_j(T_t)-KH_t(T_t)\right)^+\f]
 	  * computed from a new Libor path.
       */
-     Real nextForwardPayoff() const;
+     Real nextForwardPayoff();
 	 
 	 
      /** Mean of the control variate, the forward price at time zero.
       */
-     Real controlVariateMean() const;
+     Real controlVariateMean();
  
 	 
     /** Control variate is the forward bond price.
      */
-    RealVector nextControlledForwardPayoff() const;
+    RealVector nextControlledForwardPayoff();
 		 
    
       

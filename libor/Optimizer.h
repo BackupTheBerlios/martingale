@@ -25,12 +25,15 @@ spyqqqdia@yahoo.com
 #ifndef martingale_optimizer_h    
 #define martingale_optimizer_h
 
+#include "TypedefsMacros.h"
 #include "Array.h"
-#include "QuasiMonteCarlo.h"
-#include <math.h>
-#include <cmath>
 
 MTGL_BEGIN_NAMESPACE(Martingale)
+
+
+// we are using
+class LowDiscrepancySequence;
+
 
 
 /*! \file Optimizer.h
@@ -83,7 +86,7 @@ public:
      *
      * @returns the minimizing vector x.
      */
-    virtual RealArray1D& search() = 0;
+    virtual const RealArray1D& search() = 0;
     
     
     /** @param n dimension of argument vector.
@@ -149,7 +152,7 @@ public:
 	 *  Implemented in the header because implementation in the .cc file
 	 *  causes an inexplicable syntax error message.
 	 */
-    RealArray1D& search();
+    const RealArray1D& search();
 
 
 	 
@@ -326,13 +329,13 @@ public:
 // ACCESSORS
     
     /** Current gradient.*/
-    RealArray1D& getGrad(){ return grad; }
+    const RealArray1D& getGrad() const { return grad; }
     
     /** Current point.*/
-    RealArray1D& getX(){ return x; }
+    const RealArray1D& getX() const { return x; }
     
     /** Current direction.*/
-    RealArray1D& getD(){ return d; }
+    const RealArray1D& getD() const { return d; }
 	
 
 // CONSTRUCTOR
@@ -366,7 +369,7 @@ public:
       *
       * @returns the minimizing vector <code>x</code>.
       */
-     RealArray1D& search();
+     const RealArray1D& search();
 
 	
 	
@@ -416,7 +419,7 @@ private:
      * @param x point at which the gradient is computed.
      * @param fx function value <code>f(x)</code>.
      */
-    RealArray1D& gradF(RealArray1D& x, Real fx);
+    const RealArray1D& gradF(RealArray1D& x, Real fx);
 	
    
     /** <p>Computes the gradient of {@link Optimizer#f} at the point 
@@ -434,7 +437,7 @@ private:
      *
      * @param x point at which the gradient is computed.
      */
-    RealArray1D& gradcdF(RealArray1D& x);
+    const RealArray1D& gradcdF(RealArray1D& x);
 	
 	
 // BACK TRACKING DURING LINE SEARCH                 
@@ -537,18 +540,14 @@ public:
 	 *  @param delta initial window all u with \f$x0_j-\delta_j<u_j<x0_j+\delta_j\f$.
 	 *  @param _verbose announce each new min during search.
 	 */
-	SobolSearch(int n, RealArray1D& x0, int nVals, RealArray1D delta, bool _verbose=false) : 
-	Optimizer(n),
-	nPoints(nVals), q(4.0/5), xOpt(x0), x(x0), d(delta), verbose(_verbose),
-	lds(new Sobol(n))
-    {  	}
+	SobolSearch(int n, const RealArray1D& x0, int nVals, const RealArray1D& delta, bool _verbose=false);
 	
 	/** Wether or not the vector u is in the search domain.
 	 *  This is the default implementation (true, unconstrained search).
 	 */
-	virtual bool isInDomain(RealArray1D& u){ return true; }
+	virtual bool isInDomain(RealArray1D& u) const { return true; }
 	
-	RealArray1D& search();
+	const RealArray1D& search();
 	
 }; // end SobolSearch
 	
@@ -580,12 +579,7 @@ public:
 	
 	
 	
-
-
-
-
-
-
+// TEST FUNCTIONS
 
 /** Some examples of objective functions. */
 namespace ObjectiveFunction {
@@ -595,7 +589,7 @@ namespace ObjectiveFunction {
 } // end namespace
 
 
-MTGL_END_NAMESPACE(Martingale)
 
+MTGL_END_NAMESPACE(Martingale)
 
 #endif

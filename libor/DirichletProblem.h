@@ -23,13 +23,13 @@ spyqqqdia@yahoo.com
 #ifndef martingale_dirichletproblem_h
 #define martingale_dirichletproblem_h
 
-
+#include "TypedefsMacros.h"
+#include "Matrices.h"
 
 MTGL_BEGIN_NAMESPACE(Martingale) 
 
 
-// forward drclarations
- 
+// we are using
 class DirichletProblemExample;
 class EuclideanRegion;
 class Ball;
@@ -63,7 +63,7 @@ protected:
 public: 
 	
 	/** The boundary function h. */
-	virtual Real boundaryFunction(RealVector& u) = 0;
+	virtual Real boundaryFunction(const RealVector& u) = 0;
 	
 // CONSTRUCTOR
 	
@@ -87,7 +87,7 @@ public:
 	 * @param nPath number of paths launched for the boundary.
 	 * @param reportHits report what percentage of paths hit the boundary.
 	 */
-	Real solution(RealVector& x, int nPath=50000, bool reportHits=false);
+	Real solution(const RealVector& x, int nPath=50000, bool reportHits=false);
 	
 	
 }; // end DirichletProblem
@@ -112,7 +112,7 @@ public:
 	 */
 	DirichletProblemExample(int dim, int T, Real dt=0.01);
 	
-	Real boundaryFunction(RealVector& u);
+	Real boundaryFunction(const RealVector& u);
 		
 	
 	/** <p>Computes f(x) for the boundary function 

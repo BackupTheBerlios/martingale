@@ -39,7 +39,7 @@ tau(new FirstExitTime<RealVector,Real>(X,G))
 	
 Real 
 DirichletProblem::
-solution(RealVector& x, int nPath=50000, bool reportHits=false)
+solution(const RealVector& x, int nPath=50000, bool reportHits=false)
 {		
 	X->setStart(x);
 	int c=0;                                 // hits on the boundary
@@ -48,11 +48,11 @@ solution(RealVector& x, int nPath=50000, bool reportHits=false)
 			
 		int t=X->newPathSegment(tau);        // first time outside G
 		int s=t-1;
-		RealVector& u=X->currentPath(s);
-		RealVector& v=X->currentPath(t);
+		const RealVector& u=X->currentPath(s);
+		const RealVector& v=X->currentPath(t);
 		if(!(G->isMember(v))) c++;            // hit on the boundary            
 		// point where the boundary is hit
-        RealVector& z=G->boundaryIntersection(u,v); 
+        const RealVector& z=G->boundaryIntersection(u,v); 
 		sum+=boundaryFunction(z);
 	}
 		
@@ -73,7 +73,7 @@ DirichletProblem(new Ball(dim),T,dt)
 
 Real 
 DirichletProblemExample::
-boundaryFunction(RealVector& u)
+boundaryFunction(const RealVector& u)
 { Real f=u[0]; for(int i=1;i<dim;i++) f+=u[i]; return f; }
 		
 	
