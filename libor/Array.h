@@ -24,7 +24,7 @@ spyqqqdia@yahoo.com
 #define martingale_array_h
 #define SUBSCRIPT_CHECK
 
-
+#include "TypedefsMacros.h"
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
@@ -169,6 +169,9 @@ public:
 	
     /** Number of array elements. */
 	int getSize() const { return n; }
+	
+	/** Pointer to data array */
+	S* getData(){ return dptr; }
 
 	
 // CONSTRUCTOR
@@ -177,7 +180,7 @@ public:
 	 *  @param b_ <a href="index-base">index base</a>.
 	 */
 	Array1D(int n_, int b_=0) : 
-	n(n_), b(b_)
+	b(b_), n(n_) 
 	{  
          dptr=new S[n];
 		 for(int i=0;i<n;i++) dptr[i]=0;
@@ -186,8 +189,7 @@ public:
 	
 	~Array1D(){ delete[] dptr; }
 	
-   /** Subscripting.
-    */
+   /** Subscripting.*/
    const S& operator[](int i) const 
    { 
 	   #ifdef SUBSCRIPT_CHECK
@@ -197,8 +199,7 @@ public:
 	   return dptr[i-b]; 
    }
    
-   /** Subscripting.
-    */
+   /** Subscripting.*/
    S& operator[](int i)  
    { 
 	   #ifdef SUBSCRIPT_CHECK
@@ -207,10 +208,50 @@ public:
 	   #endif	
 	   return dptr[i-b];
    }
+   
+   /** Copies the elements of b which must be of the same
+    *  length as a (not checked).
+    */
+   Array1D<S>& operator=(Array1D<S>& B)
+   {
+	   S* dptrB=B.getData();
+	   for(int j=0;j<n;j++) dptr[j]=dptrB[j];
+	   b=B.getIndexBase();  
+	   
+	   return *this;
+   }
+   
+// EUCLLIDEAN NORM, SCALING
+   
+    /** Euclidean norm. */     
+    Real norm()
+    {
+        Real u=0;
+        for(int i=0;i<n;i++) u+=dptr[i]*dptr[i];
+        return sqrt(u);
+    }
+	
+	/** Multiplication by a scalar, returns scaled array. */
+	Array1D<Real>& scale(Real f)
+    {
+        for(int i=0;i<n;i++) dptr[i]*=f;
+        return *this;
+    }  
+	
+	/** Dot product with the array X of the same length.
+	 *  Lengths are not checked.
+	 */
+	Real dotProduct(Array1D<Real>& X)
+    {
+		Real* a=dptr;
+		Real* x=X.getData();
+		Real sum=0.0;
+		for(int j=0;j<n;j++) sum+=a[j]*x[j];
+			
+		return sum;
+    }
 			 
 		   
-				
-
 }; // end Array1D
 
 
@@ -275,9 +316,9 @@ public:
 	/** @param n1 number of array elements in dimension 1.
 	 *  @param b1 <a href="index-base">index base</a> in dimension 1.
 	 */
-	Array2D(int n_1, int n_2, int b_1=0, int b_2=0) : 
-	n1(n_1), n2(n_2), 
-	b1(b_1), b2(b_2)
+	Array2D(int n_1, int n_2, int b_1=0, int b_2=0) :
+	b1(b_1), b2(b_2),
+	n1(n_1), n2(n_2) 
 	{  
          dptr=new S*[n_1];
 		 for(int i=0;i<n1;i++){
@@ -294,8 +335,7 @@ public:
 		 delete[] dptr;
 	}
 	
-   /** Subscripting.
-    */
+   /** Subscripting with indices based on the index bases.*/
    const S& operator()(int i, int j) const 
    { 
 	   #ifdef SUBSCRIPT_CHECK
@@ -305,8 +345,7 @@ public:
 	   return dptr[i-b1][j-b2]; 
    }
    
-   /** Subscripting.
-    */
+   /** Subscripting with indices based on the index bases.*/
    S& operator()(int i, int j) 
    { 
 	   #ifdef SUBSCRIPT_CHECK
@@ -316,7 +355,17 @@ public:
 	   return dptr[i-b1][j-b2]; 
    }
 			 
-		   
+   /** Pointer to row i. This allows subscripting as X[i][j]
+    *  with absolute (zero based) indices i,j.
+    */
+   S* operator[](int i)  
+   { 
+	   #ifdef SUBSCRIPT_CHECK
+	      SubscriptCheck::
+	      checkSubscript(i,b1,n1,"Array2D, row i");
+	   #endif	
+	   return dptr[i-b1];
+   }	   
 				
 
 }; // end Array2D
@@ -386,8 +435,8 @@ public:
 	 *  @param b1 <a href="index-base">index base</a> in dimension 1.
 	 */
 	Array3D(int n_1, int n_2, int n_3, int b_1=0, int b_2=0, int b_3=0) : 
-	n1(n_1), n2(n_2), n3(n_3),
-	b1(b_1), b2(b_2), b3(b_3)
+	b1(b_1), b2(b_2), b3(b_3),
+	n1(n_1), n2(n_2), n3(n_3)
 	{  
          dptr=new S**[n_1];
 		 for(int i=0;i<n1;i++){
@@ -438,6 +487,12 @@ public:
 
 }; // end Array3D
 
+
+
+
+typedef Array1D<Real> RealArray1D;
+typedef Array2D<Real> RealArray2D;
+typedef Array3D<Real> RealArray3D;
 
 
 
