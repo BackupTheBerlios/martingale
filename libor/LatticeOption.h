@@ -203,8 +203,8 @@ public:
 	static void test(int s, int p, int q)
     {
 		Timer watch; watch.start();
-		LiborFactorLoading* fl=JR_FactorLoading::sample(q);
-		LmmLattice2F theLattice(fl,s);
+		ConstVolLiborFactorLoading* fl=ConstVolLiborFactorLoading::sample(q);
+		ConstVolLmmLattice2F theLattice(fl,s);
 		LmmNode* root=theLattice.getRoot();
 		
 		Real strike=root->swapRate(p,q);
