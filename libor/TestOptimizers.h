@@ -28,50 +28,40 @@ spyqqqdia@yahoo.com
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
-/** A collection of free standing short test programs.
+/*! \file TestOptimizers.h
+ *  The three types of optimizer are tested on the very nasty test function 
+ *  \f[f(x)=1\bigg/\sum\nolimits_jexp(-x_j^2)\f]
+ *  in dimension n. The graph consists of n very narrow valleys along the coordinate 
+ *  axes. Note the symmetry under coordinate permutation.
+ *  The optimizer must crawl along each valley minimizing each variable separately. 
+ *  The minimum is assumed at the origin. The search starts 
+ *  the point \f$x_j=1.6+j*0.6\f$.
+ *
+ * <p>For \f$n\geq 3\f$ this fails miserably no matter how many function evaluations 
+ * are permitted. 
  */
  
 
 
-/** Test program in dimension n. Very nasty test function 
-  *  \f[f(x)=1\bigg/\sum\nolimits_jexp(-x_j^2)\f]
-  *  consists of three very narrow valleys intersecting at right angles. 
-  *  The optimizer must crawl along each valley minimizing each variable separately. 
-  *  Takes a huge number of steps. Minimum is assumed at the origin.
-  *
+/**  Test in dimension n. See file description TestOptimizer.h.
   * @param n dimension.
   * @param steps maximum number steps.
   */
 void testDownhillSimplex(int n, int steps);
 
 
-/** <p>Test program in dimension n. Very nasty test function 
- *  \f[f(x)=1\bigg/\sum\nolimits_jexp(-x_j^2)\f]
- *  consists of n very narrow valleys intersecting at right angles. 
- *  The optimizer must crawl along each valley minimizing each variable separately. 
- *  Takes a huge number of steps. Minimum is assumed at the origin. The search starts 
- *  the point \f$x_j=1.6+j*0.6\f$.
- *
- * <p>For \f$n\geq 3\f$ this fails miserably. It seems that we have to rescale the 
- * objective function so that the gradient has coordinates of roughly the same
- * magnitude. 
- *
+/** Test in dimension n. See file description TestOptimizer.h.
  * @param n dimension.
  * @param nVals maximum number of function evaluations.
  */
 void testBFGS(int n, int nVals);
 	
 
-/** Test program in dimension n. Very nasty test function 
- *  \f[f(x)=1\bigg/\sum\nolimits_jexp(-x_j^2)\f]
- *  consists of three very narrow valleys intersecting at right angles. 
- *  The optimizer must crawl along each valley minimizing each variable separately. 
- *  Takes a huge number of steps. Minimum is assumed at the origin.
- *
+/** Test in dimension n. See file description TestOptimizer.h.
  * @param n dimension.
- * @param nVals number of function evaluations.
+ * @param nPoints number of Search points.
  */
-void testSobolSearch(int n, int nVals);
+void testSobolSearch(int n, int nPoints);
 
 	     
 	

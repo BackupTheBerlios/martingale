@@ -62,17 +62,16 @@ void testMatrixMultiply();
 *******************************************************************************/
 
 
-/** <p>Computes the exponentials <code>H=exp(A), K=exp(-A)</code> for a randomly 
- *  initialized matrix <code>A</code> then prints the products <code>HK,KH</code>
- *  These must be the identity matrix or close to it. The user chooses the matrix
- *  class: lower and upper triangular and square.</p>
+/** Auxilliary to <code>testMatrixExponentials()</code>.
  */
 void reportMatrixElements(Real** data, int dim, int matrix_type);
 
 
-/** Randomly intializes a square matrix A and computes exp(A), exp(-A).
- *  Then tests how close exp(A)*exp(-A) and exp(-A)*exp(A) are to the identity
- *  matrix.
+/** <p>Computes the exponentials <code>H=exp(A), K=exp(-A)</code> for a randomly 
+ *  initialized matrix <code>A</code> then checks if the products <code>HK,KH</code>
+ *  are close to the identity matrix. Prints the diagonal and the largest and 
+ *  smallest off diagonal element. The user chooses the matrix class: 
+ *  lower and upper triangular and square.</p>
  */
 void testMatrixExponentials();
 

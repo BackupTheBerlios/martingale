@@ -22,9 +22,20 @@ spyqqqdia@yahoo.com
 
 
 #include "Utils.h"
+using std::cout;
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
+
+void 
+printStars()
+{
+	cout << "\n\n";
+	for(int i=0;i<80;i++) cout << '*';
+	cout << endl;
+    for(int i=0;i<80;i++) cout << '*';
+	cout << endl;
+}
 
 
 /***************************************************************************************

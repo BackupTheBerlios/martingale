@@ -129,14 +129,11 @@ public:
 	 *  \f$h(x_1,x_2,\ldots,x_d)=x_1+x_2+\dots+x_d\f$ on the unit ball
 	 *  in \f$R^d\f$. This function is harmonic (\f$\nabla h=0\f$) and so
 	 *  the solution on the interior has the same form.
-	 *  We compute the solution f(x) for \f$x_1=x_2=\dots=x_n=1/2\sqrt{d}\f$
+	 *  We compute the solution f(x) for \f$x_1=x_2=\dots=x_d=1/2\sqrt{d}\f$
 	 *  and then compare the known analytic value with what we get.
-	 *  Size of time steps 0.01. Number of paths: 30000.
-	 *
-	 * @param d dimension.
-	 * @param T time steps alloted to hit boundary.
+	 *  Size of time steps 0.01. Number of paths: 100000.
 	 */
-	static void runExample(int d, int T);
+	static void runExample();
 	
 	
 }; // end DirichletProblemExample

@@ -29,6 +29,9 @@ spyqqqdia@yahoo.com
 #include "Random.h"
 #include <complex>
 
+using std::cout;
+using std::endl;
+
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
@@ -52,10 +55,10 @@ testMatrixInverse()
 	Real precision=0.001,       // maximum acceptable relative error in percent
 		 epsilon=0.000000001; // zero denominator reset to epsilon
 	
+	printStars();
+	cout << "\n\nTesting inverse of random upper triangular matrix.";
 	Uinv.testEquals(I,precision,epsilon,"Uinv*U=I");
-	cout << Uinv << endl;
 	U.testEquals(I,precision,epsilon,"U*Uinv=I");
-	cout << U << endl;
 	
 } // testMatrixInverse
 
@@ -125,7 +128,8 @@ Real precision=0.001,       // maximum acceptable relative error in percent
  
 
 // tests of rectangular matrix products
-cout << "\n\n\nTesting rectangular matrix products:\n";
+printStars();
+cout << "\n\nTesting rectangular matrix products:\n";
  
 // SQ1*SQ2
 Real sq1_sq2[5][5]=
@@ -152,7 +156,8 @@ SQ1_SQ2t.testEquals(SQ11^=SQ2,precision,epsilon,"SQ1^=SQ2 test");
 
 
 // tests of lower triangular matrix products
-cout << "\n\n\nTesting lower triangular matrix products:\n";
+printStars();
+cout << "\n\nTesting lower triangular matrix products:\n";
 
 // LTR1*LTR2 : 
 Real ltr1_ltr2[5][5]=
@@ -178,7 +183,8 @@ LTR1_UTR2t.testEquals(LTR11^=UTR2,precision,epsilon,"LTR1^=UTR2 test");
 
 
 // tests of upper triangular matrix products
-cout << "\n\n\nTesting upper triangular matrix products:\n";
+printStars();
+cout << "\n\nTesting upper triangular matrix products:\n";
 
 // UTR1*UTR2 : 
 Real utr1_utr2[5][5]=
@@ -270,9 +276,10 @@ testMatrixExponentials()
 {
     int repeat=1;
 	while(repeat==1){
-	
+	 
+		printStars();
 	    std::cout << endl << endl
-		          << "A matrix A will be initialized with random entries from [-r,r]." << endl
+		          << "\n\nA matrix A will be initialized with random entries from [-r,r]." << endl
 		          << "We then compute the products P=exp(A)exp(-A) and Q=exp(-A)exp(A)." << endl 
 		          << endl
 		          << "These should be equal to the identity matrix, to check this" << endl 
@@ -368,8 +375,9 @@ testSymmetricMatrixExponentials()
     int repeat=1;
 	while(repeat==1){
 	
+		printStars();
 	    std::cout << endl << endl
-		          << "A symmetric matrix A will be initialized with random entries from [-r,r]." << endl
+		          << "\n\nA symmetric matrix A will be initialized with random entries from [-r,r]." << endl
 		          << "We then compute the products exp(A) by diagonalization of A " 
 		          << " and by series expansion." << endl
 		          << "It is then tested if the two results agree." << endl;
@@ -408,7 +416,8 @@ testComplexExponential()
      int repeat=1;
 	 while(repeat==1){
 		 
-		 std::cout << "Computing the exponential exp(A) where A={{a,b},{-b,a}}." << endl
+		 printStars();
+		 std::cout << "\n\nComputing the exponential exp(A) where A={{a,b},{-b,a}}." << endl
 		           << "This matrix is the complex number z=a+ib." << endl
 		           << "The matrix exponential will be compared to the STL exp(z)." << endl
 		           << endl;

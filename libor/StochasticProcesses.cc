@@ -27,6 +27,9 @@ spyqqqdia@yahoo.com
 #include "FactorLoading.h"
 #include "Matrix.h"
 
+using std::cout;
+using std::endl;
+
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
@@ -85,19 +88,25 @@ void
 VectorBrownianMotion::
 testPathFunctional(int t, int T, int nPath)
 {
+	 Real dt=0.01;
+	 printStars();
+	 cout << "\n\nComputing mean and variance of functional f(X)=X_1(T)+X_2(T)"
+	      << "\nconditioned on F_t with t = " << t*dt << " and T = " << T*dt
+	      << "\nfor a standard two dimensional Brownian motion X.";
+	
 	BrownianVectorProcess* X=new VectorBrownianMotion(2,T,0.01);
 	X->newPathSegment(t);
     RealVector& x=X->currentPath(t);
 
     Real analyticConditionalMean=x[0]+x[1],
-         analyticVariance=2*(T-t)*0.01;
+         analyticVariance=2*(T-t)*dt;
 		 		 
      // Functional F(X)=X_1(T)+X_2(T)
      SumFunctional* SF=new SumFunctional(X,T);
      Real* vtMC=SF->conditionalMeanAndVariance(t,nPath,true,"Monte Carlo");
      X->switchToQMC();
      Real* vtQMC=SF->conditionalMeanAndVariance(t,nPath,true,"Quasi Monte Carlo");
-		 		 
+	
      cout << endl << endl
 	      << "Paths: " << nPath << endl
 	      << "Analytic conditional mean = " << analyticConditionalMean << endl

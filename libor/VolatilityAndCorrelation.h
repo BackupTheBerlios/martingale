@@ -95,12 +95,12 @@ public:
 	static const int M=0, JR=1, CONST=2; 
 	
 	
-	/** @param a_,b,c,d parameters of the vol surface
+	/** @param a0,b0,c0,d0 parameters of the vol surface
 	 *  @param type vol surface type M, JR or CONST.
 	 */
 	VolSurface
-	(Real a_, Real b_, Real c_, Real d_, int type) :
-	volType(type), a(a_), b(b_), c(c_), d(d_)
+	(Real a0, Real b0, Real c0, Real d0, int type) :
+	volType(type), a(a0), b(b0), c(c0), d(d0)
     {    }
 	
 	/** Type ID, implemented: M, JR, CONST.
@@ -152,8 +152,8 @@ public:
 					
 	/** Sets the parameters (calibration).
 	 */
-	void setParameters(Real _a, Real _b, Real _c, Real _d)
-	{ a=_a; b=_b; c=_c; d=_d; }
+	void setParameters(Real a1, Real b1, Real c1, Real d1)
+	{ a=a1; b=b1; c=c1; d=d1; }
 	
 	/** Message and fields.*/
 	virtual std::ostream& printSelf(std::ostream& os) const = 0;
@@ -178,8 +178,8 @@ class JR_VolSurface : public VolSurface {
 public:
 	
 	JR_VolSurface
-	(Real a, Real b, Real c, Real d) :
-	VolSurface(a,b,c,d,JR)
+	(Real a0, Real b0, Real c0, Real d0) :
+	VolSurface(a0,b0,c0,d0,JR)
     {    }
 
   
@@ -221,8 +221,8 @@ class M_VolSurface : public VolSurface {
 public:
 	
 	M_VolSurface
-	(Real a, Real b, Real c, Real d) :
-	VolSurface(a,b,c,d,M)
+	(Real a0, Real b0, Real c0, Real d0) :
+	VolSurface(a0,b0,c0,d0,M)
     {    }
 
   
@@ -281,8 +281,8 @@ class CONST_VolSurface : public VolSurface {
 	
 public:
 	
-	CONST_VolSurface(Real a, Real b, Real c, Real d) :
-	VolSurface(a,b,c,d,CONST)
+	CONST_VolSurface(Real a0, Real b0, Real c0, Real d0) :
+	VolSurface(a0,b0,c0,d0,CONST)
     {    }
 		
 // VOLATILITIES, CORRELATIONS, COVARIATION INTEGRALS

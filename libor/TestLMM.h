@@ -75,7 +75,7 @@ MTGL_BEGIN_NAMESPACE(Test_LMM)
 void testLiborFactorLoading(int n);
 
 
-/** Allocates sample LiborFactorLoadings of type CS and JR in dimension n and sets
+/** Allocates sample LiborFactorLoadings of type CS and JR in dimension n.
  *  Then runs the rank r factorization test {@link UTRMatrix#testFactorization(int r)}
  *  on all log-Libor covariation matrices 
  *  {@link LiborFactorLoading#logLiborCovariationMatrix(int t)}, t=0,1,...,n-3.
@@ -136,13 +136,9 @@ void testCapletPrice(int lmmType, int volType, int corrType);
 // BONDCALL PRICE
 
 /** <p>Allocates  LMM in dimension n (user supplied) with quarterly compounding
- *  and prices the at the money 
- *  call on a bond along \f$[T_p,T_q]\f$ exercisable at time \f$T_p\f$ where 
- *  \f$p=n/3, q=2*n/3\f$. Coupons initialized randomly with \f$c_j\in[0.5,1.5]\f$.
- *
- *  <p>For each dimension the test is carried out for accrual intervals of length
- *  \f$\delta_j=0.1,0.5\f$. With increasing delta the predictor corrector 
- *  algorithm becomes less accurate.
+ *  and prices the at the money call on a bond along \f$[T_p,T_q]\f$ 
+ *  exercisable at time \f$T_p\f$ where \f$p=n/3, q=2*n/3\f$. 
+ *  Coupons are initialized randomly with \f$c_j\in[0.5,1.5]\f$.
  *
  *  <p>The Monte Carlo forward price is computed from 8192=2^{13}
  *  Libor paths and compared to the analytic price both using an MC
@@ -177,9 +173,15 @@ void testCallOnZeroCouponBondPrice(int lmmType, int volType, int corrType);
  *
  ******************************************************************************/
 
-/** Asks for the number of factors and dimension n and then builds a 
+/** Asks for the number of factors and dimension n (user supplied) and then builds a 
  *  corresponding Lmmlattice with n time steps (one time step per accrual interval)
- *  and runs the selftest on the lattice.
+ *  and runs the selftest on the lattice. This is useful to determine how many
+ *  time steps a lattice can make with the amount of RAM on your machine. 
+ *
+ *  <p>To determine that set the constant <code>LATTICE_MAX_STEPS</code> in 
+ *  TypedefsMacros.h to a large value (say 5000) and then run the test 
+ *  with increasing values of n. For 1GB RAM start with n=310. Watch if the system
+ *  goes into virtual memory.
  */
 void testLmmLattice();
 

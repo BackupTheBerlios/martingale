@@ -1,22 +1,27 @@
-/* WARANTY NOTICE AND COPYRIGHTThis program is free software; you can redistribute it and/ormodify it under the terms of the GNU General Public Licenseas published by the Free Software Foundation; either version 2of the License, or (at your option) any later version.This program is distributed in the hope that it will be useful,but WITHOUT ANY WARRANTY; without even the implied warranty ofMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See theGNU General Public License for more details.You should have received a copy of the GNU General Public Licensealong with this program; if not, write to the Free SoftwareFoundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.Copyright (C) Michael J. Meyermatmjm@mindspring.comspyqqqdia@yahoo.com*/
-
-
 
 #include "Random.h"
 #include "Utils.h"
 #include <cmath>
 
+
 using std::erf;
+using std::cerr;
+using std::endl;
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 MTGL_BEGIN_NAMESPACE(Random)
 
+
 // static initialization
-unsigned long MersenneTwister::mag01[2]={0x0, MATRIX_A};
-		
+unsigned long 
+MersenneTwister::mag01[2]={0x0, MATRIX_A};
+
+MersenneTwister MT19937;
+
+
 MersenneTwister::
-MersenneTwister(ulong seed=4357) : mt(new ulong[MT_N]), mti(MT_N+1)
-{
+MersenneTwister(unsigned long seed) : mt(new unsigned long[MT_N]), mti(MT_N)
+{	
     // state vector intialization
     for (int i=0;i<MT_N;i++) {
 		
@@ -25,7 +30,6 @@ MersenneTwister(ulong seed=4357) : mt(new ulong[MT_N]), mti(MT_N+1)
         mt[i] |= (seed & 0xffff0000) >> 16;
         seed = 69069 * seed + 1;
     }
-    mti = MT_N;
 }
 
 
@@ -44,7 +48,7 @@ u01()
         }
         for (;kk<MT_N-1;kk++) {
             y = (mt[kk]&UPPER_MASK)|(mt[kk+1]&LOWER_MASK);
-            mt[kk] = mt[kk+MT_D] ^ (y >> 1) ^ mag01[y & 0x1];
+            mt[kk] = mt[kk-MT_D] ^ (y >> 1) ^ mag01[y & 0x1];
         }
         y = (mt[MT_N-1]&UPPER_MASK)|(mt[0]&LOWER_MASK);
         mt[MT_N-1] = mt[MT_M-1] ^ (y >> 1) ^ mag01[y & 0x1];
@@ -62,6 +66,14 @@ u01()
     return ( ((double)y + 1.0) * 2.3283064359965952e-10 ); 
     /* return y; for integer generation */
 } 
+
+
+Real 
+U01(){ return MT19937.u01(); } 
+
+
+int 
+Uint(int n){ return (int) (n*U01()); }
 
 
 int 
@@ -156,22 +168,12 @@ nInverse(Real x)
     return z;
 
 } // end nInverse
-  
-
-MersenneTwister MT19937;
-
-Real 
-U01(){ return MT19937.u01(); } 
-
-
-int 
-Uint(int n){ return (int) (n*U01()); }
    
 
 Real 
 sTN(){ return nInverse(U01()); }
 
- 
+
 
 
 MTGL_END_NAMESPACE(Random)

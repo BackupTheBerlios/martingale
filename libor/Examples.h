@@ -72,30 +72,20 @@ void timeMatrixMultiply(int dim, int N);
 
 /**<p>We compute the matrix exponentials <code>H(t)=exp(At), K(t)=exp(-At)</code>
  * for <code>t=1</code>, where A is a (constant) upper triangular dim by dim matrix 
- * and time t is a real number.</p>
+ * and time t is a real number.
  *
  * The computation simulates the paths <code>t -> H(t),K(t)</code> until time
- * <code>t=1</code> using the dynamics <code>dH(t)=H(t)Adt, dK(t)=-K(t)Adt</code>. 
+ * <code>t=1</code> using the dynamics 
+ * \f[dH(t)=H(t)Adt,\quad dK(t)=-K(t)Adt.\f]
  * The purpose is to determine what step sizes are necessary to obtain reasonable 
- * accuracy and how long such a computation takes in various dimensions.</p>
+ * accuracy and how long such a computation takes in various dimensions.
  *
  * <p>This path dynamics is discretized as
- * <center>H(t+dt)-H(t)=H(t)Adt, ie. H(t+dt)=H(t)(I+Adt)</center>
- * <center>K(t+dt)-K(t)=-K(t)Adt, ie. K(t+dt)=K(t)(I-Adt)</center>
- * and computes the exponential <code>exp(At)</code> as
- * <code>(1+Adt)^{t/dt}=(1+At/m)^m</code> where <code>m=t/dt</code> in 
- * accordance with the limit formula <code>(1+x/m)^m -> e^x, m->oo</code>.
- * So if we want the exponentials <code>exp(At)</code> for only one value
- * of <code>t</code> then there are faster methods to do this (let m be a 
- * power of 2 and use repeated squaring). However in the simulation of 
- * forward Libors we actually have to carry out a path computation as above.
- * </p>
- *
- * <p>The accuracy is checked by checking the relationship 
- * <code>K(t)=H(t)^{-1}</code>, that is, <code>H(t)K(t)=K(t)H(t)=I</code>.</p> 
- *
- * @param dim matrix dimension
- * @param dt step size in the matrix path dynamics
+ * \f[H(t+dt)-H(t)=H(t)Adt,\quad\hbox{ie.}\quad H(t+dt)=H(t)(I+Adt).\f]
+ * \f[K(t+dt)-K(t)=-K(t)Adt,\quad\hbox{ie.}\quad K(t+dt)=K(t)(I-Adt).\f]
+ * The accuracy is checked by checking the relationship 
+ * <code>K(t)=H(t)^{-1}</code>, that is, <code>H(t)K(t)=K(t)H(t)=I</code>.
+ * Matrix dimension <code>dim</code> and step size <code>dt</code> are user supplied.
  */
 void matrixExponentials();
 
@@ -113,7 +103,7 @@ void matrixExponentials();
     /** Allocates sample Libor process in dimension n
      *  then times the computation of N full Libor paths.
      *  Note the dramatic speedup if SUBSCRIPT_CHECK is undefined
-     *  in Array.h and Matrices.h.
+     *  in Array.h.
      */   
     void liborPathTiming(int n, int N);	
 	

@@ -31,7 +31,9 @@ spyqqqdia@yahoo.com
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
-
+/** separation between program outputs on the console.
+ */
+void printStars();
 
 
 /***************************************************************************************

@@ -302,12 +302,12 @@ correlationMatrix(n-1,1)
    
 Correlations* 
 Correlations::
-sample(int n, int type)
+sample(int m, int type)
 {
     switch(type){
 		   
-	    case JR : return JR_Correlations::sample(n); 
-	    default : return CS_Correlations::sample(n); 
+	    case JR : return JR_Correlations::sample(m); 
+	    default : return CS_Correlations::sample(m); 
     }
 }
 
@@ -358,8 +358,8 @@ setParameters(Real alpha_, Real beta_, Real r_oo_)
 // JR_Correlations
 
 JR_Correlations::
-JR_Correlations(const RealArray1D& T_, Real beta) : 
-Correlations(T_.getDimension()-1,0.0,beta,0.0,JR), T(T_) 	
+JR_Correlations(const RealArray1D& T_, Real beta_) : 
+Correlations(T_.getDimension()-1,0.0,beta_,0.0,JR), T(T_) 	
 { 
 	setCorrelations(); 
 }
@@ -377,13 +377,13 @@ setCorrelations()
 
 Correlations* 
 JR_Correlations::
-sample(int n, Real delta=0.25)
+sample(int m, Real delta=0.25)
 { 
-	RealArray1D T(n+1); T[0]=0.0;
-	for(int i=0;i<n;i++) T[i+1]=T[i]+delta;
+	RealArray1D T(m+1); T[0]=0.0;
+	for(int i=0;i<m;i++) T[i+1]=T[i]+delta;
 		
-	Real beta=0.1;
-	return new JR_Correlations(T,beta); 
+	Real beta_=0.1;
+	return new JR_Correlations(T,beta_); 
 }
 	
 
@@ -400,8 +400,8 @@ printSelf(ostream& os) const
 
 // CS_Correlations
 CS_Correlations::
-CS_Correlations(int n_, Real alpha_, Real beta_, Real r_oo_) : 
-Correlations(n_,alpha_,beta_,r_oo_,CS) 	
+CS_Correlations(int m, Real alpha_, Real beta_, Real r_oo_) : 
+Correlations(m,alpha_,beta_,r_oo_,CS) 	
 { 
 	setCorrelations(); 
 }
@@ -442,10 +442,10 @@ printSelf(ostream& os) const
 
 Correlations* 
 CS_Correlations::
-sample(int _n)
+sample(int m)
 { 
-	Real _alpha=1.8, _beta=0.1, _r_oo=0.4;
-	return new CS_Correlations(_n,_alpha,_beta,_r_oo);
+	Real alpha_=1.8, beta_=0.1, r_oo_=0.4;
+	return new CS_Correlations(m,alpha_,beta_,r_oo_);
 }
 
 

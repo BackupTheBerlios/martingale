@@ -26,18 +26,18 @@ spyqqqdia@yahoo.com
 // INCLUDES IN ORDER
 
 
-// #include "TestOptimizers.h"
-// #include "TestProbability.h"
-// #include "FinMath.h"
-// #include "Examples.h"
-// #include "TestMatrix.h"
-// #include "VolatilityAndCorrelation.h"
- #include "TestLMM.h"
-// #include "LiborCalibrator.h"
-// #include "ExercisePlot.h"
-// #include "TestFormulas.h"
-// #include "DirichletProblem.h"
-// #include "LiborMarketModel.h"
+#include "TestOptimizers.h"
+#include "TestProbability.h"
+#include "FinMath.h"
+#include "Examples.h"
+#include "TestMatrix.h"
+#include "VolatilityAndCorrelation.h"
+#include "TestLMM.h"
+#include "LiborCalibrator.h"
+#include "ExercisePlot.h"
+#include "TestFormulas.h"
+#include "DirichletProblem.h"
+#include "LiborMarketModel.h"
  
 
 
@@ -65,7 +65,7 @@ int main()
  *
 *******************************************************************************/
 	
-    // testSTNCovarianceMatrix(600,10000);
+    // testSTNCovarianceMatrix(60,10000);
     // testPathFunctional(9,15,100000);
 	
 /*******************************************************************************
@@ -108,7 +108,7 @@ int main()
 	
 	 // Test_LMM::testLmmPaths(20);
 
-	 // Examples::liborPathTiming(30,20000);         // 20000 paths in dimension 30
+	 // Examples::liborPathTiming(30,2000);         // 20000 paths in dimension 30
 	
 	
 	// anomalies in high dimensions (n>=70) for all but DriftlessLMM,
@@ -124,7 +124,7 @@ int main()
 	
 	// Libor derivatives in the driftless LMM with constant volatilities, 
 	// includes lattice pricing
-     Test_LMM::testLiborDerivative();
+    // Test_LMM::testLiborDerivative();
 	
 	
 
@@ -191,8 +191,8 @@ int main()
 	 // Real dt=0.01;
 	 // Examples::brownianMotionInBall(dim,T,dt,nPath); //<----Subscript out of range exception---->	
 	
-     // int dim=30, T=10;
-	 // DirichletProblemExample::runExample(dim,T);
+
+	 DirichletProblemExample::runExample();
 	
 
 

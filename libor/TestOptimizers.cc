@@ -22,6 +22,9 @@ spyqqqdia@yahoo.com
 
 #include "TestOptimizers.h"
 #include "Optimizer.h"
+#include "Utils.h"
+
+using std::cout;
 
 
 MTGL_BEGIN_NAMESPACE(Martingale)
@@ -30,7 +33,9 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 void 
 testDownhillSimplex(int n, int steps)
 {
-     RealArray1D x(n);
+     printStars();
+	 cout << "\n\nTesting Downhill Simplex.";
+	 RealArray1D x(n);
      for(int i=0;i<n;i++)x[i]=1.6+(i%2)*0.6;
          
      Real delta=0.3;
@@ -47,7 +52,9 @@ testDownhillSimplex(int n, int steps)
 void 
 testBFGS(int n, int nVals)
 {
-     RealArray1D x(n), h(n);
+     printStars();
+	 cout << "\n\nTesting BFGS.";
+	 RealArray1D x(n), h(n);
      for(int i=0;i<n;i++){ x[i]=1.6+(i%2)*0.6; h[i]=0.1; }
          
      Real stepmax=0.3;
@@ -65,6 +72,8 @@ testBFGS(int n, int nVals)
 void 
 testSobolSearch(int n, int nVals)
 {
+     printStars();
+	 cout << "\n\nTesting Sobol search.";
      RealArray1D x(n), delta(n);
      for(int i=0;i<n;i++){ x[i]=1.6+(i%2)*0.6; delta[i]=0.5; }
          

@@ -117,8 +117,7 @@ sample(int n, int volType=VolSurface::JR, int corrType=Correlations::CS)
 	RealArray1D c(n);        // k_j
 	RealArray1D L0(n);
     for(int i=0;i<n;i++)
-	{ deltas[i]=0.25; c[i]=0.2+0.1*Random::U01(); L0[i]=0.04; }
-				
+	{ deltas[i]=0.25; c[i]=0.2+0.1*Random::U01(); L0[i]=0.04; }				
 	VolSurface* vols = VolSurface::sample(volType);
 	Correlations* corrs = Correlations::sample(n,corrType);
 			

@@ -513,11 +513,14 @@ printSelf(ostream& os) const
 BondCall::
 BondCall(Bond* D, Real strike, int s) : 
 // Libors L_j, j>=s needed until time T_s (forward transporting)
-LiborDerivative(D->getLMM(),s,true,true,true,true),     
+LiborDerivative(D->getLMM(),s,false,true,true,true),     
 B(D),
 p(D->get_p()), q(D->get_q()), 
 K(strike), t(s)
-{   }
+{   
+	// analytic price implemented only for driftless LMM
+	if(D->getLMM()->getType()->type==LiborMarketModelType::DL) hasAnalytic_=true;
+}
 	
 	
 BondCall* 

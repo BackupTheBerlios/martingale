@@ -26,6 +26,8 @@ spyqqqdia@yahoo.com
 #include "StochasticProcesses.h"
 #include "QuasiMonteCarlo.h"
 
+using std::cout;
+
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
@@ -33,6 +35,9 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 void 
 testSTNCovarianceMatrix(int d, int N)
 {
+    printStars();
+    cout << "\n\nComputing standard normal covariance matrix in dimension " << d
+	     << "\nSamples size: " << N;
     StandardNormalVector Z(d);
 	Timer watch;
     watch.start();
@@ -58,8 +63,7 @@ testSTNCovarianceMatrix(int d, int N)
 	} // end for i
 			
 	watch.stop();	
-    std::cout << endl << "Standard normal covariance matrix, dimension: " << d
-	          << endl << "Maximal diagonal element: " << maxdiag
+    std::cout << endl << "Maximal diagonal element: " << maxdiag
 	          << endl << "Minimal diagonal element: " << mindiag
 	          << endl << "Maximal offdiagonal element: " << maxoffdiag
 	          << endl << "Minimal diagonal element: " << minoffdiag;

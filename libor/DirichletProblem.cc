@@ -23,7 +23,11 @@ spyqqqdia@yahoo.com
 
 #include "DirichletProblem.h"
 #include "StochasticProcesses.h"
+#include "Utils.h"
 #include <iostream>
+#include <cmath>
+
+using std::floor;
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
@@ -80,25 +84,36 @@ boundaryFunction(const RealVector& u)
 	
 void 
 DirichletProblemExample::	
-runExample(int d, int T)
+runExample()
 {
-	std::cout << "\n\nSolution f(x) of the Dirichlet problem on the unit ball"
+    int do_again=1;
+    // main loop
+    while(do_again==1){	
+        
+        printStars();
+	cout << "\n\nSolution f(x) of the Dirichlet problem on the unit ball"
 	     << "\nfor the boundary function h(x_1,x_2,...,x_d)=x_1+x_2+...+x_d"
-	     << "\nat the point x_1=x_2=...=x_d=0.75."
-	     << "\nDimension  d = " << d;
-		
+	     << "\nat the point x_1=x_2=...=x_d=1/(2*sqrt(d))."
+	     << "\n\nEnter dimension  d = ";
+	
+        int d; cin >> d;
+        int T =(int) floor(10.0*(d+20)/d);	
 	DirichletProblemExample Example(d,T);
 	RealVector x(d);
 	for(int i=0;i<d;i++) x[i]=1.0/(2*sqrt(d));
 			
-	cerr << "\n\nAnalytic: f(x) = " << Example.boundaryFunction(x);
-	cerr << "\nMonte Carlo computation...";
-	Real fx=Example.solution(x,30000,true);
-	cerr << "\nMonte Carlo: f(x) = " << fx 
+	cout << "\n\nAnalytic: f(x) = " << Example.boundaryFunction(x);
+	cout << "\nMonte Carlo computation...";
+	Real fx=Example.solution(x,100000,true);
+	cout << "\nMonte Carlo: f(x) = " << fx 
 	     << "\nQuasi Monte Carlo computation...";
 	Example.X->switchToQMC();
 	fx=Example.solution(x,30000,true);
-	cerr << "\nQuasi Monte Carlo: f(x) = " << fx;
+	cout << "\nQuasi Monte Carlo: f(x) = " << fx;
+
+	cout << "\n\nDo another run (yes = 1, no = 0) do_again = ";
+	cin >> do_again;
+    }
 } 
 
 

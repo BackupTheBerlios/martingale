@@ -63,7 +63,8 @@ testLiborFactorLoadingFactorization(int n, int r)
 	for(int volType=0;volType<3;volType++)
 	for(int corrType=0;corrType<2;corrType++){
 		
-	   cout << "\nTesting Libor factor loading," 
+	   printStars();	
+	   cout << "\n\nTesting Libor factor loading," 
 		    << "\ncorrelation matrices low rank factorization:" 
 		    << "\nVolatility surface type = VolSurface::" << volType
             << "\nCorrelation type = Correlations::" << corrType;
@@ -90,6 +91,7 @@ testLmmPaths(int n)
 	for(int corrType=0;corrType<2;corrType++){
 		
 		LiborMarketModel* lmm=LiborMarketModel::sample(n,lmmType,volType,corrType);
+		printStars();
 		cout << "\n\n5 Libor paths, LMM type: " << *(lmm->getType()) 
 		     << endl << endl;
 		for(int path=0;path<5;path++){
@@ -110,13 +112,16 @@ testSwaptionPrice(int lmmType, int volType, int corrType)
 	// main loop
 	while(do_again==1){
 	
-	    cout << "\n\nPricing swaption along [T_p,T_q] at p=n/3, q=n"
-	         << "\nEnter dimension n of Libor process: n = ";
-	    int n; cin >> n;
+		printStars();
+	    cout << "\n\nPricing swaption along [T_p,T_n] "
+	         << "in LMM of dimension n."
+		     << "\n\nEnter p = ";
+	    int p; cin >> p;
+		cout << "Enter n = ";
+		int n; cin >> n;
 		
     	Timer watch; watch.start();
-	    int p=n/3, q=n;
-        Swaption* swpn=Swaption::sample(p,q,lmmType,volType,corrType);
+        Swaption* swpn=Swaption::sample(p,n,lmmType,volType,corrType);
 	    swpn->testPrice(8192);
 	    watch.stop(); watch.report(" ");
 
@@ -134,6 +139,7 @@ testCapletPrice(int lmmType, int volType, int corrType)
 	// main loop
 	while(do_again==1){
 	
+		printStars();
 	    cout << "\n\nPricing caplet at i=n/3."
 	         << "\nEnter dimension n of Libor process: n = ";
 	    int n; cin >> n;
@@ -157,12 +163,16 @@ testCallOnBondPrice(int lmmType, int volType, int corrType)
 	// main loop
 	while(do_again==1){
 	
-	    cout << "\n\nPricing at the money call on bond with random coupons."
-	         << "\nEnter dimension n of Libor process: n = ";
-	    int n; cin >> n;
+		printStars();
+	    cout << "\n\nPricing at the money call on bond along [T_p,T_q] "
+		     << "with random coupons c_j in [0.5,1.5]"
+	         << "\n\nEnter p = ";
+	    int p; cin >> p;
+		cout << "Enter q = ";
+	    int q; cin >> q;
 		
 	    Timer watch; watch.start();
-	    BondCall* bc=BondCall::sample(n,lmmType,volType,corrType);
+	    BondCall* bc=BondCall::sample(p,q,lmmType,volType,corrType);
 	    bc->testPrice(8192);
 	    watch.report(" ");
 
@@ -180,12 +190,15 @@ testCallOnZeroCouponBondPrice(int lmmType, int volType, int corrType)
 	// main loop
 	while(do_again==1){
 	
-	    cout << "\n\nPricing at the mnoey call on zero coupon bond."
-	         << "\nEnter dimension n of Libor process: n = ";
-	    int n; cin >> n;
+		printStars();
+	    cout << "\n\nPricing at the money call expiring at T_{p-1}"
+		     << "\non zero coupon bond maturing at T_p"
+		     << "\nin LMM of dimension p+3."
+	         << "\n\nEnter p = ";
+	    int p; cin >> p;
 		
 	    Timer watch; watch.start();		
-	    BondCall*  bc=BondCall::sampleCallOnZeroCouponBond(n,lmmType,volType,corrType);
+	    BondCall*  bc=BondCall::sampleCallOnZeroCouponBond(p,lmmType,volType,corrType);
 	    bc->testPrice(8192);
 	    watch.report(" ");
 
@@ -203,8 +216,9 @@ testLmmLattice()
 	// main loop
 	while(do_again==1){
 	
+		printStars();
 	    cout << "\n\nBuilding and testing a lattice for the driftless libor market model:"
-	         << "\nEnter dimension n of Libor process: n = ";
+	         << "\n\nEnter dimension n of Libor process: n = ";
 	    int n; cin >> n;
 	    cout << "Enter number r of factors (2 or 3): r = ";
 	    int r; cin >> r;
@@ -258,9 +272,8 @@ testBermudanSwaption()
 void
 testCallOnBond()
 {
-    cout << "\nCoupons will be intialized randomly."
-	     << "\nInterval [T_p,T_q] for which coupons are received:"
-		 << "\nEnter p = ";
+    cout << "\nBond with random coupons c_j in [0.5,1.5] on [T_p,T_q]."
+		 << "\n\nEnter p = ";
 	int p; cin >> p;
     cout << "Enter q = ";
     int q; cin >> q;
@@ -277,7 +290,7 @@ void
 testCallOnZeroCouponBond()
 {
     cout << "\nZero coupon bond matures at T_p:"
-		 << "\nEnter p = ";
+		 << "\n\nEnter p = ";
 	int p; cin >> p;
 	cout << "Enter number of Libor paths: ";
     int nPath; cin >> nPath;
@@ -291,8 +304,8 @@ testCallOnZeroCouponBond()
 void
 testCaplet()
 {
-    cout << "\nCaplet on [T_i,T_{i+1}], i=n/3"
-	     << "\nEnter dimension n of Libor process, n =";
+    cout << "\nCaplet on [T_i,T_{i+1}], i=n/3 in LMM of dimension n."
+	     << "\n\nEnter n = ";
 	int n; cin >> n;
 	cout << "Enter number of Libor paths: ";
     int nPath; cin >> nPath;
@@ -310,7 +323,8 @@ testLiborDerivative()
 	// main loop
 	while(do_again==1){
 	
-	    cout << "\n\nPricing of at the money Libor derivatives"
+	    printStars();
+		cout << "\n\nPricing of at the money Libor derivatives"
 		     << "\nin the default driftless Libor Market Model."
 		     << "\nChoose derivative:"
 		     << "\nCaplet (0)"
@@ -318,7 +332,7 @@ testLiborDerivative()
 		     << "\nBermudan swaption (2)"
 		     << "\nCall on bond (3)"
 		     << "\nCall on zero coupon bond (4)" 
-		     << "\nDerivative = ";
+		     << "\n\nDerivative = ";
 		     
 		int derivative; cin>>derivative;
 		switch(derivative){

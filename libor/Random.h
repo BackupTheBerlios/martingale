@@ -10,7 +10,7 @@
 /* Period parameters */  
 #define MT_N 624
 #define MT_M 397
-#define MT_D 221               // MT_N-MT_M
+#define MT_D 227               // MT_N-MT_M
 #define MATRIX_A 0x9908b0df    // constant vector a 
 #define UPPER_MASK 0x80000000  // most significant w-r bits 
 #define LOWER_MASK 0x7fffffff  // least significant r bits 
@@ -47,18 +47,17 @@ MTGL_BEGIN_NAMESPACE(Random)
  */
 class MersenneTwister {
 	
-    typedef unsigned long ulong;
-    ulong* mt;                     // the array for the state vector 
+    unsigned long* mt;             // the array for the state vector 
     int mti;                       // mti==N+1 means mt[N] is not initialized 
 	
-	// mag01[x] = x * MATRIX_A  for x=0,1 
-	static unsigned long mag01[2];
+    // mag01[x] = x * MATRIX_A  for x=0,1 
+    static unsigned long mag01[2];
 		
 public : 
 
 /** @param seed seed used to initialize state vector
  */
-MersenneTwister(ulong seed=4357);
+MersenneTwister(unsigned long seed=4357);
 
 /** Next uniform real in (0,1). */
 Real u01();

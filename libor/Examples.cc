@@ -33,6 +33,10 @@ spyqqqdia@yahoo.com
 #include "FastPredictorCorrectorLMM.h"
 #include "StochasticProcesses.h"
 
+using std::cout;
+using std::cin;
+using std::endl;
+
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 MTGL_BEGIN_NAMESPACE(Examples)
@@ -41,6 +45,8 @@ MTGL_BEGIN_NAMESPACE(Examples)
 void 
 timeSTN()
 {
+    printStars();
+	cout << "\n\nTiming 100 million standard normal deviates.";
     Timer watch;
 	watch.start();
     for(int i=0;i<100000000;i++) Random::sTN(); 
@@ -56,10 +62,11 @@ timeMatrixMultiply(int dim, int N)
 	RealMatrix B(dim);
 	Timer watch;
 	
-	std::cout << "\n\nTiming square matrix times square matrix\n"
-	          << "in dimension " << dim << ", for " << N << " products."
-	          << endl << endl 
-	          << "Optimal memory access pattern: " << endl;
+    printStars();
+	cout << "\n\nTiming square matrix times square matrix\n"
+	     << "in dimension " << dim << ", for " << N << " products."
+	     << endl << endl 
+	     << "Optimal memory access pattern: " << endl;
     watch.start();
 	// loop over the multiplications
 	for(int n=0;n<N;n++){
@@ -96,9 +103,13 @@ timeMatrixMultiply(int dim, int N)
 void 
 matrixExponentials()
 {
-    std::cout << endl << "Enter matrix dimension: ";
+    printStars();
+	cout << "\n\nComputing matrix exponentials H(t)=exp(At), K(t)=exp(-At) and checking"
+	     << "\nH(t)K(t)=K(t)H(t)=I for t=1.0."
+	     << "\nComputation as semigroups with dynamics dH(t)=AH(t)dt, dK(t)=-AK(t)dt."
+	     << "\n\nEnter matrix dimension: ";
 	int dim; cin >> dim;
-    std::cout << endl << "Enter step size dt (roughly 0.1): ";
+    cout << endl << "Enter step size dt (roughly 0.01): ";
 	Real dt; cin >> dt;
 	// make string conversion available
 	Int_t Dim(dim);  Real_t Dt(dt);
@@ -147,14 +158,18 @@ liborPathTiming(int n, int N)
 {
     Timer watch;
 	for(int lmmType=0;lmmType<4;lmmType++){
-			
+		
+		printStars();
+		cout << "\n\nTiming Libor paths.";
         int volType=VolSurface::JR,
 		    corrType=Correlations::CS;
 		LiborMarketModel* lmm=LiborMarketModel::sample(n,lmmType,volType,corrType);
         watch.start();
 		for(int i=0;i<N;i++) lmm->newPath();
 		watch.stop();
-		cout << '\n' << *(lmm->getType());
+		cout << endl << *(lmm->getType())
+		     << "\nPaths: " << N
+		     << "\nDimension: " << n;
 		watch.report(" ");
 	}		
 } // end liborPathTiming
@@ -163,6 +178,10 @@ liborPathTiming(int n, int N)
 void 
 brownianMotionInBall(int dim, int T, Real dt, int N)
 {
+    printStars();
+	cout << "\n\nComputing mean time for Standard Brownian motion launched at the origin"
+	     << "\nto hit on boundary of unit ball in dimension " << dim
+	     << "\nPaths: " << N;
 	Region< RealVector >* D=new Ball(dim,1.0);
 	VectorProcess* X=new VectorBrownianMotion(dim,T,dt);
 	StoppingTime* tau=new FirstExitTime<RealVector,Real>(X,D);
@@ -173,8 +192,7 @@ brownianMotionInBall(int dim, int T, Real dt, int N)
 		Real t=X->newPathSegment(tau);
 		sum+=t;
 	}
-	cout << endl << endl
-	     << "Mean time to hit boundary: " << dt*sum/N;
+	cout << "\n\nMean time to hit boundary: " << dt*sum/N;
 }
 	
 
