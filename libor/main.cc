@@ -27,9 +27,9 @@ spyqqqdia@yahoo.com
 
 
 // #include "FinMath.h"
-// #include "TestMatrix.h"
+ #include "TestMatrix.h"
 // #include "TestProbability.h"
- #include "TestLMM.h"
+// #include "TestLMM.h"
 // #include "TestOptimizers.h"
 // #include "LatticeOption.h"
 // #include "TestFormulas.h"
@@ -79,6 +79,7 @@ int main()
 	// Examples::timeMatrixMultiply(1000,1);          
 	// testMatrixMultiply();
 	// testMatrixExponentials();
+	testSymmetricMatrixExponentials();
 	// testComplexExponential();
 	// TnT::factorizationTest(80);
 	
@@ -103,7 +104,7 @@ int main()
 	
 	
 	
-	// testFactorLoading(20);
+	// testLiborFactorLoading(20);
 	// testLiborFactorLoadingFactorization(60,3);    // rank 3 factorization
 	
 	// testLmmPaths(20);
@@ -112,11 +113,11 @@ int main()
 	
 	
 	// anomalies in high dimensions (n>=70) for all but DriftlessLMM,
-	     int n=30;                          // dimension
+/*	     int n=30;                          // dimension
 	     int lmmType=LiborMarketModel::PC;  // DL, LFDL, PC, FPC
 	     int volType=VolSurface::M;         // JR, M, CONST
          int corrType=Correlations::CS;     // JR, CS
-
+*/
 	// testCapletPrice(n,lmmType,volType,corrType); 
 	// testSwaptionPrice(n,lmmType,volType,corrType);
 	// testCallOnBondPrice(lmmType,volType,corrType);

@@ -127,7 +127,7 @@ covariationMatrixRoots(T)
 		
     for(int t=0;t<T;t++){			
 	
-		const UTRMatrix<Real>& cv_t=factorLoading->covariationMatrix(t*dt,(t+1)*dt);
+		const UTRRealMatrix& cv_t=factorLoading->covariationMatrix(t*dt,(t+1)*dt);
         covariationMatrixRoots[t]=&(cv_t.utrRoot());
 	}
 } // end constructor
@@ -144,7 +144,7 @@ void
 GaussianMartingale::
 timeStep(int t)
 {
-    const UTRMatrix<Real>& R=*(covariationMatrixRoots[t]);
+    const UTRRealMatrix& R=*(covariationMatrixRoots[t]);
     RealVector& Xt=*(path[t]);
     RealVector& X=*(path[t+1]);
 		

@@ -22,7 +22,7 @@ spyqqqdia@yahoo.com
 
 
 
-#include "Matrices.h"
+
 #include "Array.h"
 #include "LiborFactorLoading.h"
 #include "Random.h"
@@ -211,8 +211,10 @@ selfTest() const
 		
 		const UTRRealMatrix& C=logLiborCovariationMatrix(t);
 		const UTRRealMatrix& L=logLiborCovariationMatrixRoot(t);
+		Matrix<Real,UpperTriangular<Real> >& LLt=L.aat();
+		LLt.setRowIndexBase(t+1); LLt.setColIndexBase(t+1);   // make equal to C
 		cout << "\nt = " << t << ": ";
-		C.testEquals(L.aat(),precision,epsilon,"C=L*L'");
+		C.testEquals(LLt,precision,epsilon,"C=L*L'");
 	}
 
 } // end test
