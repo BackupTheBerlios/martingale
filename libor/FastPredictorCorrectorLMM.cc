@@ -26,6 +26,8 @@ spyqqqdia@yahoo.com
 #include "StochasticGenerator.h"
 #include "LiborFactorLoading.h"
 #include <cmath>
+//#include <math.h>
+#include <algorithm>
 using namespace Martingale;
 
 
@@ -142,8 +144,8 @@ printWienerIncrements(int t, int s) const
 	 for(int u=t;u<s;u++)
 	 for(int k=u+1;k<n;k++){ 
 			
-			cout << Z(u,k) << " "; 
-            if(k==n-1) cout << endl; 
+			std::cout << Z(u,k) << " "; 
+            if(k==n-1) std::cout << endl; 
 	}
 } // end printWienerIncrements
 	
@@ -179,7 +181,7 @@ timeStep(int t, int p)
      // compute predicted Libors using the cached deterministic drift
      // steps m0(t,j)
      for(int j=q;j<n;j++){ Y(t+1,j)=Y(t,j)+m0(t,j)+V[j];
-                           X(t+1,j)=exp(Y(t+1,j)); }
+                           X(t+1,j)=std::exp(Y(t+1,j)); }
     
      // actual drift step using the predicted Libors
      for(int k=q+1;k<n;k++) G[k]=0.5*(2-1/(1+X(t,k))-1/(1+X(t+1,k)));
@@ -191,7 +193,7 @@ timeStep(int t, int p)
 
      // recompute the Libors with new drift step
      for(int j=q;j<n;j++){ Y(t+1,j)=Y(t,j)+m[j]+V[j];
-                           X(t+1,j)=exp(Y(t+1,j)); }  
+                           X(t+1,j)=std::exp(Y(t+1,j)); }  
       
 }  // end timeStep
 
