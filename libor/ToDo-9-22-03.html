@@ -1,0 +1,87 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<link rel="stylesheet" href="html-info.css" type="text/css">
+</head>
+<body>
+
+
+<h1>TO DO - 9-22-03</h1>
+
+<b>Copy constructors, operator =, destructors</b> are not defined for all classes even if the
+the compiler supplied versions (shallow copy) won't do. A case in point is the class
+LiborMarketModel (LMM). I don't envision a use of this class where these are needed.
+However I cannot know what you want to do. Will be fixed in the future.
+
+<p>
+
+<b>Resource ownership:</b> for each matrix function returning a reference document if the user 
+has to deallocate the resource. 
+
+<p>
+
+<b>LmmLattice</b>
+<ul>
+<li><i>Volatility rescaling</i> introduce a parameter which allows us to 
+control to which percent the volatility is rescaled. Swaption price experiments
+indicate that full rescale overshoots the target.</li>
+
+<li><i>Exercise times:</i> Since the method <code>Option::isExercisable(Real t)</code>
+uses continuous time t, the lattice pricing code in Pricing.h relies
+on the comparison of floats when instantiated for Bermudan swaptions. 
+This is fragile and works only if the exercise times are exact integral multiples of the
+lattice time step. Reflect upon alternatives.</li>
+</ul>
+
+<p>
+
+<b>Control variates:</b> seem to have an adverse effect despite extremely high 
+correlation.  Investigate this by computing the mean and variance of the caplet price over say 20
+runs for caplets in a PC LMM (where we have exact analytics) with and without
+control variates.
+
+<p>
+
+<b>LiborMarketModel and drived classes:</b>
+the use of the cache XLvec is the only reason that the member function
+XLvec(t,p) is not constant and that propagates through basically all the
+Libor quantity member functions.
+Reflect upon wether it's worth it or wether we should return from the stack.
+
+<p>
+
+<b>Doxygen-docs</b>
+<ul>
+<li>Write extensive doxygen-docs for LiborCalibrator.h.</li>
+<li>Link all file descriptions to the classes defined in the files.</li>
+</ul>
+
+<p>
+
+<b>Matrix:</b> <code>UTRMatrix&lt;Real&gt;</code> is not the same as 
+<code>UTRRealMatrix</code>. 
+This is due to the fact that there are no templated typdefs. 
+Affects: RandomObject. The covariation matrix has type <code>UTRMatrix&lt;S&gt;</code>.
+Thus the functionality of <code>UTRRealMatrix</code> is not available for RandomObjects 
+with Real scalars (factor analysis, matrix functions). Possible solutions:
+Move the functionality of <code> UTRRealMatrix</code> to the more general type  
+<code>UTRMatrix&lt;S&gt;</code> or limit RandomObjects to Real scalars.
+
+<p>
+
+<b>Headers:</b> clear up the problem with the typedef in forward declarations and remove 
+"#include Matrix.h" from headers if it is not really needed.
+
+<h2>Last: 9-21-03</h2>
+
+Bug in <code>Random::MersenneTwister::u01()</code><br>
+<code>kk+MT_D</code> should be
+<code>kk-MT_D</code>. This writes off the end of the array <code>mt</code>.
+Fixed: 9-22-03.
+
+
+
+</body>
+</html>
+
