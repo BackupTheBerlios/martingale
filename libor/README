@@ -31,15 +31,10 @@ Working on LiborTree2F.h
 TnT.h can be eliminated. Integrated into Matrices.h as global functions.
 
 
-
 6-20-03:
 
-Libortree2F:
+LiborTree2F: 
 
-<-------BUG---------> Node::setStateVariables():
-in the computation of the V_j "V[t]" should read "V[j]".
-
- 
 Matrix inversion of the last two rows of the rank 2 root of the covariation matrix
 is ill conditioned because of the high correlation of V_{n-2}, V_{n-1}.
 Decorrelate these from the beginning.
@@ -52,7 +47,20 @@ to r, that is, the covariation matrices C(t) controlling the time steps are fact
 as C(t) = R(t)R(t)' with R(t) of rank r. Tested on swaption and seems to be working.
 
 SobolVectorDriver inefficient for this LMM since it is allocated in a dimension which 
-assumes that full Libor paths are computed. This dimrension may be too high.
+assumes that full Libor paths are computed. This dimension may be too high.
 No other effect but inefficiency. Cannot be resolved unless a new driver is written.
+
+
+6-21-03:
+
+LiborTree2F: decorrelation V_{n-2}, V_{n-1}  -->  V_{n-2}-V_{n-1}, V_{n-1} implemented.
+No improvement.
+
+6-23-03:
+
+Split up Libortree2F into Lattice.h, Node.h, LmmLattice.h, LatticeOption.h
+To do:
+implement ConstVolLiborLactorLoading, then ConstVolLmmLattice and 
+ConstVolLmmLatticeSwaptions.
 
 
