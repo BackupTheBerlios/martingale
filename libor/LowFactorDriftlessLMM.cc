@@ -85,7 +85,9 @@ lowRankCovariationMatrixRoots(n-1),
 SG(new MonteCarloVectorDriver(r)),
 XVec(n)
 {        
-    // initialize U,Y path arrays
+    // set typeID
+	type=LFDL;
+	// initialize U,Y path arrays
     for(int j=0;j<n;j++){ 
 			
 		U(0,j)=x[j]; for(int k=j+1;k<n;k++) U(0,j)*=1+x[k];
@@ -117,7 +119,7 @@ XVec(n)
 		
 LiborMarketModel* 
 LowFactorDriftlessLMM::
-sample(int n, int r, int volType, int corrType)
+sample(int n, int volType, int corrType, int r=3)
 {
 	LiborFactorLoading* 
 	fl=LiborFactorLoading::sample(n,volType,corrType);
@@ -382,17 +384,12 @@ std::ostream&
 LowFactorDriftlessLMM::
 printSelf(std::ostream& os) const
 {
-	RealVector vols(n); vols[0]=0;
-	for(int i=1;i<n;i++) vols[i]=vol(i); 
-
 	os << "\nDriftless Libor Market Model, random dynamics: ";
     SG->printSelf(os);
-	os << "State variables: Gaussian forward transported Libors" << endl 
+	os << "\nState variables: Gaussian forward transported Libors" << endl 
 	   << "U_j=X_j(1+X_{j+1})...(1+X_{n-1})" << endl
 	   << "These are driftless, very fast exact simulation.";
 	factorLoading->printSelf(os); 
-	os << "\n\nLibor volatilities:\n" << vols; 
-	
 	return os;
 }
 	 

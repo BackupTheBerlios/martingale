@@ -95,6 +95,8 @@ logLiborCovariationMatrixRoots(n-1),
 SG(new MonteCarloLiborDriver(n)),
 XVec(n)
 {  
+    // set typeID
+	type=PC;
     // initialize path arrays
     for(int j=0;j<n;j++){ X(0,j)=x[j]; Y(0,j)=log(x[j]); }
         
@@ -247,14 +249,10 @@ std::ostream&
 PredictorCorrectorLMM::
 printSelf(std::ostream& os) const 
 {
-	RealVector vols(n);
-	for(int i=0;i<n;i++) vols[i]=vol(i); 
-
 	os << "\nLibor market model: predictor-corrector type" << endl
 	   << "\nRandom dynamics: ";
 	SG->printSelf(os);
 	factorLoading->printSelf(os);
-	os << "\n\nLibor volatilities:\n" << vols;
 	return os;
 }
  

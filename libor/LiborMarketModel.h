@@ -32,15 +32,14 @@ spyqqqdia@yahoo.com
 
 #include "TypedefsMacros.h"
 #include "Matrices.h"
-#include <iostream>
+//#include <string>
+//#include <iostream>
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 // we are using
 class LiborFactorLoading;
-
-
 class Bond;  // defined below
 
 /**<p>Libor Market Model based on state variables with Gaussian {@link FactorLoading}.
@@ -70,7 +69,8 @@ class LiborMarketModel {
 protected:
     
 	// initialized from the factorloading
-    int n;                                  // number of forward Libors
+    int n,                                  // number of forward Libors
+	    type;                               // model typeID: DL,FRDL,PC,FPC,
     const RealArray1D& delta;               // delta[t]=T_{t+1}-T_t,length of compounding intervals
     const RealArray1D& T;                   // tenor structure, Tc[t]=T_t
     const RealArray1D& l;                   // initial Libors, l[j]=L_j(0)
@@ -83,12 +83,16 @@ protected:
 public:
 	
 	/** Flags for the type of LMM. 
-	 *  DL ({@link DrifltessLMM}), 
-	 *  PC ({@link PredictorCorrectorLMM}),
+	 *  DL {@link DriftlessLMM}, 
+	 *  LFDL {@link LowFactorDriftlessLMM}
+	 *  PC {@link PredictorCorrectorLMM},
 	 *  FPC {@link FastPredictorCorrectorLMM}.
 	 */
-	static const int DL=0, PC=1, FPC=2;
+	static const int DL=0, LFDL=1, PC=2, FPC=3;
 	
+	/** Type of Libor path simulation.
+	 */
+	std::string modelType();
 	
 
     /** The number n of accrual periods.
@@ -211,6 +215,12 @@ public:
 	  *  <p>Default implementation, returns zero.
 	  */ 
 	 virtual int effectiveDimension(int t, int s) const { return 0; }
+	 
+	 
+	 /** Diagnostic. Print the the standard normal increments driving the current path.
+	  *  Empty implementation.
+	  */
+	 virtual void printWienerIncrements(int s, int t) const { }
 
 
      

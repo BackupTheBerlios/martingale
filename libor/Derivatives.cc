@@ -184,13 +184,14 @@ testPrice()
 	      epsilon=0.00000001;   // replacement for zero denominator in relError
          
 	 // correlation with control variate
+	std::cout << "\n\n\n\n";
 	printSelf(std::cout);                       // cout << *this linkage problems
 	LMM->printSelf(std::cout);                  // cout << *LMM linkage problems
     std::cout << endl << "Effective dimension of the simulation = " 
 	          << effectiveDimension()
 	          << endl;
 		
-	  int nPath=1000;
+	  int nPath=10000;
       // prices
       aprice=analyticForwardPrice();
       mcprice=monteCarloForwardPrice(nPath);
@@ -330,7 +331,7 @@ analyticForwardPrice() const
 std::ostream& 
 Caplet::
 printSelf(std::ostream& os) const
-{ return os << "Caplet Cplt([T_"<<i<<",T_"<<i+1<<"],"<<kappa<<")" << endl; }
+{ return os << "\nCaplet Cplt([T_"<<i<<",T_"<<i+1<<"],"<<kappa<<")"; }
 
 
 
@@ -427,7 +428,7 @@ analyticForwardPrice() const
 std::ostream& 
 Swaption::
 printSelf(std::ostream& os) const
-{  return os << "Swaption Swpn(T_"<<t<<",[T_"<<p<<",T_"<<q<<"],"<<kappa<<")" << endl; }
+{  return os << "\nSwaption Swpn(T_"<<t<<",[T_"<<p<<",T_"<<q<<"],"<<kappa<<")"; }
 
 	
 

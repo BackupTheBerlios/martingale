@@ -22,7 +22,6 @@ spyqqqdia@yahoo.com
 
 #ifndef martingale_typedefsmacros_h
 #define martingale_typedefsmacros_h
-
 #include <string>
 
 /*

@@ -26,7 +26,7 @@ spyqqqdia@yahoo.com
 #include "TypedefsMacros.h"
 #include "Derivatives.h"
 #include "LiborFactorLoading.h"
-#include  "LiborMarketModel.h"            // for inclusion to main.cc
+#include "LiborMarketModel.h"            // for inclusion to main.cc
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
@@ -96,6 +96,26 @@ static void testLiborFactorLoadingFactorization(int n, int r)
  *
  ******************************************************************************/
 
+
+/** Prints 20 paths of \f$X_{n-4}\$. All Libor market model types.
+ */
+void testLmmPaths(int n)
+{
+	for(int lmmType=0;lmmType<4;lmmType++)
+	for(int volType=0;volType<3;volType++)
+	for(int corrType=0;corrType<2;corrType++){
+		
+		LiborMarketModel* lmm=LiborMarketModel::sample(n,lmmType,volType,corrType);
+		std::cout << "\n\n20 Libor paths, LMM type: " << lmm->modelType() 
+		          << endl << endl;
+		for(int path=0;path<2;path++){
+			
+			lmm->newPath();
+		    for(int t=0;t<n-5;t++) std::cout << lmm->XL(n-4,t) << ", ";
+			std::cout << lmm->XL(n-4,n-5) << endl;
+		}
+	}
+}	
 
  
 // SWAPTION PRICE

@@ -27,6 +27,7 @@ spyqqqdia@yahoo.com
 #include "LiborFactorLoading.h"
 #include "Random.h"
 #include "Utils.h"
+#include <string>
 #include <cmath>
 #include <iostream>
 using namespace Martingale;
@@ -42,17 +43,17 @@ using namespace Martingale;
  ******************************************************************************/
  
  
-string 
+std::string 
 VolSurface::
-volSurfaceType(int volType)
+volSurfaceType()
 {
      switch(volType){
 			 
-		 case VolSurface::CONST : return "CONST";
-         case VolSurface::JR : return "JR";
-		 case VolSurface::M : return "M";
+		 case CONST : return "CONST";
+         case JR    : return "JR";
+		 case M     : return "M";
 	}
-	return "  ";
+	return "Unknown volatility surface";
 }
 
 
@@ -131,8 +132,8 @@ std::ostream&
 M_VolSurface::
 printSelf(std::ostream& os) const
 {
-  	return os << "\n\nVolSurface, type book, 6.11.1, " 
-	          << "a=" << a << ", d=" << d << endl;
+  	return os << "\nVolSurface, type book, 6.11.1, " 
+	          << "a=" << a << ", d=" << d;
 }
 	
 
@@ -192,9 +193,8 @@ JR_VolSurface::
 printSelf(std::ostream& os) const 
 {
    	return
-	os << "\n\nVolSurface, type Jaeckel-Rebonato, " 
-	   << "a=" << a << ", b=" << b << ", c=" << c << ", d=" << d 
-	   << endl;
+	os << "\nVolSurface, type Jaeckel-Rebonato, " 
+	   << "a=" << a << ", b=" << b << ", c=" << c << ", d=" << d;
 }
 
 
@@ -208,7 +208,7 @@ std::ostream&
 CONST_VolSurface::
 printSelf(std::ostream& os) const
 {
-   	return os << "\n\nVolSurface, type: constant." << endl;
+   	return os << "\nVolSurface, type: constant.";
 }
 
 
@@ -248,15 +248,14 @@ operator()(int i, int j) { return correlationMatrix(i,j); }
    
 string 
 Correlations::
-correlationType(int corrType)
+correlationType()
 {
      switch(corrType){
 			 
-		 case Correlations::JR : return "JR";
-         case Correlations::CS : return "CS";
-		 default :               return "Unknown-Correlations";
+		 case Correlations::JR : return "JR"; 
+         case Correlations::CS : return "CS";   
 	}
-	return "   ";   // makes compiler happy
+	return "Unknown-Correlations";
 }
 
 // GLOBAL INSERTION
@@ -303,8 +302,8 @@ JR_Correlations::
 printSelf(std::ostream& os) const
 {
 	return
-	os << "\n\nCorrelations: Jaeckel-Rebonato, " 
-	   << "beta=" << beta << endl;
+	os << "\nCorrelations: Jaeckel-Rebonato, " 
+	   << "beta=" << beta;
 }
 
 
@@ -339,9 +338,8 @@ CS_Correlations::
 printSelf(std::ostream& os) const
 {
 	return
-	os << "\n\nCorrelations: Coffee-Shoenmakers, " 
-	   << "alpha=" << alpha << ", beta=" << beta << ", r_oo=" << r_oo 
-	   << endl;
+	os << "\nCorrelations: Coffee-Shoenmakers, " 
+	   << "alpha=" << alpha << ", beta=" << beta << ", r_oo=" << r_oo;
 }
 
 
@@ -362,6 +360,16 @@ sample(int _n)
  *                     LiborFactorLoading
  * 
  ******************************************************************************/
+
+
+std::string
+LiborFactorLoading::
+factorLoadingType()
+{
+	return
+	"\nVolatility surface: "+(vol->volSurfaceType())+
+	"\nCorrelations: "+(corr->correlationType());
+}
 
 
  

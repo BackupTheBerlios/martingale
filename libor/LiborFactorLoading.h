@@ -28,12 +28,13 @@ spyqqqdia@yahoo.com
 
 #include "TypedefsMacros.h"
 #include "Matrices.h"
+#include <string>
+#include <iostream>
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 // we are using
-class std::ostream;
 extern Real exp(Real);
 
 
@@ -137,9 +138,9 @@ public:
 	virtual std::ostream& printSelf(std::ostream& os) const = 0;
 	
 	
-	/** Converts integer type ID to string "CONST, "JR", "M".
+	/** Type of volatility surface "CONST, "JR", "M".
 	 */
-	static string volSurfaceType(int typeID);
+	string volSurfaceType();
 	
 
 }; // end VolSurface
@@ -375,7 +376,7 @@ public:
 	
 	/** Converts integer type ID to string "JR", "CS".
 	 */
-	static string correlationType(int typeID);
+	std::string correlationType();
 	
 	
 }; // end Correlations
@@ -526,7 +527,7 @@ class LiborFactorLoading {
 
 protected:
 	
-    int n;                     // dimension of Y
+    int n;                     // dimension of Y	
     
     RealArray1D delta;         // delta[j]=T[j+1]-T[j]
     RealArray1D T;             // tenor structure T[t]=T_t
@@ -542,6 +543,8 @@ public:
 	
     
 // ACCESSORS
+	
+	std::string factorLoadingType();
     
     /** Number <code>n</code> of forward Libors including \f$L_0(t)\f$.
      */
@@ -579,7 +582,6 @@ public:
 	int getCorrelationType(){ return corr->getType(); }
 	
 	
-	    
     
 // CONSTRUCTOR
 

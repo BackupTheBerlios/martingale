@@ -86,14 +86,16 @@ int main()
 	
 	// testFactorLoading(20);
 	// testLiborFactorLoadingFactorization(60,3);    // rank 3 factorization
+	
+	// testLmmPaths(20);
 
 	// Examples::liborPathTiming(80,10000);         // 10000 paths in dimension 80
 	// Examples::liborApproximationError(124, 120, 120, 20000);
 	
 	// anomalies in high dimensions (n>=70) for all but DriftlessLMM,
-	   int lmmType=LiborMarketModel::FPC;  // FPC, DL
-	   int volType=VolSurface::JR;        // M,CONST
-	   int corrType=Correlations::CS;     // JR
+	   int lmmType=LiborMarketModel::DL;  // DL, LFDL, PC, FPC
+	   int volType=VolSurface::M;        // JR, M, CONST
+	   int corrType=Correlations::CS;     // JR, CS
 	testCapletPrice(lmmType,volType,corrType); 
 	//testSwaptionPrice(lmmType,volType,corrType);
 	//testCallOnBondPrice(lmmType,volType,corrType);

@@ -95,47 +95,48 @@ public:
 	StochasticGenerator(int m=1) : n(m) {  }
 	
 // ADAPTERS
+// cannot be declared const because the Sobol driver has to reset the Sobol sequence.
 	
 	/** Writes standard normal deviates needed to drive a simulation 
 	 *  from discrete time t to discrete time T into the vector Z.
 	 *  Z must have zero based index.
 	 */
-	virtual void newWienerIncrements(int t, int T, RealVector& Z) const {  }
+	virtual void newWienerIncrements(int t, int T, RealVector& Z)  {  }
 	
 	/** Writes standard normal deviates needed to drive a simulation 
 	 *  from discrete time t to discrete time T into the vector Z.
 	 *  Z must have zero based index.
 	 */
-	virtual void newWienerIncrements(int t, int T, Real* Z) const {  }
+	virtual void newWienerIncrements(int t, int T, Real* Z)  {  }
     
 	/** Writes standard normal deviates needed to drive a simulation 
 	 *  from discrete time t to discrete time T into the upper triangular 
 	 *  matrix Z. Z must have zero based indices.
 	 */
-    virtual void newWienerIncrements(int t, int T, UTRRealMatrix& Z) const  {  }
+    virtual void newWienerIncrements(int t, int T, UTRRealMatrix& Z)   {  }
 	
 	/** Writes standard normal deviates needed to drive a simulation 
 	 *  from discrete time t to discrete time T into the square matrix Z.
 	 *  Z must have zero based indices.
 	 */
-    virtual void newWienerIncrements(int t, int T, RealMatrix& Z) const {  }
+    virtual void newWienerIncrements(int t, int T, RealMatrix& Z)  {  }
 	
 	/** Writes standard normal deviates needed to drive a simulation 
 	 *  from discrete time t to discrete time T into the square matrix Z.
 	 *  Z must have zero based indices.
 	 */
-    virtual void newWienerIncrements(int t, int T, RealArray2D& Z) const {  }
+    virtual void newWienerIncrements(int t, int T, RealArray2D& Z)  {  }
 	
     /** Writes standard normal deviates needed to drive a simulation 
 	 *  from discrete time t to discrete time T into the matrix Z.
 	 *  Z must have zero based index.
 	 */
-	virtual void newWienerIncrements(int t, int T, Real** Z) const  {  }
+	virtual void newWienerIncrements(int t, int T, Real** Z)   {  }
 	
 	/** Restarts the generator. Necessary for low discrepancy sequences.
 	 *  Default implementation: empty, suitable for random number generators.
 	 */
-	virtual void restart() const  {  }
+	virtual void restart()  {  }
 	
 	/** String identifying the generator.
 	 */

@@ -35,7 +35,7 @@ using namespace Martingale;
 
 std::ostream& 
 StochasticGenerator::
-printSelf(std::ostream& os) const 
+printSelf(std::ostream& os) const
 {
 	   return os << "\nUnspecified stochastic generator.";
 }
@@ -59,10 +59,10 @@ std::ostream& operator <<
    
 void 
 MonteCarloLiborDriver::
-newWienerIncrements(int t, int T, UTRRealMatrix& Z)
+newWienerIncrements(int t, int T, UTRRealMatrix& Z) 
 {
 	 for(int s=t;s<T;s++)
-	 for(int k=s+1;k<n;k++)Z(s,k)=Random::sTN();
+	 for(int k=s+1;k<n;k++) Z(s,k)=Random::sTN(); 
 }
 
 
@@ -75,7 +75,7 @@ printSelf(std::ostream& os) const { return os << "Mersenne Twister."; }
 
 void 
 SobolLiborDriver::
-newWienerIncrements(int t, int T, UTRRealMatrix& Z)
+newWienerIncrements(int t, int T, UTRRealMatrix& Z) 
 {		
 	// number of normal deviates needed per path
 	int d = (T-t)*(2*n-(1+t+T))/2;
@@ -110,7 +110,7 @@ printSelf(std::ostream& os) const { return os << "Sobol sequence."; }
 
 void 
 MonteCarloVectorDriver::
-newWienerIncrements(int t, int s, Real** Z)
+newWienerIncrements(int t, int s, Real** Z) 
 {
 	 for(int u=t;u<s;u++)
      for(int k=0;k<n;k++) Z[u][k]=Random::sTN();
@@ -118,7 +118,7 @@ newWienerIncrements(int t, int s, Real** Z)
 	
 void 
 MonteCarloVectorDriver::
-newWienerIncrements(int t, int s, RealMatrix& Z)
+newWienerIncrements(int t, int s, RealMatrix& Z) 
 {   newWienerIncrements(t,s,Z.getData());  }
 	
 	
@@ -130,7 +130,7 @@ printSelf(std::ostream& os) const { return os << "Mersenne Twister."; }
 
 void 
 SobolVectorDriver::
-newWienerIncrements(int t, int s, Real** Z)
+newWienerIncrements(int t, int s, Real** Z) 
 {		
     // Use s Sobol vector of full dimension n*T otherwise the effective
 	// dimension of the simulation is underestimated if a path is computed 
@@ -145,7 +145,7 @@ newWienerIncrements(int t, int s, Real** Z)
     
 void 
 SobolVectorDriver::
-newWienerIncrements(int t, int s, RealMatrix& Z)
+newWienerIncrements(int t, int s, RealMatrix& Z) 
 {   
 	newWienerIncrements(t,s,Z.getData());  
 }
@@ -170,7 +170,7 @@ printSelf(std::ostream& os) const { return os << "Sobol sequence."; }
 
 void 
 MonteCarloScalarDriver::
-newWienerIncrements(int t, int s, Real* Z)
+newWienerIncrements(int t, int s, Real* Z) 
 {
 	 for(int u=t;u<s;u++) Z[u]=Random::sTN();
 }
@@ -184,7 +184,7 @@ printSelf(std::ostream& os) const { return os << "Mersenne Twister."; }
 
 void 
 SobolScalarDriver::
-newWienerIncrements(int t, int s, Real* Z)
+newWienerIncrements(int t, int s, Real* Z) 
 {		
 	// Use s Sobol vector of full dimension T otherwise the effective
     // dimension of the simulation is underestimated if a path is computed 

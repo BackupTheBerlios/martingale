@@ -22,6 +22,7 @@ spyqqqdia@yahoo.com
 
 #include "LiborMarketModel.h"
 #include "DriftlessLMM.h"
+#include "LowFactorDriftlessLMM.h"
 #include "PredictorCorrectorLMM.h"
 #include "FastPredictorCorrectorLMM.h"
 #include "Array.h"
@@ -64,11 +65,31 @@ sample(int n, int lmmType, int volType, int corrType)
 		case FPC :
         lmm=FastPredictorCorrectorLMM::sample(n,volType,corrType); break;
 		
+	    case LFDL :
+        lmm=LowFactorDriftlessLMM::sample(n,volType,corrType); break;
+		
 		default :
         lmm=DriftlessLMM::sample(n,volType,corrType); 
 	}
 	
 	return lmm;
+}
+
+
+std::string 
+LiborMarketModel::
+modelType()
+{
+    std::string str="\nSimulation: ";
+	switch(type){
+			 
+		 case PC   : str+="Predictor-Corrector"; break;
+         case FPC  : str+="Fast Predictor-Corrector"; break;
+		 case DL   : str+="DriftlessLMM"; break;
+	     case LFDL : str+="Low factor DriftlessLMM, 3 factors"; break;
+	}
+	str+=factorLoading->factorLoadingType();
+	return str;
 }
 	
 

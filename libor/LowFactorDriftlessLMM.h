@@ -165,7 +165,7 @@ public:
 	 * @param corrType type of correlations (Correlations::JR,CS).
 	 * @param r number of factors.
 	 */
-	static LiborMarketModel* sample(int n, int r, int volType, int corrType);
+	static LiborMarketModel* sample(int n, int volType, int corrType, int r=3);
     
 
 // WIENER INCREMENTS	
