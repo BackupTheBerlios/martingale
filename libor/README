@@ -65,3 +65,24 @@ Libor volatilities (ConstVolLmmLattice2F). Swaption priced correctly.
 Next: implement lattices for asset baskets, American lattice options.
 
 
+7-3-03:
+
+Files changed: Matrices.h, Lmmlattice.h, Lattice.h, LatticeOption.h,
+Node.h.
+
+Eliminated general 2 factor LmmLattice since the recovery of the V_j from 
+two of these variables is not sound in the context of a stochastic process. 
+Recover this file for the implementation of asset baskets with 1,2 or 3 assets and 
+nonconstant volatilities.
+
+Generalized constant volatility Lmmlattices to more than one time step per Libor accrual interval.
+Added Array.h, lightweight array classes in dimension 1,2,3 and LiborArray2D an array
+adapted to Libor simulation with more than one time step per Libor accrual interval.
+
+Next:
+
+Move SubscriptCheck to Utils.h to make Matrices.h independent of Array.h
+and avoid recompilation of Matrices.h whenever Array.h is changed.
+Three factor constant volatility LmmLattice and associated options.
+
+

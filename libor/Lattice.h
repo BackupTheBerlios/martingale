@@ -24,7 +24,6 @@ spyqqqdia@yahoo.com
 #define martingale_lattice_h
 
 #include "Node.h"
-#include "Matrices.h"
 #include <list>
 
 MTGL_BEGIN_NAMESPACE(Martingale)
@@ -99,10 +98,10 @@ public:
 	
 // CONSTRUCTOR
 	
-	/** @param steps number of time steps in the lattice.
+	/** @param s number of time steps in the lattice.
 	 */
-	Lattice(int steps) : 
-	m(steps), nodes(0), nodeList(m+1)
+	Lattice(int s) : 
+	m(s), nodes(0), nodeList(m+1)
 	{  
 		// the lists of nodes at each time t
 		for(int t=0;t<=m;t++)
@@ -112,12 +111,7 @@ public:
 	~Lattice()
     {
 		// the lists of nodes at each time t
-		for(int t=0;t<=m;t++){
-			
-		   std::list<Node_t*>& nodes=getNodeList(t);
-		   std::list<Node_t*>::const_iterator theNode;
-		   for(theNode=nodes.begin(); theNode!=nodes.end(); ++theNode) delete &(*theNode);
-		   }
+		for(int t=0;t<=m;t++) getNodeList(t).~list<Node_t*>();
 	}
 			 
 		   
@@ -148,9 +142,9 @@ public:
 				Node_t* node=*theNode;
 				std::list<Edge>& edges=node->getEdges();
 		        std::list<Edge>::const_iterator theEdge;           // pointer to edge
+				psum=0.0;
 	        	for(theEdge=edges.begin(); theEdge!=edges.end(); ++theEdge){
 					
-			    	psum=0.0;
 					p=theEdge->probability;
 					if((p<0)||(p>1)) prob_failure=true;
 					psum+=p;

@@ -20,6 +20,7 @@ spyqqqdia@yahoo.com
 
 */
 
+
 #ifndef martingale_node_h    
 #define martingale_node_h
 
@@ -77,10 +78,10 @@ class Node {
 	
 protected:
 	
-	/** time at which the node lives. */
-	int t;    
+	/** number of time steps to reach the node. */
+	int s; 
 
-	/** Cache for the value \f$\pi_t=E_t(h)\f$ of some conditional expectation 
+	/** Cache for the value \f$\pi_s=E_s(h)\f$ of some conditional expectation 
 	 *  at this node. 
 	 */
 	Real  pi;               
@@ -94,7 +95,7 @@ public:
 // ACCESSORS
 	
 	/** Discrete time t at which the node lives. */
-	int getTime(){ return t; }
+	int getTimeStep(){ return s; }
 	Real getPi(){ return pi; }
 	void setPi(Real x){ pi=x; }
 	
@@ -104,9 +105,9 @@ public:
 	
 // CONSTRUCTOR
 	
-	/** @param s discrete time t at which the node lives.
+	/** @param s_ number of time steps to reach the node from time zero.
 	 */
-	Node(int s) : t(s), edges() {  }
+	Node(int s_) : s(s_), edges() {  }
 				 
 		
     ~Node()
@@ -151,6 +152,9 @@ protected:
 	/** Dimension of underlying LMM. */
 	int n;
 	
+	/** Number of time steps in each Libor accrual interval. */
+	int nSteps;
+	
 	/** The accrual factors H_j(T_t), j=t,...,n at this node,
 	 *  natural indexation, index base t.
 	 */
@@ -160,16 +164,25 @@ protected:
 public:
 	
 // ACCESSORS
+
+    /** Returns t such that the node lives in the accrual interval \f$(T_{t-1},T_t]\f$.
+	 */
+	int get_t()
+    {
+		if(s%nSteps==0) return s/nSteps;
+		return s/nSteps+1;
+	}		
 	
 	vector<Real>& getH(){ return H; }
 	
 	
 // CONSTRUCTOR
 	
-	/** @param _n dimension of the underlying LMM (number of acrual periods).
-	 *  @param t discrete time (continuous time T_t) at which the node lives.
+	/** @param fl factor loading of underlying Libor process.
+	 *  @param s number of time steps to reach the node from time zero.
+	 *  @param steps number of time steps in each Libor accrual interval.
 	 */
-	LmmNode(LiborFactorLoading* fl, int t);
+	LmmNode(LiborFactorLoading* fl, int s, int steps=1);
 				 
 	
 
@@ -181,7 +194,7 @@ public:
 	 */
 	void printState()
 	{
-         cout << "\n\n Diagnostic: node at time t = " << t
+         cout << "\n\n Diagnostic: node at time step s = " << s
 		      << "\nVector H: " << H
 		      << "\nPrice pi = " << pi;
 	}
@@ -192,10 +205,16 @@ public:
 	
 	/** Libor \f$X_j=\delta_jL_j\f$ at this node.
 	 */
-	Real X()
+	Real X(int j)
     {
-		if(t==n-1) return (H[t]-1.0);
-		else return (H[t]-H[t+1])/H[t+1];
+		int t=get_t();             // node in (T_{t-1},T_t]
+		if((t==n)&&(j==n-1)) return (H[j]-1.0);
+		if((t<n)&&(j>=t)&&(j<n)) return (H[j]-H[j+1])/H[j+1];
+		// else
+		cout << "\n\nLmmNode:X(j): j = " << j << " not in ["<<t<<","<<n-1<<"]"
+		     << "\nTime step s = " << s
+		     << "Terminating.";
+		exit(0);		
 	}
 
 	
@@ -215,11 +234,13 @@ public:
 
 // ZERO COUPON BONDS
 		
-    /** The zero coupon bond \f$B_i\f$ expiring at time \f$T_i\f$ at this
-	 *  node. We must have \f$t\leq i\f$ where t is the discrete time at which
-	 *  the node lives.
+    /** The zero coupon bond \f$B_i\f$ expiring at time \f$T_i\f$ at this node. 
 	 */
-	Real B_i(int i){ return H[i]/H[t]; }
+	Real B_i(int i)
+	{ 
+		int t=get_t();
+		return H[i]/H[t]; 
+	}
 	
 
 }; // end Node
@@ -242,7 +263,7 @@ public:
  */
 struct LmmNode2F : public LmmNode {
 	
-		
+	
 	Real V1, V2;            // the variables which are evolved
 	int i,                  // V1=V1(0)+ia_1
 		j;                  // V2=V2(0)+ja_2,
@@ -262,12 +283,12 @@ public:
 	
 // CONSTRUCTOR
 	
-	/** @param n dimension of underlying LMM (number of accrual periods).
-	 *  @param t discrete time (continuous time T_t) at which the node lives.
+	/** @param s number of time steps to reach this node from time zero.
+	 *  @param nSteps number of time steps in each Libor acrual interval.
 	 *  @param k state V_1=V_1(0)+ka
 	 *  @param l state V_2=V_2(0)+la
 	 */
-	LmmNode2F(LiborFactorLoading* fl, int t, int k, int l) : LmmNode(fl,t),
+	LmmNode2F(LiborFactorLoading* fl, int s, int nSteps, int k, int l) : LmmNode(fl,s,nSteps),
     i(k), j(l)
 	{	}
 				 

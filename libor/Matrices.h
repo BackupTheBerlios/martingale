@@ -33,6 +33,7 @@ spyqqqdia@yahoo.com
 #include "jama/jama_eig.h"
 #include "tnt_array1d_utils.h"
 #include "tnt_array2d_utils.h"
+#include "Array.h"
 //include "Utils.h"                 
 
 /*
@@ -55,43 +56,6 @@ template<class S> class Matrix;
 
 ***************************************************************************************/
 
-
-struct ArraySubscriptCheck {
-	
-static void checkSubscript(int i, int base, int dim, string str)
-{
-	if((i<base)||(i>base+dim-1)){
-		
-	    cout << "\n\nSubscript out of range: " << str 
-	         << "\ni = " << i << " not in [" << base << ", " << base+dim-1 << "]"
-	         << "\nTerminating.";
-	    exit(0);
-	}
-} // end checkSubscript
-
-
-static void checkSubscript(int i, int j, int a, int b, int rows, int cols, string str)
-{
-	if((i<a)||(i>a+rows-1)){ 
-		
-	    cout << "\n\nSubscript out of range: " << str 
-	         << "\ni = " << i << " not in [" << a << ", " << a+rows-1 << "]"
-		     << "\nTerminating.";
-		exit(0);
-	}
-		
-	
-	if((j<b)||(j>b+cols-1)){
-		
-	    cout << "\n\n Subscript out of range: " << str 
-	         << "\nj = " << j << " not in [" << b << ", " << b+cols-1 << "]"
-	         << "\nTerminating.";
-	    exit(0);
-	}
-} // end checkSubscript
-
-}; // end ArraySubscriptCheck
-	     
 
 
 /** The relative error in percent of an approximation to an exact value,
@@ -146,10 +110,10 @@ Matrix<S>& rank_Reduced_Root(UTRMatrix<S>& C, int r)
 	    base=C.getIndexBase();
     JAMA::Eigenvalue<S>* eigval=eigenDecomposition(C);
 	// eigenvalues sorted ascending
-	Array1D<S> l(dim);
+	TNT::Array1D<S> l(dim);
 	eigval->getRealEigenvalues(l);
 	// corresponding eigenvectors
-	Array2D<S> U(dim,dim);
+	TNT::Array2D<S> U(dim,dim);
 	eigval->getV(U);
 	
 	Matrix<S>& root=*(new Matrix<S>(dim,r,base,0));
@@ -171,7 +135,7 @@ static void factorAnalysis(UTRMatrix<S>& C)
 	int dim=C.getDimension();
     JAMA::Eigenvalue<S>* eigval=eigenDecomposition(C);
 	// eigenvalues sorted ascending
-	Array1D<S> l(dim);
+	TNT::Array1D<S> l(dim);
 	eigval->getRealEigenvalues(l);
 		
 	S traceNorm=l[0];
@@ -260,7 +224,7 @@ public:
    S& operator[](int i)
    {
 	   #ifdef SUBSCRIPT_CHECK
-	      ArraySubscriptCheck::checkSubscript(i,b,dim,"Vector");
+	      SubscriptCheck::checkSubscript(i,b,dim,"Vector");
 	   #endif	   
 	   return dptr[i-b]; 
     }
@@ -608,7 +572,7 @@ S** getData() const { return dptr; }
 S& operator()(int i, int j)
 { 
 	#ifdef SUBSCRIPT_CHECK
-	  ArraySubscriptCheck::checkSubscript(i,j,base,base,dim,dim,"LTRMatrix");
+	  SubscriptCheck::checkSubscript(i,j,base,base,dim,dim,"LTRMatrix");
 	#endif	  
 	return dptr[i-base][j-base]; 
 }
@@ -619,7 +583,7 @@ S& operator()(int i, int j)
 const S& operator()(int i, int j) const 
 { 
 	#ifdef SUBSCRIPT_CHECK
-	  ArraySubscriptCheck::checkSubscript(i,j,base,base,dim,dim,"LTRMatrix");
+	  SubscriptCheck::checkSubscript(i,j,base,base,dim,dim,"LTRMatrix");
 	#endif	
 	return dptr[i-base][j-base]; 
 }
@@ -978,7 +942,7 @@ S** getData() const { return dptr; }
 S& operator()(int i, int j)
 { 
 	#ifdef SUBSCRIPT_CHECK
-	  ArraySubscriptCheck::checkSubscript(i,j,base,base,dim,dim,"UTRMatrix");
+	  SubscriptCheck::checkSubscript(i,j,base,base,dim,dim,"UTRMatrix");
 	#endif	
 	return dptr[i-base][j-i]; 
 }
@@ -989,7 +953,7 @@ S& operator()(int i, int j)
 const S& operator()(int i, int j) const 
 { 
 	#ifdef SUBSCRIPT_CHECK
-	  ArraySubscriptCheck::checkSubscript(i,j,base,base,dim,dim,"UTRMatrix");
+	  SubscriptCheck::checkSubscript(i,j,base,base,dim,dim,"UTRMatrix");
 	#endif	
 	return dptr[i-base][j-i]; 
 }
@@ -1523,7 +1487,7 @@ S** getData() const { return dptr; }
 S& operator()(int i, int j)
 { 
 	#ifdef SUBSCRIPT_CHECK
-	  ArraySubscriptCheck::checkSubscript(i,j,a,b,rows,cols,"Matrix");
+	  SubscriptCheck::checkSubscript(i,j,a,b,rows,cols,"Matrix");
 	#endif		
 	return dptr[i-a][j-b]; 
 }
@@ -1534,7 +1498,7 @@ S& operator()(int i, int j)
 const S& operator()(int i, int j) const 
 { 
 	#ifdef SUBSCRIPT_CHECK
-	  ArraySubscriptCheck::checkSubscript(i,j,a,b,rows,cols,"Matrix");
+	  SubscriptCheck::checkSubscript(i,j,a,b,rows,cols,"Matrix");
 	#endif	
 	return dptr[i-a][j-b]; 
 }

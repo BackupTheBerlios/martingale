@@ -164,22 +164,25 @@ private:
 template<typename Node>
 class LatticeSwaption : public LatticeEuropeanOption<Node> {
 	
-	int s,    // exercise time T_s
-	    p,    // swap begins at time T_p
-	    q;    // swap ends at time T_q
+	int s,          // swaption exercises at time T_s
+	    nSteps,     // number of time steps in each Libor accrual interval
+	    p,          // swap begins at time T_p
+	    q;          // swap ends at time T_q
 	
-	Real kappa;  // the strike rate
+	Real kappa;     // the strike rate
 	
 public:
 	
 	/** @param lattice the underlying LmmLattice.
-	 *  @param _s swaption is exercisable at time T_s, s=s0.
-	 *  @param _p  swap begins at time T_p, p=p0.
-	 *  @param _q  swap ends at time T_q, q=q0.
+	 *  @param s swaption is exercisable at time T_s, s=s0.
+	 *  @param p_ swap begins at time T_p, p=p0.
+	 *  @param q_  swap ends at time T_q, q=q0.
+	 *  @param steps number of time steps in each Libor accrual interval.
 	 */
-	LatticeSwaption(Lattice<Node>* lattice, int _s, int _p, int _q, Real strike) :
-	LatticeEuropeanOption<Node>(lattice,_s),
-	p(_p), q(_q),
+	LatticeSwaption(Lattice<Node>* lattice, int s, int p_, int q_, Real strike, int steps=1) :
+	LatticeEuropeanOption<Node>(lattice,s*steps),          // m=s*nSteps time steps needed until time T_s 
+	nSteps(steps),
+	p(p_), q(q_),
 	kappa(strike)
     {  }
 	
@@ -203,12 +206,14 @@ public:
 	static void test(int s, int p, int q)
     {
 		Timer watch; watch.start();
-		ConstVolLiborFactorLoading* fl=ConstVolLiborFactorLoading::sample(q);
-		ConstVolLmmLattice2F theLattice(fl,s);
+		ConstVolLiborFactorLoading* fl=ConstVolLiborFactorLoading::sample(q); 
+		// number of time steps in each Libor accrual interval
+		int nSteps=3;
+		ConstVolLmmLattice2F theLattice(fl,s,3);
 		LmmNode* root=theLattice.getRoot();
 		
 		Real strike=root->swapRate(p,q);
-		LatticeSwaption<LmmNode2F> swpn(&theLattice,s,p,q,strike);
+		LatticeSwaption<LmmNode2F> swpn(&theLattice,s,p,q,strike,nSteps);
 		Real treePrice=swpn.forwardPrice();
 		
 		cout << "\n\n\nSwaption forward price: " 
