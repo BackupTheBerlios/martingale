@@ -64,7 +64,7 @@ static void checkSubscript(int i, int base, int dim, string str)
 		
 	    cout << "\n\nSubscript out of range: " << str 
 	         << "\ni = " << i << " not in [" << base << ", " << base+dim-1 << "]"
-	         << "Terminating.";
+	         << "\nTerminating.";
 	    exit(0);
 	}
 } // end checkSubscript
@@ -76,7 +76,7 @@ static void checkSubscript(int i, int j, int a, int b, int rows, int cols, strin
 		
 	    cout << "\n\nSubscript out of range: " << str 
 	         << "\ni = " << i << " not in [" << a << ", " << a+rows-1 << "]"
-		     << "\nTerminating";
+		     << "\nTerminating.";
 		exit(0);
 	}
 		
