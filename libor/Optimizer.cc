@@ -162,7 +162,7 @@ using namespace Martingale;
             // the state before the last step
             cout << "\n\nFunction minimum: " << y[min]
 			     << "\nMinimizing vector:";
-            for(int j=0;j<n;j++) cout << vertices(min,j) << endl;
+            for(int j=0;j<n;j++) cout << endl << vertices(min,j);
         }
 		
 		RealArray1D& xvec=*(new RealArray1D(n));
@@ -192,11 +192,12 @@ using namespace Martingale;
 // CONSTRUCTOR
 
 
-    BFGS::BFGS
-	(int n, RealArray1D& _x, int _nVals, Real _stepmax, RealArray1D& _h, bool _verbose=false) :
+    BFGS::
+	BFGS(int n, RealArray1D& _x, int _nVals, Real _stepmax, 
+	     RealArray1D& _h, int _nRestarts, bool _verbose=false) :
     Optimizer(n),
 	stepmax(_stepmax),
-	nVals(_nVals), fVals(0),
+	nVals(_nVals), fVals(0), restarts(0), nRestarts(_nRestarts),
 	x0(n),
 	grad0(n),
 	x(_x),
@@ -226,6 +227,7 @@ using namespace Martingale;
      RealArray1D& BFGS::search()
      {
 		 setInitialConditions();
+		 if(fVals==nVals/nRestarts) resetHessian();
          // main loop to termination
          while(true){
 			            
@@ -263,11 +265,17 @@ using namespace Martingale;
             
             // termination on zero gradient
             if(relativeSize(xDelta,x)<EPSX){
-                
-                if(verbose)
-                cout << "\n\nBFGS.search(): no movement in x, fVals=" << fVals;
-                break;
-            }
+				
+                if(restarts<nRestarts){ 
+					
+					if(verbose)cout << "\n\nBFGS.search(): restarting";
+					resetHessian(); restarts++; 
+				}else{
+				
+                    if(verbose)cout << "\n\nBFGS.search(): no movement in x, fVals=" << fVals;
+                    break;
+				} // end if
+            } // endif
 
          } // end main loop
 		 
@@ -319,7 +327,13 @@ using namespace Martingale;
          }
          return (q<EPSG);
     }
-  
+	
+	
+	void BFGS::resetHessian()
+    {
+		for(int i=0;i<n;i++)
+        for(int j=0;j<n;j++){ H[i][j]=0.0; if(i==j)H[i][j]=1.0; }
+	}
     
 
 // BFGS UPDATE
@@ -434,7 +448,7 @@ using namespace Martingale;
         // scale directional vector d to a maximum length of
         // stepmax, then do backward line search.
         // proper BFGS does not do that, only scales down to stepmax!!!!
-        if(dNorm>stepmax/100)d.scale(stepmax/dNorm);
+        if(dNorm>stepmax)d.scale(stepmax/dNorm);
         
         Real k=grad.dotProduct(d);   // slope     
         if(k>=0) cout << "\n\nBFGS.lineSearch(): no descent, roundoff errors.";

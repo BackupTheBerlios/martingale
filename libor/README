@@ -106,3 +106,17 @@ is dragged everywhere the header file is included, thus better to move includes 
 implementations in headers (for example problems with forward declarations).
 
 
+7-8-03:
+
+Files changed: 
+
+Optimizer.h,cc; LiborCalibrator.h; LiborFactorLoading.h; TestOptimizers.h,cc.
+
+Added restarts to BFGS Optimizers. No improvement on the sample function.
+Added TypeID to LiborFactorloading (integer flag).
+
+New: LiborCalibrator, reads and writes data. 
+Check if the list are correctly freed (most likely not) or a destructor has to be written.
+
+
+

@@ -291,7 +291,9 @@ protected:
    
     Real stepmax;                 // maximum steplength in the line search
     int nVals,                    // maximum number of function evaluations
-        fVals;                    // current number of function evaluations
+        fVals,                    // current number of function evaluations
+	    restarts,                 // number of times the optimizer has been restarted
+	    nRestarts;                // number of restarts budgeted
 
     // keep current
     RealArray1D 
@@ -341,10 +343,11 @@ public:
      * @param nVals maximum number of function evaluations allowed
      * @param stepmax maximum step length in line search
      * @param h variable increments dx_j in the gradient computation.
-	 * @param of objective function.
+	 * @param nRestarts number of times the optimizer is restarted.
      * @param verbose messages about results, default is <code>false</code.
      */
-    BFGS(int _n, RealArray1D& _x, int _nVals, Real _stepmax, RealArray1D& _h, bool _verbose=false);
+    BFGS(int _n, RealArray1D& _x, int _nVals, Real _stepmax, 
+	     RealArray1D& _h, int _nRestarts=3, bool _verbose=false);
 	
 		    	
     /** Sets function value, gradient and initial direction by making calls to {@link Optimizer#f}. 
@@ -387,6 +390,11 @@ private:
     /** The bfgs update of the approximate inverse Hessian.
      */
     void bfgsUpdate();
+	
+	
+	/** Resets the Hessian to the identity. This is a restart of the optimizer.
+	 */
+	void resetHessian();
 	
 	
 // GRADIENT COMPUTATION  
@@ -475,11 +483,12 @@ class ConcreteBFGS : public BFGS {
 	
 public:
 	
-	 /** @param _of pointer to objective function. */
+	 /** @param _of pointer to objective function. 
+	  */
 	 ConcreteBFGS
 	 (Real (*_of)(int n, Real* x), int n, RealArray1D& x, int nVals, 
-      Real stepmax, RealArray1D& h, bool verbose=false) :
-     BFGS(n,x,nVals,stepmax,h,verbose),
+      Real stepmax, RealArray1D& h, int nRestarts=3, bool verbose=false) :
+     BFGS(n,x,nVals,stepmax,h,nRestarts,verbose),
 	 of(_of)
      {   
 		 // now we can call f

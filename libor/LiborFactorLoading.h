@@ -90,7 +90,8 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  *  
  * @author  Michael J. Meyer
  */
-class LiborFactorLoading {
+class LiborFactorLoading {	
+
 
 	
     int n;         // dimension of Y
@@ -106,6 +107,16 @@ class LiborFactorLoading {
     
 	
 public:
+	
+		
+	/** type id */
+	static const int 
+	/** Coffee-Shoenmakers */
+	CS=0, 
+	/** Jaeckel-Rebonato */
+	JR=1,
+	/** Constant Volatility (Jaeckel-Rebonato correlations) */
+	CV=2;   
     
 // ACCESSORS
     
@@ -128,6 +139,11 @@ public:
     /** The array of initial XLibors \f$X_j(0)=\delta_jL_j(0)\f$. 
      */
     Real* getInitialXLibors() const { return x; }
+	
+	/** Type ID of the default type (Coffee-Shoenmakers). 
+	 *  Override as appropriate.
+	 */
+	virtual int getTypeID(){ return CS; }
 	
 	/** Drift linearization constants, see book, 6.5.2.
      */
@@ -425,7 +441,9 @@ public:
 	
                                                                                                         
        
-// VOLATILITIES, CORRELATIONS, COVARIATION INTEGRALS  
+// VOLATILITIES, CORRELATIONS, COVARIATION INTEGRALS 
+
+   int getTypeID(){ return CS; }
   
    /** <p>Instantaneous log-Libor correlations <code>rho_ij</code>
     *  for <code>i,j&gt=1</code>.</p>
@@ -571,7 +589,10 @@ class JR_FactorLoading : public LiborFactorLoading {
 
     
 public:
-    
+
+   
+   int getTypeID(){ return JR; } 
+   
 
 // CONSTRUCTOR
 
@@ -707,7 +728,10 @@ class ConstVolLiborFactorLoading : public LiborFactorLoading {
 
     
 public:
-    
+
+ 
+   int getTypeID(){ return CV; }
+   
 
 // CONSTRUCTOR
 
