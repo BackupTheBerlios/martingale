@@ -123,11 +123,11 @@ protected:
 	LiborMarketModelType type;
     
 	// initialized from the factorloading
-    int n;                                  // number of forward Libors
-    const RealArray1D& delta;               // delta[t]=T_{t+1}-T_t,length of compounding intervals
-    const RealArray1D& T;                   // tenor structure, Tc[t]=T_t
-    const RealArray1D& l;                   // initial Libors, l[j]=L_j(0)
-    const RealArray1D& x;                   // initial X-Libors x[j]=X_j(0)=delta_jL_j(0)
+    int n;                            // number of forward Libors
+    RealArray1D delta;                // delta[t]=T_{t+1}-T_t,length of compounding intervals
+    RealArray1D T;                    // tenor structure, Tc[t]=T_t
+    RealArray1D l;                    // initial Libors, l[j]=L_j(0)
+    RealArray1D x;                    // initial X-Libors x[j]=X_j(0)=delta_jL_j(0)
     
     // volatility and correlation structure
     LiborFactorLoading* factorLoading;
@@ -217,6 +217,7 @@ public:
      * {@link FactorLoading}.
      */
     LiborMarketModel(LiborFactorLoading* fl, int lmmType=DL);
+    virtual ~LiborMarketModel(){ }
    
    
     /** Sample Libor market model, quarterly accrual.

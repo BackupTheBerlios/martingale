@@ -159,7 +159,6 @@ public:
 	 * @param r number of factors.
      */
     LowFactorDriftlessLMM(LiborFactorLoading* fl, int r);
-	virtual ~LowFactorDriftlessLMM(){ }
 	
 	
 	/** Sample LMM, quarterly accrual.

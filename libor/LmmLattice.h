@@ -105,9 +105,9 @@ class BondCall;
  *     </li>
  * </ul>
  * We want to have a large number of nodes but not so large as to exceed main memory. 
- * With 1GB main memory we can tolerate about 5.3 million nodes corresponding to 250
- * time steps in a two factor lattice and 3.5 million 
- * nodes corresponding to 60 time steps in a three factor model. The number of time 
+ * With 1GB main memory we can tolerate about 11 million nodes corresponding to about 310
+ * time steps in a two factor lattice and 6 million 
+ * nodes corresponding to about 70 time steps in a three factor model. The number of time 
  * steps in the lattice can be controlled by choosing the number of time steps in each
  * Libor accrual interval. 
  */
@@ -179,7 +179,9 @@ Real getTimeStep(){ return delta/nSteps; }
  */
 int getTenor(int s){ return (int)(s*dt/delta); }
 
-/** Time and state independent transition probability along edge i.*/
+/** Time and state independent transition probability along edge i.
+ *  Declared final (hence nonvirtual) for speed. */
+
 Real transitionProbability(int i){ return 1.0/(1<<r); }
 
 		
@@ -222,7 +224,8 @@ std::ostream& printSelf(std::ostream& os) const;
 
 
 /** Builds an r=2,3 factor lattice in in dimension n (number of Libor accrual periods)
- *  build with n-3 time steps (one per accrual period) and runs the selfTest().
+ *  up tp time \f$T_{n-3}\f$ with 3 time steps per Libor accrual period) and runs the 
+ *  selfTest().
  */
 static void test(int r, int n);
 

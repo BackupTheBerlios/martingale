@@ -25,11 +25,6 @@ spyqqqdia@yahoo.com
 
 
 #include "TypedefsMacros.h"
-#include "Random.h"
-#include "RandomVariables.h"
-#include "StochasticProcesses.h"
-#include "QuasiMonteCarlo.h"
-
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
@@ -49,40 +44,8 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 
 /** Times the computation of a standard normal covariance matrix.
  */
-void testSTNCovarianceMatrix(int d, int N)
-{
-    StandardNormalVector Z(d);
-	Timer watch;
-    watch.start();
-	UTRRealMatrix cvm=Z.covarianceMatrix(N,"Standard normal covariance matrix");
-	
-	// get the largest and smallest diagonal element and the largest and smallest 
-	// off diagonal element
-	Real mindiag=100.0, maxdiag=0.0,
-	     minoffdiag=100000.0, maxoffdiag=-100000.0;
-	for(int i=0;i<d;i++)
-	for(int j=i;j<d;j++){
-		
-		Real cvm_ij=cvm(i,j);
-		if(i==j){
-			if(cvm_ij<mindiag)mindiag=cvm_ij;
-			if(cvm_ij>maxdiag)maxdiag=cvm_ij;
-		}
-		
-		if(i!=j){
-			if(cvm_ij<minoffdiag)minoffdiag=cvm_ij;
-			if(cvm_ij>maxoffdiag)maxoffdiag=cvm_ij;
-		}
-	} // end for i
-			
-	watch.stop();	
-    std::cout << endl << "Standard normal covariance matrix, dimension: " << d
-	          << endl << "Maximal diagonal element: " << maxdiag
-	          << endl << "Minimal diagonal element: " << mindiag
-	          << endl << "Maximal offdiagonal element: " << maxoffdiag
-	          << endl << "Minimal diagonal element: " << minoffdiag;
-    watch.report("Finished");
-}
+void testSTNCovarianceMatrix(int d, int N);
+
 
 
 
@@ -99,9 +62,7 @@ void testSTNCovarianceMatrix(int d, int N)
  *  The conditional mean and variance are computed from a sample of size 
  *  nPath and compared with the analytic values.
  */
-void testPathFunctional(int t, int T, int nPath)
-{ VectorBrownianMotion::testPathFunctional(t,T,nPath); }
-	
+void testPathFunctional(int t, int T, int nPath);
 	     
 	
 MTGL_END_NAMESPACE(Martingale)

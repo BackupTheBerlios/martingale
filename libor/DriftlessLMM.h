@@ -176,7 +176,6 @@ public:
      * {@link FactorLoading}.
      */
     DriftlessLMM(LiborFactorLoading* fl);
-	virtual ~DriftlessLMM(){ }
 	
 	
 		

@@ -35,14 +35,14 @@ class BondCall;
 
 
 /*! \file LiborFunctional.h
- *  Free standing functions to computing various functionals F of the
+ *  Free standing functions computing various functionals F of the
  *  Libor process as deterministic functions \f$F=F(H)\f$ of a vector 
  *  \f[H=(H_p(t),\dots,H_n(t))\f] 
  *  of accrual factors at time t.  
  */
 
 	
-/** <p>Free standing functions to computing various functionals F of the
+/** <p>Free standing functions computing various functionals F of the
  *  Libor process as deterministic functions \f$F=F(H)\f$ of a vector 
  *  \f[H=(H_p(t),\dots,H_n(t))\f] 
  *  of accrual factors at time t. It is assumed that the vector
@@ -55,7 +55,7 @@ class BondCall;
  *  structure.
  *
  *  <p>Note that the time t does not explicitly enter in any of the
- *  computations. This information is in the vector H.
+ *  computations. Only the information in the vector H is needed..
  */
 namespace LiborFunctional {
 	

@@ -20,6 +20,7 @@ spyqqqdia@yahoo.com
 
 */
 
+
 #ifndef martingale_examples_h    
 #define martingale_examples_h
 

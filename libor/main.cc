@@ -22,21 +22,21 @@ spyqqqdia@yahoo.com
 */
 
 
-/* Created by Anjuta version 0.1.9 */
-/*	This file will not be overwritten */
+
+// INCLUDES IN ORDER
 
 
-// #include "FinMath.h"
-// #include "TestMatrix.h"
-// #include "TestProbability.h"
-// #include "TestLMM.h"
- #include "ExercisePlot.h"
 // #include "TestOptimizers.h"
-// #include "TestFormulas.h"
+// #include "TestProbability.h"
+// #include "FinMath.h"
 // #include "Examples.h"
-// #include "DirichletProblem.h"
+// #include "TestMatrix.h"
 // #include "VolatilityAndCorrelation.h"
+ #include "TestLMM.h"
 // #include "LiborCalibrator.h"
+// #include "ExercisePlot.h"
+// #include "TestFormulas.h"
+// #include "DirichletProblem.h"
 // #include "LiborMarketModel.h"
  
 
@@ -54,9 +54,9 @@ int main()
  *
 *******************************************************************************/
 	
-	 // testDownhillSimplex(5,5000);
-	 // testBFGS(5,500);
-	 // testSobolSearch(50,5000);
+	// testDownhillSimplex(5,500);
+	// testBFGS(5,500);
+	// testSobolSearch(5,500);
 	
 	
 /*******************************************************************************
@@ -65,8 +65,7 @@ int main()
  *
 *******************************************************************************/
 	
-    // testSTNCovarianceMatrix(600,50000);
-    // testControlledSTN(1000000);
+    // testSTNCovarianceMatrix(600,10000);
     // testPathFunctional(9,15,100000);
 	
 /*******************************************************************************
@@ -81,7 +80,7 @@ int main()
 	// testMatrixExponentials();
 	// testSymmetricMatrixExponentials();
 	// testComplexExponential();
-	// TnT::factorizationTest(80);
+	
 	
 	
 	
@@ -104,25 +103,24 @@ int main()
 	
 	
 	
-	// Test_LMM::testLiborFactorLoading(20);
-	// Test_LMM::testLiborFactorLoadingFactorization(60,3);    // rank 3 factorization
+	 // Test_LMM::testLiborFactorLoading(20);
+	 // Test_LMM::testLiborFactorLoadingFactorization(60,3);    // rank 3 factorization
 	
-	// Test_LMM::testLmmPaths(20);
+	 // Test_LMM::testLmmPaths(20);
 
-	// Examples::liborPathTiming(30,20000);         // 5000 paths in dimension 30
+	 // Examples::liborPathTiming(30,20000);         // 20000 paths in dimension 30
 	
 	
 	// anomalies in high dimensions (n>=70) for all but DriftlessLMM,
 /*
-	     int n=50;                          // dimension
-	     int lmmType=LiborMarketModel::DL;  // DL, LFDL, PC, FPC
-	     int volType=VolSurface::CONST;     // JR, M, CONST
+	     int lmmType=LiborMarketModel::PC;  // DL, LFDL, PC, FPC
+	     int volType=VolSurface::JR;        // JR, M, CONST
          int corrType=Correlations::CS;     // JR, CS
 */
-	// Test_LMM::testCapletPrice(n,lmmType,volType,corrType); 
-	// Test_LMM::testSwaptionPrice(n,lmmType,volType,corrType);
-	// Test_LMM::testCallOnBondPrice(n,lmmType,volType,corrType);
-	// Test_LMM::testCallOnZeroCouponBondPrice(n,lmmType,volType,corrType);
+	// Test_LMM::testCapletPrice(lmmType,volType,corrType); 
+	// Test_LMM::testSwaptionPrice(lmmType,volType,corrType);
+	// Test_LMM::testCallOnBondPrice(lmmType,volType,corrType);
+	// Test_LMM::testCallOnZeroCouponBondPrice(lmmType,volType,corrType);
 	
 	// Libor derivatives in the driftless LMM with constant volatilities, 
 	// includes lattice pricing
@@ -167,16 +165,8 @@ int main()
 	
 
      // Test_LMM::testLmmLattice();
-	 plotBermudanExercise();
+     // plotBermudanExercise();
 	 
-	
-/*******************************************************************************
- *
- *                 LATTICES FOR ASSET BASKETS
- *
-*******************************************************************************/
-	 
-	 // BasketLattice3F::test(5,50);
 	
 	
 /*******************************************************************************
@@ -199,13 +189,10 @@ int main()
 
 	 // int dim=10, T=10000, nPath=10000; 
 	 // Real dt=0.01;
-	 // Examples::brownianMotionInBall(dim,T,dt,nPath); <------------Subscript out of range exception--------->	
+	 // Examples::brownianMotionInBall(dim,T,dt,nPath); //<----Subscript out of range exception---->	
 	
-	// int t=20, T=100, nPath=500000;
-	// VectorBrownianMotion::testPathFunctional(t,T,nPath);
-	
-	// int dim=30, T=10;
-	// DirichletProblemExample::runExample(dim,T);
+     // int dim=30, T=10;
+	 // DirichletProblemExample::runExample(dim,T);
 	
 
 

@@ -22,7 +22,6 @@ spyqqqdia@yahoo.com
 
 
 #include "LmmLattice.h"
-#include "LmmLatticeData.h"
 #include "Node.h"
 #include "Lattice.h"
 #include "Utils.h"
@@ -279,7 +278,7 @@ LmmLattice::
 test(int r, int n)
 {
     Timer watch; watch.start();
-	LmmLattice* lattice = sample(r,n,n,5,true);
+	LmmLattice* lattice = sample(r,n,n,3,true);
 	lattice->rescaleVols();
 	lattice->selfTest();
 	delete lattice;

@@ -72,6 +72,8 @@ virtual bool isTriggered(int t, int s) = 0;
  */
 virtual int nextTriggered(int t) = 0;
 	
+virtual ~Trigger(){ }
+	
 
 }; // end Trigger
 

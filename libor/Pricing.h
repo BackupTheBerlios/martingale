@@ -55,8 +55,8 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  *
  * <p>This approach provides enormous flexibility. Classes no longer have to 
  * conform to well defined interfaces as in a traditional inheritance hierachy.
- * There is a price however: a user who wishes to implement her own Option and
- * Lattice classes and make use of these function templates will have to read the 
+ * There is a price however: if you want to implement your own Option and
+ * Lattice classes and make use of these function templates you will have to read the 
  * source code to understand what methods these classes have to provide and how 
  * they are used.
  */
@@ -76,9 +76,21 @@ namespace Pricing {
 using std::vector;
 	
 
-/** The forward price of theOption when priced in theLattice. Read the source code 
+/** <p>The forward price of theOption when priced in theLattice. Read the source code 
  *  to see what member functions the types LatticeType and OptionType must
  *  implement.
+ *  <p>The routine is written under the assumption that the transition probabilities
+ *  are computed by the lattice and are both time and state independent. This is rather
+ *  restrictive but true for the lattices we consider. The code can easily be rewritten
+ *  to cover the general case of both time and state dependent transition probabilities.
+ *  Simply define <code>LatticeType::transitionProbability</code> to be a function of
+ *  the edge i, time t and the node n. For reasons of speed this approach is not taken 
+ *  here.
+ *  <p>Please read the source code to determine the precise syntactic assumptions which 
+ *  the code makes about the type of lattice <code>LatticeType</code>, the type of nodes
+ *  within the lattice <code>LatticeType::NodeType</code> and the type 
+ *  <code>OptionType</code> of option to be priced in the lattice
+	.
  */
 template<typename LatticeType, typename OptionType>
 Real latticeForwardPrice(LatticeType* theLattice, OptionType* theOption)
@@ -183,33 +195,35 @@ Real betaCoefficient(OptionType* theOption, int N)
        sum_XX+=X*X; sum_XY+=X*Y;
     }
         
-    return (N*sum_XY-sum_X*sum_Y)/(N*sum_XX-sum_X*sum_X);
+    // divide numerator and denominator by N^2
+	return (N*sum_XY-sum_X*sum_Y)/(N*sum_XX-sum_X*sum_X);
         
 }
 
 
 /** The forward price of theOption computed from nPaths paths of thePathGenerator
  *  supplied by the option and using the control variate implemented for the option.
+ *  See book, 2.8.
  */
 template<typename OptionType>
 Real controlledMonteCarloForwardPrice(OptionType* theOption, int nPaths)
 {
 	Real controlVariateMean=theOption->controlVariateMean();
-	Real beta=betaCoefficient(theOption,nPaths/10);
+	int M=1024;          // complete cycle for the Sobol generator
+	Real beta=betaCoefficient(theOption,M);
 	Real sum_payoff=0.0, 
 	     payoff, 
 	     controlVariate;
 	
-	int N=9*nPaths/10;
-	for(int i=0;i<N;++i){
+	for(int i=0;i<nPaths;++i){
 		
 	    // next forwardPayoff - controlVariate pair
 	    const RealArray1D& Z = theOption->nextControlledForwardPayoff();
 	    payoff = Z[0];       
 	    controlVariate = Z[1];       
-		sum_payoff+=payoff-beta*(controlVariate-controlVariateMean);
+		sum_payoff+=payoff+beta*(controlVariateMean-controlVariate);
 	}
-	return sum_payoff/N;	
+	return sum_payoff/nPaths;	
 } 
 
 

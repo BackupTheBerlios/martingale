@@ -33,11 +33,20 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 /*! \file Node.h
- *  <p>Nodes in a stochastic lattice for a standard Brownian motion Z.
- *  Emphasis is on smallest possible memory footprint. 
+ *  <p>Nodes in a stochastic lattice.
+ *  There is no common interface for all node types. The node type is a 
+ *  template parameter for the lattice the nodes live in and can be recovered
+ *  from the type of lattice as <code>LatticeType::NodeType</code>. The type of
+ *  lattice is handed to the pricing function 
+ *  {@link Pricing#latticeForwardPrice} as a template parameter. Consequently
+ *  no interface to all node types is needed for lattice pricing.
+ *
+ *  <p>Emphasis is on smallest possible memory footprint. The lattice handles 
+ *  everything except the information specific to each node. Nodes do not have to
+ *  know which lattice they live in nor at which time step within the lattice.
+ *  Only one type of node is implemented: {@link StandardBrownianNode}.
  */
  
-
 
 /**********************************************************************************
  *
@@ -52,7 +61,7 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  *  the array of edges and the state k of the Brownian motion 
  *  \f[Z_j=k[j]*a,\quad a=\sqrt{dt}\f]
  *  as a integer multiples of the tick size a. Nodes don't need to know 
- *  anything else, not at which time they live or even which lattice they 
+ *  anything else, not at which time they live nor even which lattice they 
  *  live in. The lattice knows that and all else such as the transition 
  *  probabilities. This avoids storing the same data in each of the million 
  *  nodes in the lattice.

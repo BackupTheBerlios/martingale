@@ -38,7 +38,8 @@ using std::vector;
 
 /*! \file Lattice.h
  *  General lattice as a vector of pointers to the list of nodes at
- *  each time t.
+ *  each time t. Free standing functions to build two and three factor
+ *  lattices.
  */
 
 
@@ -72,8 +73,15 @@ using std::vector;
  * is handled with equal ease and this is the main advantage of lattices over Monte Carlo
  * path simulation.
  *
- * <p>The Lattice consists of nodes of type Node. Only {@link StandardNrownianNode}s are
- * implemented and transition probabilities are assumed independent of state and time.
+ * <p>The Lattice consists of nodes of type Node. This type can be recovered from the 
+ * lattice type as <code>LatticeType::NodeType</code>. The edges originating from a node
+ * are assumed to be numbered i=0,1,.... Transition probabilities are assumed 
+ * to be independent of state and time and are computed by the lattice.
+ * 
+ * <p>The code can easily be rewritten to cover the general case of both time and state 
+ * dependent transition probabilities. Simply define 
+ * <code>Lattice::transitionProbability</code> to be a function of the edge i, time t and 
+ * the node n. For reasons of speed this approach is not taken here.
  *
  * @param Node the type of nodes in this lattice.
  */
@@ -180,7 +188,7 @@ public:
 				psum=0.0;
 	        	for(int i=0;i<nEdge;i++) {
 					
-					Node* edge=edges[i];
+					// Node* edge=edges[i];
 					p=transitionProbability(i);
 					if((p<0)||(p>1)) prob_failure=true;
 					psum+=p;
@@ -216,15 +224,12 @@ public:
  *  Assumes that the nodes store the state 
  *  \f[Z_j=k[j]*a,\quad a=\sqrt{dt},\quad j=0,1,...,r-1,\f]
  *  in the integer vector k and have construtors of the form
- *  <center><code>
- *  Node(int s, int* k, LatticeData* latticeData),
- *  </code></center>
- *  where s is the number of time steps to reach the node from time zero,
- *  k is the integer vector storing the state of Z and latticeData is an object
- *  containing necessary information about the lattice the nodes live in.
+ *  <center><code>Node(int e, int* k),</code></center>
+ *  where e is the number of edges originating at this node,
+ *  k is the integer vector storing the state of Z.
  *  Here dt is the size of the time step and \f$a=\sqrt{dt}\f$ the tick size of a 
  *  standard Brownian motion over a time step of size dt. Code is limited to
- *  lattices built with on {@link StandardBrownianNodes}.
+ *  lattices built with {@link StandardBrownianNodes}.
  */
 namespace LatticeBuilder {
 

@@ -39,7 +39,7 @@ class LowDiscrepancySequence;
 /*! \file Optimizer.h
  * <p>BFGS, Downhill Simplex optimizers and global search along a Sobol sequence.
  * The BFGS optimizer is modified so as to
- * cope with objective functions \f$f(u)\f$ with a graph with step function like 
+ * cope with objective functions \f$f(u)\f$ with step function like 
  * qualities. Our main applications are expectations
  * \f[f(u)=E[X(u)],\f]
  * where the random variable \f$X(u)\f$ depends on the parameter vector u.
@@ -90,6 +90,7 @@ public:
     /** @param n dimension of argument vector.
      */
     Optimizer(int _n) : n(_n) { }
+	virtual ~Optimizer(){ }
 	
     
 }; // end Optimizer

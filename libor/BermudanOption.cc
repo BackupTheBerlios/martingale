@@ -88,7 +88,7 @@ BermudanSwaption::
 currentForwardPayoff(int s)
 {
 	if(s==q) return 0.0;                  // never exercised
-	Real S_sqT,H_sqT,h;
+	Real S_sqT,H_sqT;
 	S_sqT=LMM->swapRate(s,q,s);           // swaprate S_{s,q}(T_s)
 	if(S_sqT<kappa) return 0.0;
     H_sqT=LMM->H_pq(s,q,s);

@@ -53,10 +53,10 @@ void
 timeMatrixMultiply(int dim, int N)
 {
     RealMatrix A(dim); 
-	UTRRealMatrix B(dim);
+	RealMatrix B(dim);
 	Timer watch;
 	
-	std::cout << "\n\nTiming square matrix times upper triangular matrix\n"
+	std::cout << "\n\nTiming square matrix times square matrix\n"
 	          << "in dimension " << dim << ", for " << N << " products."
 	          << endl << endl 
 	          << "Optimal memory access pattern: " << endl;
@@ -70,7 +70,7 @@ timeMatrixMultiply(int dim, int N)
 			for(int j=i;j<dim;j++) B(i,j)=n-i+j; 
 		}
 			
-		A*=B;
+		A^=B;
 	}
     watch.stop();
     watch.report("time: ");
@@ -86,7 +86,7 @@ timeMatrixMultiply(int dim, int N)
 			for(int j=i;j<dim;j++) B(i,j)=n-i+j; 
 		}
 			
-		A^=B;
+		A*=B;
 	}
     watch.stop();
     watch.report("time: ");
@@ -154,7 +154,8 @@ liborPathTiming(int n, int N)
         watch.start();
 		for(int i=0;i<N;i++) lmm->newPath();
 		watch.stop();
-		watch.report(lmm->modelType());
+		cout << '\n' << *(lmm->getType());
+		watch.report(" ");
 	}		
 } // end liborPathTiming
 	

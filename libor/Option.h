@@ -55,8 +55,10 @@ class LmmLattice;
 /*! \file Option.h
  *  <p>The class {@link Option} is the general interface to all European or 
  *  Bermudan options. In fact Bermudan options allow exercise at an arbitrary 
- *  sequence of times and European Options are treated as a special case where 
- *  exercise is possible only at expiry.
+ *  sequence of times and European respectively American options are treated as 
+ *  a special case where exercise is possible only at expiry respectively at 
+ *  each time step. See {@link Otion}, {@link LiborDerivative}, 
+ *  {@link Caplet}, {@link Swaption} and {@link BondCall}.
  */
  
 

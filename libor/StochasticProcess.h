@@ -50,6 +50,8 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  */
 class StoppingTime {
 	
+protected:
+	
 	int T;  // number of time steps to horizon
 	
 public:
@@ -119,13 +121,8 @@ public:
    {  }
 
    
-   /** stop as soon as X(t) hits D or t=horizon.
-    */
-   bool stop(int t)
-   {
-       int T=X->getT();
-       return ((D->isMember(X->currentPath(t)))||(t==T));  
-   }
+   /** stop as soon as X(t) hits D or t=horizon.*/
+   bool stop(int t){ return ((D->isMember(X->currentPath(t)))||(t==T)); }
           
 }; //end HittingTime
 
@@ -156,13 +153,8 @@ public:
    {  }
 
    
-   /** Stop as soon as X(t) leaves D or t=horizon.
-    */
-   bool stop(int t)
-   {
-       int T=X->getT();
-       return (!(D->isMember(X->currentPath(t)))||(t==T));  
-   }
+   /** Stop as soon as X(t) leaves D or t=horizon.*/
+   bool stop(int t){ return (!(D->isMember(X->currentPath(t)))||(t==T)); }
        
        
 }; //end FirstExitTime
@@ -326,6 +318,8 @@ public:
      * @param T_oo number of time steps to horizon.
      */
     StochasticProcess(int d, int T_oo) : dim(d), T(T_oo) {  }
+	
+	virtual ~StochasticProcess(){ }
 
                                              
 // TIME STEPS
@@ -522,7 +516,7 @@ public:
 	 *  @param T   number of time steps to the horizon.
 	 */
 	BrownianVectorProcess(int dim, int T) : VectorProcess(dim,T),
-	path(T+1), Z(T,dim), 
+	path(T+1), Z(T,dim,0,0), 
 	SG(new MonteCarloVectorDriver(dim))
     {   
 		for(int t=0;t<=T;t++) path[t]=new RealVector(dim);

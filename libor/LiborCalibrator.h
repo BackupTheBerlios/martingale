@@ -227,6 +227,8 @@ public:
 	(LiborFactorLoading* fl,
 	 const char* capletsInFile="CapletsIn.txt",  const char* swaptionsInFile="SwaptionsIn.txt",
 	 const char* capletsOutFile="CapletsOut.txt", const char* swaptionsOutFile="SwaptionsOut.txt");
+	 
+	virtual ~LmmCalibrator(){ }
 	
 // ACCESSORS
 	
