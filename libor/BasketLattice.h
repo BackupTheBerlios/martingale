@@ -23,15 +23,18 @@ spyqqqdia@yahoo.com
 #ifndef martingale_basketlattice_h    
 #define martingale_basketlattice_h
 
+// template class BasketLattice must be implemented in header
+#include "TypedefsMacros.h"
+#include "Matrices.h"
+#include "Lattice.h"
+
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 
 
-// forward declarations
-class Realvector;
-class UTRRealMatrix;
-class BasketNode2F;
+// we are using
+class BasketNode2F;              
 class BasketNode3F;
 
 
@@ -172,13 +175,13 @@ public:
 	 *  @param sg asset volatilities.
 	 *  @param rho correlation of returns.
 	 */
-	BasketLattice
-	(int _n, int _T, Real _dt, RealVector _S0, RealVector _sg, UTRRealMatrix& _rho) : 
-	Lattice<BasketNode>(_T),
-	n(_n), T(_T), dt(_dt), a(sqrt(dt)), S0(_S0), sg(_sg), driftunit(_n), rho(_rho)
+    BasketLattice
+    (int _n, int _T, Real _dt, RealVector _S0, RealVector _sg, UTRRealMatrix& _rho) : 
+    Lattice<BasketNode>(_T),
+    n(_n), T(_T), dt(_dt), a(sqrt(dt)), S0(_S0), sg(_sg), driftunit(_n), rho(_rho)
     {  
-		for(int j=0;j<n;j++) driftunit[j]=-sg[j]*sg[j]*dt/2.0;
-	}
+	    for(int j=0;j<n;j++) driftunit[j]=-sg[j]*sg[j]*dt/2.0;
+    }
 	
   
 }; // end BasketLattice
@@ -236,7 +239,7 @@ public:
     /** Computes the relative errors in the trae norm of the approximate rank two 
      *  factorization rho=RR' of the correlation matrix rho. See book, Appendix A.1.
      */
-    void testFactorization();
+    void testFactorization() const;
 
 	
 	
@@ -310,7 +313,7 @@ public:
     /** Computes the relative errors in the trae norm of the approximate rank two 
      *  factorization rho=RR' of the correlation matrix rho. See book, Appendix A.1.
      */
-    void testFactorization();
+    void testFactorization() const;
 
 	
 	

@@ -22,14 +22,15 @@ spyqqqdia@yahoo.com
 
 #include "BasketLattice.h"
 #include "Lattice.h"
+#include "Matrices.h"
 #include "Utils.h"
-#include "Array.h"
+#include <string>
+#include <iostream>
 #include <math.h>
-
 using namespace Martingale;
 
 
-				
+
 
 /**********************************************************************************
  *
@@ -37,54 +38,58 @@ using namespace Martingale;
  *
  *********************************************************************************/
 	
-    BasketLattice2F::BasketLattice2F
-	(int _n, int _T, Real _dt, RealVector& _S0, RealVector& _sg, UTRRealMatrix& _rho) :
-	BasketLattice<BasketNode2F>(_n,_T,_dt,_S0,_sg,_rho),
-	R(_rho.rankReducedRoot(2))
-    {  	
-		// scale the rows of R back to norm one 
-		// this preserves rho_{jj}=1 and volatilities
-		for(int i=0;i<n-1;i++){
+BasketLattice2F::
+BasketLattice2F
+(int _n, int _T, Real _dt, RealVector& _S0, RealVector& _sg, UTRRealMatrix& _rho) :
+BasketLattice<BasketNode2F>(_n,_T,_dt,_S0,_sg,_rho),
+R(_rho.rankReducedRoot(2))
+{  	
+	// scale the rows of R back to norm one 
+	// this preserves rho_{jj}=1 and volatilities
+	for(int i=0;i<n-1;i++){
 			
-			Real f=0.0;      // norm of row_i(R)
-			for(int j=0;j<2;j++) f+=R(i,j)*R(i,j);
-			f=sqrt(f);
-			R.scaleRow(i,1.0/f);
-		}
+		Real f=0.0;      // norm of row_i(R)
+		for(int j=0;j<2;j++) f+=R(i,j)*R(i,j);
+		f=sqrt(f);
+		R.scaleRow(i,1.0/f);
+	}
 		
-		buildLattice();       // build lattice with T time steps
-		testFactorization();
+	buildLattice();       // build lattice with T time steps
+	testFactorization();
 		
-	} // end constructor
+} // end constructor
 	
 				
-    BasketLattice2F* BasketLattice2F::sample(int n, int T)
-    {
-		// initial asset prices
-		RealVector S0(n);
-		for(int j=0;j<n;j++) S0[j]=100.0;
+BasketLattice2F* 
+BasketLattice2F::
+sample(int n, int T)
+{
+	// initial asset prices
+	RealVector S0(n);
+	for(int j=0;j<n;j++) S0[j]=100.0;
 			
-		// volatilities
-		RealVector sg(n);
-		for(int j=0;j<n;j++) sg[j]=0.3;
+	// volatilities
+	RealVector sg(n);
+	for(int j=0;j<n;j++) sg[j]=0.3;
 			
-		// correlation of returns
-		UTRRealMatrix rho(n);
-	    for(int j=0;j<n;j++)
-		for(int k=j;k<n;k++) rho(j,k)=exp(0.2*(j-k));
+	// correlation of returns
+	UTRRealMatrix rho(n);
+    for(int j=0;j<n;j++)
+	for(int k=j;k<n;k++) rho(j,k)=exp(0.2*(j-k));
 			
-		// time step
-		Real dt=0.1;
+	// time step
+	Real dt=0.1;
 		
-		return new BasketLattice2F(n,T,dt,S0,sg,rho);
-	}
+	return new BasketLattice2F(n,T,dt,S0,sg,rho);
+}
 	
 	
 // Covariance matrix rank 2 factorization error
 	
 
-void BasketLattice2F::
-testFactorization()
+void 
+BasketLattice2F::
+testFactorization() const
 {
 	cout << "\n\nRelative errors of the approximate rank 2 factorization"
 	     << "\nrho=RR' (rank(R)=2) of the correlation matrix rho"
@@ -156,53 +161,53 @@ buildLattice()
 					edgeList.push_back(*edge);
 					
 			   } // end for k,l
-			} // end for theNode
+		} // end for theNode
 
-				
-			cout << "\nTime step s = " << s << ", total nodes = " << nodes;
+        cout << "\nTime step s = " << s << ", total nodes = " << nodes;
 		
-		} // end for s
-		
-	} // end buildLattice
+	} // end for s
+} // end buildLattice
 	
 	
 		
-	 void BasketLattice2F::
-	 setAssetPrices(BasketNode2F* node)
-	 {
-         int s=node->getTimeStep();   // time step at which node lives
+void 
+BasketLattice2F::
+setAssetPrices(BasketNode2F* node)
+{
+     int s=node->getTimeStep();   // time step at which node lives
 			         
-         Real Z1=node->get_i()*a, 
-		      Z2=node->get_j()*a;     // Z2=ja
+     Real Z1=node->get_i()*a, 
+          Z2=node->get_j()*a;     // Z2=ja
 		 
-		 // compute asset prices
-		 RealVector& S=node->getS();
+	 // compute asset prices
+	 RealArray1D& S=node->getS();
 		 
-		 // volatility parts V_j of Y_j=log(S_j)
-		 for(int j=0;j<n;j++) S[j]=sg[j]*(R(j,0)*Z1+R(j,1)*Z2); 
+	 // volatility parts V_j of Y_j=log(S_j)
+	 for(int j=0;j<n;j++) S[j]=sg[j]*(R(j,0)*Z1+R(j,1)*Z2); 
 		 
-         // V_j -> Y_j: add on initial value and drift
-		 for(int j=0;j<n;j++) S[j]+=log(S0[j])+s*driftunit[j];  
+     // V_j -> Y_j: add on initial value and drift
+	 for(int j=0;j<n;j++) S[j]+=log(S0[j])+s*driftunit[j];  
 				 
-		 // move from Y_j=log(S_j) to S_j
-		 for(int j=0;j<n;j++) S[j]=exp(S[j]);    
+	 // move from Y_j=log(S_j) to S_j
+	 for(int j=0;j<n;j++) S[j]=exp(S[j]);    
 			 
-	} // setAssetPrices
+} // setAssetPrices
 
 	
 	
 	
 // TEST
 	
-	void BasketLattice2F::
-    test(int n, int T)
-    {
-		Timer watch; watch.start();
-		BasketLattice2F* lattice=sample(n,T);
-		lattice->selfTest();
-		watch.stop();
-		watch.report("Libor tree construction and self test");
-	}
+void 
+BasketLattice2F::
+test(int n, int T)
+{
+	Timer watch; watch.start();
+	BasketLattice2F* lattice=sample(n,T);
+	lattice->selfTest();
+	watch.stop();
+	watch.report("Libor tree construction and self test");
+}
 
 
 
@@ -213,54 +218,57 @@ buildLattice()
  *********************************************************************************/
 	
 	
-    BasketLattice3F::BasketLattice3F
-	(int _n, int _T, Real _dt, RealVector& _S0, RealVector& _sg, UTRRealMatrix& _rho):
-	BasketLattice<BasketNode3F>(_n,_T,_dt,_S0,_sg,_rho),
-	R(_rho.rankReducedRoot(3))
-    {  	
-		// scale the rows of R back to norm one 
-		// this preserves rho_{jj}=1 and volatilities
-		for(int i=0;i<n-1;i++){
+BasketLattice3F::
+BasketLattice3F
+(int _n, int _T, Real _dt, RealVector& _S0, RealVector& _sg, UTRRealMatrix& _rho):
+BasketLattice<BasketNode3F>(_n,_T,_dt,_S0,_sg,_rho),
+R(_rho.rankReducedRoot(3))
+{  	
+	// scale the rows of R back to norm one 
+	// this preserves rho_{jj}=1 and volatilities
+	for(int i=0;i<n-1;i++){
 			
-			Real f=0.0;      // norm of row_i(R)
-			for(int j=0;j<3;j++) f+=R(i,j)*R(i,j);
-			f=sqrt(f);
-			R.scaleRow(i,1.0/f);
-		}
+		Real f=0.0;      // norm of row_i(R)
+		for(int j=0;j<3;j++) f+=R(i,j)*R(i,j);
+		f=sqrt(f);
+		R.scaleRow(i,1.0/f);
+	}
 		
-		buildLattice();       // build lattice with T time steps
-		testFactorization();
+	buildLattice();       // build lattice with T time steps
+	testFactorization();
 		
-	} // end constructor
+} // end constructor
 	
 				
-    BasketLattice3F* BasketLattice3F::sample(int n, int T)
-    {
-		// initial asset prices
-		RealVector S0(n);
-		for(int j=0;j<n;j++) S0[j]=100.0;
+BasketLattice3F* 
+BasketLattice3F::
+sample(int n, int T)
+{
+	// initial asset prices
+	RealVector S0(n);
+	for(int j=0;j<n;j++) S0[j]=100.0;
 			
-		// volatilities
-		RealVector sg(n);
-		for(int j=0;j<n;j++) sg[j]=0.3;
+	// volatilities
+	RealVector sg(n);
+	for(int j=0;j<n;j++) sg[j]=0.3;
 			
-		// correlation of returns
-		UTRRealMatrix rho(n);
-	    for(int j=0;j<n;j++)
-		for(int k=j;k<n;k++) rho(j,k)=exp(0.2*(j-k));
+	// correlation of returns
+	UTRRealMatrix rho(n);
+    for(int j=0;j<n;j++)
+	for(int k=j;k<n;k++) rho(j,k)=exp(0.2*(j-k));
 			
-		// time step
-		Real dt=0.1;
+	// time step
+	Real dt=0.1;
 		
-		return new BasketLattice3F(n,T,dt,S0,sg,rho);
-	}
+	return new BasketLattice3F(n,T,dt,S0,sg,rho);
+}
 	
 	
 // Covariance matrix rank 2 factorization error
 	
-
-void BasketLattice3F::
-testFactorization()
+void 
+BasketLattice3F::
+testFactorization() const
 {
 	cout << "\n\nRelative errors of the approximate rank 3 factorization"
 	     << "\nrho=RR' (rank(R)=3) of the correlation matrix rho"
@@ -335,54 +343,54 @@ buildLattice()
 					edgeList.push_back(*edge);
 					
 			   } // end for p,q,r
-			} // end for theNode
+		} // end for theNode
 
-				
-			cout << "\nTime step s = " << s << ", total nodes = " << nodes;
+		cout << "\nTime step s = " << s << ", total nodes = " << nodes;
 		
-		} // end for s
-		
-	} // end buildLattice
+	} // end for s
+} // end buildLattice
 	
 	
-		
-	 void BasketLattice3F::
-	 setAssetPrices(BasketNode3F* node)
-	 {
-         int s=node->getTimeStep();   // time step at which node lives
+
+void 
+BasketLattice3F::
+setAssetPrices(BasketNode3F* node)
+{
+     int s=node->getTimeStep();   // time step at which node lives
 			         
-         Real Z1=node->get_i()*a, 
-		      Z2=node->get_j()*a,     // Z2=ja
-		      Z3=node->get_k()*a;
+     Real Z1=node->get_i()*a, 
+	      Z2=node->get_j()*a,     // Z2=ja
+		  Z3=node->get_k()*a;
 		 
-		 // compute asset prices
-		 RealVector& S=node->getS();
+     // compute asset prices
+	 RealArray1D& S=node->getS();
 		 
-		 // volatility parts V_j of Y_j=log(S_j)
-		 for(int j=0;j<n;j++) S[j]=sg[j]*(R(j,0)*Z1+R(j,1)*Z2+R(j,2)*Z3); 
+	 // volatility parts V_j of Y_j=log(S_j)
+	 for(int j=0;j<n;j++) S[j]=sg[j]*(R(j,0)*Z1+R(j,1)*Z2+R(j,2)*Z3); 
 		 
-         // V_j -> Y_j: add on initial value and drift
-		 for(int j=0;j<n;j++) S[j]+=log(S0[j])+s*driftunit[j];  
+     // V_j -> Y_j: add on initial value and drift
+	 for(int j=0;j<n;j++) S[j]+=log(S0[j])+s*driftunit[j];  
 				 
-		 // move from Y_j=log(S_j) to S_j
-		 for(int j=0;j<n;j++) S[j]=exp(S[j]);    
+	 // move from Y_j=log(S_j) to S_j
+	 for(int j=0;j<n;j++) S[j]=exp(S[j]);    
 			 
-	} // setAssetPrices
+} // setAssetPrices
 
 	
 	
 	
 // TEST
 	
-	void BasketLattice3F::
-    test(int n, int T)
-    {
-		Timer watch; watch.start();
-		BasketLattice3F* lattice=sample(n,T);
-		lattice->selfTest();
-		watch.stop();
-		watch.report("Libor tree construction and self test");
-	}
+void 
+BasketLattice3F::
+test(int n, int T)
+{
+	Timer watch; watch.start();
+	BasketLattice3F* lattice=sample(n,T);
+	lattice->selfTest();
+	watch.stop();
+	watch.report("Libor tree construction and self test");
+}
 
 	
 	

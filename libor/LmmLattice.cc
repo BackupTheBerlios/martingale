@@ -21,66 +21,15 @@ spyqqqdia@yahoo.com
 */
 
 #include "LmmLattice.h"
+#include "LiborFactorLoading.h"
 #include "Node.h"
 #include "Array.h"
 #include "Matrices.h"
-#include <math.h>
+#include "Utils.h"
+#include <cmath>
 using namespace Martingale;
 
 
-
-
-/**********************************************************************************
- *
- *                          GENERAL LMM LATTICE
- *
- *********************************************************************************/
-
-
-
-LmmLattice::
-LmmLattice(LiborFactorLoading* fl, int s, int steps=1) : Lattice<LmmNode>(s),
-n(fl->getDimension()), nSteps(steps),
-U0(n),
-H0(n+1),
-factorLoading(fl),
-mu(n,nSteps)
-{  
-	// set log(U_j(0)), j=0,1,...,n-1
-    Real* x=factorLoading->getInitialXLibors();     // x[j]=X_j(0)
-    for(int j=0;j<n;j++){ 
-			
-	    // U_j(0)=X_j(0)(1+X_{j+1}(0))...(1+X_{n-1}(0))
-		Real Uj0=x[j]; for(int k=j+1;k<n;k++) Uj0*=1+x[k]; 
-		U0[j]=Uj0;
-	}
-		
-	// set H_j(0)
-    H0[n]=1.0;
-	for(int j=n-1;j>=0;j--) H0[j]=H0[j+1]+U0[j];
-
-	// write the deterministic drifts mu_j(t)=mu_j(0,T_t)
-	for(int t=0;t<n-1;t++)
-	for(int u=0;u<nSteps;u++)
-	for(int j=t+1;j<n;j++){
-			
-		int s=t*nSteps+u;     // number of time step
-		mu(s,j)=-0.5*factorLoading->integral_sgi_sgj_rhoij(j,j,0.0,tau(s));
-	}
-} // end constructor
-	
-	
-	
-Real 
-LmmLattice::
-tau(int s)
-{
-    Real* T=factorLoading->getTenorStructure();
-	int t=s/nSteps;
-	Real delta_t=T[t+1]-T[t];
-		
-	return T[t]+(delta_t*(s%nSteps))/nSteps;
-}
 
 
 
@@ -105,7 +54,7 @@ sg(n-1,1),
 R(fl->getRho().rankReducedRoot(2))
 {  
 	// check if Libor accrual periods are constant
-	Real* deltas=fl->getDeltas();
+	const RealArray1D& deltas=fl->getDeltas();
 	for(int j=0;j<n;j++) if(deltas[j]!=delta) {
 			
 	   cout << "\n\nConstVolLmmLattice2F(): Libor accrual periods not constant."
@@ -143,7 +92,7 @@ R(fl->getRho().rankReducedRoot(2))
 
 void 
 ConstVolLmmLattice2F::
-testFactorization()
+testFactorization() const
 {
 	cout << "\n\nRelative errors of the approximate rank 2 factorization"
 	     << "\nrho=RR' (rank(R)=2) of the correlation matrix rho"
@@ -247,7 +196,7 @@ setStateVariables(LmmNode2F* node)
 	for(int j=t;j<n;j++) V[j]=exp(V[j]);    // now V=U
 				 
 	// write the  H_n=1, H_j=U_j+H_{j+1}, j=t,...,n-1, 
-	RealVector& H=node->getH();
+	RealArray1D& H=node->getH();
 	H[n]=1.0; 
     for(int j=n-1;j>=t;j--){ 
 			 
@@ -260,9 +209,10 @@ setStateVariables(LmmNode2F* node)
 
 void 
 ConstVolLmmLattice2F::
-test(int n)
+test(int n) const
 {
 	Timer watch; watch.start();
+	LiborFactorLoading*
 	fl=LiborFactorLoading::sample(n,VolSurface::CONST,Correlations::CS);
 	ConstVolLmmLattice2F lattice(fl,n-3);
 	lattice.selfTest();
@@ -290,7 +240,7 @@ sg(n-1,1),
 R(fl->getRho().rankReducedRoot(3))
 {  
 	// check if Libor accrual periods are constant
-	Real* deltas=fl->getDeltas();
+	const RealArray1D& deltas=fl->getDeltas();
 	for(int j=0;j<n;j++) if(deltas[j]!=delta) {
 			
 	   cout << "\n\nConstVolLmmLattice2F(): Libor accrual periods not constant."
@@ -330,8 +280,9 @@ R(fl->getRho().rankReducedRoot(3))
 // Covariance matrix rank 2 factorization error
 	
 
-void ConstVolLmmLattice3F::
-testFactorization()
+void 
+ConstVolLmmLattice3F::
+testFactorization() const
 {
 	cout << "\n\nRelative errors of the approximate rank 3 factorization"
 	     << "\nrho=RR' (rank(R)=3) of the correlation matrix rho"
@@ -343,7 +294,8 @@ testFactorization()
 
 
 
-void ConstVolLmmLattice3F::
+void 
+ConstVolLmmLattice3F::
 buildLattice(int m)
 {
 	cout << "\n\n\nBuilding lattice until time step s = " << m << endl << endl;
@@ -436,7 +388,7 @@ setStateVariables(LmmNode3F* node)
 	 for(int j=t;j<n;j++) V[j]=exp(V[j]);    // now V=U
 				 
 	 // write the  H_n=1, H_j=U_j+H_{j+1}, j=t,...,n-1, 
-	 RealVector& H=node->getH();
+	 RealArray1D& H=node->getH();
 	 H[n]=1.0; 
      for(int j=n-1;j>=t;j--){ 
 			 
@@ -449,7 +401,7 @@ setStateVariables(LmmNode3F* node)
 
 void 
 ConstVolLmmLattice3F::
-test(int n)
+test(int n) const
 {
 	Timer watch; watch.start();
 	LiborFactorLoading* 

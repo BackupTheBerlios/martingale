@@ -23,13 +23,16 @@ spyqqqdia@yahoo.com
 #ifndef martingale_lmm_calibrator_h    
 #define martingale_lmm_calibrator_h
 
+#include "TypedefsMacros.h"
 #include "FinMath.h"
 #include "LiborFactorLoading.h"
 #include "Optimizer.h"
+#include "Utils.h"
 #include <iostream>
 #include <fstream>
 #include <list>
 #include <string>
+#include <cmath>
 
 //#include <string>
 #include <math.h>

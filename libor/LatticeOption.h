@@ -23,17 +23,16 @@ spyqqqdia@yahoo.com
 #ifndef martingale_latticeoption_h    
 #define martingale_latticeoption_h
 
+// template class must be implemented in header
+#include "TypedefsMacros.h"
+#include "LatticeOption.h"
+#include "Node.h"
+#include "LmmLattice.h"
+#include "LowFactorDriftlessLMM.h"
+#include "Derivatives.h"
+#include <math.h>
 
 MTGL_BEGIN_NAMESPACE(Martingale)
-
-
-
-// forward declaration
-template<typename Node> 
-class Lattice;
-
-class LmmNode2F;
-class LmmNode3F;             // for typedef LatticeSwaption<LmmNode3F> below
 
 
 
@@ -86,7 +85,9 @@ public:
 	/** @param lattice the underlying {@link Lattice}.
 	 *  @param t number of time steps to option exercise.
 	 */
-	LatticeEuropeanOption(Lattice<Node>* lattice, int t) : theLattice(lattice), s(t) {  }
+	LatticeEuropeanOption(Lattice<Node>* lattice, int t) : 
+    theLattice(lattice), s(t) 
+    {  }
 		
 		
 	/** The option payoff h at time t=s accrued forward to the horizon of the underlying
@@ -98,17 +99,55 @@ public:
 		
 	/** The forward price at time t=0.
 	 */
-	Real forwardPrice();
-		
+	Real forwardPrice()
+    {
+	    computeConditionalExpectations();
+	    Node* root=theLattice->getRoot();
+	    return root->getPi();
+    }	
 
 		
 private:		
 		
-	/** Rolls back the forward price \f$\pi_t=E_t(h)\f$ starting from time t=s to time t=0
-	 *  through all nodes in the lattice. Here s is the discrete time of option expiration.
-	 *  The value \f$\pi_t=E_t(h)\f$ is written into the field <code>pi</code> of each node.
-	 */
-	void computeConditionalExpectations();	
+/** Rolls back the forward price \f$\pi_t=E_t(h)\f$ starting from time t=s to time t=0
+ *  through all nodes in the lattice. Here s is the discrete time of option expiration.
+ *  The value \f$\pi_t=E_t(h)\f$ is written into the field <code>pi</code> of each node.
+ */
+computeConditionalExpectations()
+{
+	// run through the list of nodes at time t=s and set the known value pi_s=h
+	std::list<Node*>& nodes_s=theLattice->getNodeList(s);	    
+    std::list<Node*>::const_iterator theNode;
+	for(theNode=nodes_s.begin(); theNode!=nodes_s.end(); ++theNode)
+	{
+		// the list is a list of pointers to Node, so *theNode is pointer to Node
+		Node* node=*theNode;      
+		node->setPi(forwardPayoff(node));
+	}
+	
+	// backward computation through earlier nodes
+	for(int t=s-1; t>=0;t--){
+		
+		std::list<Node*>& nodes=theLattice->getNodeList(t);	    
+    	for(theNode=nodes.begin(); theNode!=nodes.end(); ++theNode)
+	    {
+		     Node* node=*theNode;
+			 std::list<Edge>& edges=node->getEdges();
+				
+			 Real E_th=0.0;
+			 std::list<Edge>::const_iterator theEdge;
+			 for(theEdge=edges.begin(); theEdge!=edges.end(); ++theEdge)
+	         {	
+		         Real p=theEdge->probability;
+				 // E_{t+1}(h) at the node the edge points to.    
+				 Real E_t1h=theEdge->node->getPi(); 
+				 E_th+=p*E_t1h;
+	         }	
+			 node->setPi(E_th);			 
+	    } // end for nodes
+			
+	} // end for t
+} // end computeConditionalExpectations	
 	
 }; // end LmmLatticeEuropeanOption 
 
@@ -158,16 +197,52 @@ public:
 	 *  accrued forward to the horizon \f$T_n\f$ of the underlying Libor process.
 	 */ 
 	//the NodeType extends LmmNode
-	Real forwardPayoff(Node* node);
-
+	Real forwardPayoff(Node* node)
+    {
+	     Real swapRate=node->swapRate(p,q);
+	     if(swapRate<=kappa) return 0.0;
+	     // else, forward price of the annuity B_{p,q}
+         Real Hpq=node->Hpq(p,q); 
+	     return (swapRate-kappa)*Hpq;
+    }
 	
 // TEST
 	
-	/** Allocate a sample {@link LMMlattice3F} of dimension q and computes the forward 
-	 *  price of the at the money payer swaption exercisable at time \f$T_s\f$ into a swap 
-	 *  along \f$[T_p,T_q]\f$.
-	 */
-	static void test(int s, int p, int q);
+/** Allocate a sample {@link LMMlattice3F} of dimension q and computes the forward 
+ *  price of the at the money payer swaption exercisable at time \f$T_s\f$ into a swap 
+ *  along \f$[T_p,T_q]\f$.
+ */
+static void test(int s, int p, int q)
+{
+	Timer watch; watch.start();
+	LiborFactorLoading* 
+	fl=LiborFactorLoading::sample(q,VolSurface::CONST,Correlations::CS); 
+	// number of time steps in each Libor accrual interval
+	int nSteps=2;
+	ConstVolLmmLattice3F theLattice(fl,s,nSteps);
+	LmmNode* root=theLattice.getRoot();
+	Real strike=root->swapRate(p,q);           // swap rate at time zero
+				
+	LiborMarketModel* lmm=new LowFactorDriftlessLMM(fl,3);
+	Derivative* swpnLmm=new Swaption(p,q,s,strike,lmm);
+	Real mcPrice=swpnLmm->monteCarloForwardPrice(20000),
+	     aPrice =swpnLmm->analyticForwardPrice();
+		
+	cout << "\n\n\nSwaption forward price: "
+	     << "\nAnalytic: " << aPrice
+	     << "\nMonte Carlo, 3 factors: " << mcPrice;
+		
+
+	LatticeSwaption<LmmNode3F> swpn(&theLattice,s,p,q,strike,nSteps);
+	Real treePrice=swpn.forwardPrice();
+		
+	cout << "\nTree: " << treePrice;
+        
+	watch.stop();
+	watch.report("Time");
+}	
+	
+	
 	
 }; // end LatticeSwaption
 

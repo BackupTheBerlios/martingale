@@ -30,12 +30,15 @@ spyqqqdia@yahoo.com
 #ifndef martingale_libormarketmodel_h    
 #define martingale_libormarketmodel_h
 
+#include "TypedefsMacros.h"
+#include "Matrices.h"
+
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
-// forward declarations
-class RealArray1D;
+// we are using
 class LiborFactorLoading;
+class std::ostream;
 
 
 class Bond;  // defined below
@@ -388,8 +391,9 @@ public:
 	  * @param t aggregate volatility until time \f$T_t\f$.
 	  */
 	 virtual Real bondAggregateVolatility(Bond* B, int t) const;
-
 	 
+	 
+
 // STRING MESSAGE	 
 	    
    /** Message and fields.*/

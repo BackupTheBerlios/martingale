@@ -23,17 +23,21 @@ spyqqqdia@yahoo.com
 #ifndef martingale_stochasticgenerator_h
 #define martingale_stochasticgenerator_h
 
-#include "QuasiMonteCarlo.h"
+#include "TypedefsMacros.h"
 #include "Random.h"
-
-/*
- * StochasticGenerator.h
- *
- * Created on April 22, 2003, 6:00 PM
- */
-
+#include "Matrices.h"
 
 MTGL_BEGIN_NAMESPACE(Martingale) 
+
+
+
+
+// we are using
+class std::ostream;
+class LowDiscrepancySequence;
+
+
+
 
 /*! \file StochasticGenerator.h
  *  <p>A stochastic generator is a driver generating independent standard normal
@@ -90,46 +94,62 @@ public:
 	 */
 	StochasticGenerator(int m=1) : n(m) {  }
 	
-	/** Writes standard normal deviates needed to drive a simulation 
-	 *  from discrete time t to discrete time T into the vector Z.
-	 *  Z must have zero based index.
-	 */
-	virtual void newWienerIncrements(int t, int T, vector<Real>& Z) {  }
+// ADAPTERS
 	
 	/** Writes standard normal deviates needed to drive a simulation 
 	 *  from discrete time t to discrete time T into the vector Z.
 	 *  Z must have zero based index.
 	 */
-	virtual void newWienerIncrements(int t, int T, Real* Z) {  }
+	virtual void newWienerIncrements(int t, int T, RealVector& Z) const {  }
+	
+	/** Writes standard normal deviates needed to drive a simulation 
+	 *  from discrete time t to discrete time T into the vector Z.
+	 *  Z must have zero based index.
+	 */
+	virtual void newWienerIncrements(int t, int T, Real* Z) const {  }
     
 	/** Writes standard normal deviates needed to drive a simulation 
 	 *  from discrete time t to discrete time T into the upper triangular 
 	 *  matrix Z. Z must have zero based indices.
 	 */
-    virtual void newWienerIncrements(int t, int T, UTRMatrix<Real>& Z) {  }
+    virtual void newWienerIncrements(int t, int T, UTRRealMatrix& Z) const  {  }
 	
 	/** Writes standard normal deviates needed to drive a simulation 
 	 *  from discrete time t to discrete time T into the square matrix Z.
 	 *  Z must have zero based indices.
 	 */
-    virtual void newWienerIncrements(int t, int T, Matrix<Real>& Z) {  }
+    virtual void newWienerIncrements(int t, int T, RealMatrix& Z) const {  }
+	
+	/** Writes standard normal deviates needed to drive a simulation 
+	 *  from discrete time t to discrete time T into the square matrix Z.
+	 *  Z must have zero based indices.
+	 */
+    virtual void newWienerIncrements(int t, int T, RealArray2D& Z) const {  }
 	
     /** Writes standard normal deviates needed to drive a simulation 
 	 *  from discrete time t to discrete time T into the matrix Z.
 	 *  Z must have zero based index.
 	 */
-	virtual void newWienerIncrements(int t, int T, Real** Z) {  }
+	virtual void newWienerIncrements(int t, int T, Real** Z) const  {  }
 	
 	/** Restarts the generator. Necessary for low discrepancy sequences.
 	 *  Default implementation: empty, suitable for random number generators.
 	 */
-	virtual void restart() {  }
+	virtual void restart() const  {  }
 	
 	/** String identifying the generator.
 	 */
-	virtual string toString() const { return "Unspecified generator"; }
+   /** Message and fields.*/
+   virtual std::ostream& printSelf(std::ostream& os) const;
 	
 }; // end StochasticGenerator
+
+
+
+// GLOBAL INSERTION
+
+std::ostream& operator << 
+(std::ostream& os, const StochasticGenerator& sg) { return sg.printSelf(os); }
 
 
 
@@ -152,15 +172,12 @@ public:
 	 *  simulation from discrete time t to discrete time T into the upper
 	 *  triangular matrix Z. Z must have zero based indices.
 	 */
-    void newWienerIncrements(int t, int T, UTRMatrix<Real>& Z)
-    {
-		 for(int s=t;s<T;s++)
-         for(int k=s+1;k<n;k++)Z(s,k)=Random::sTN();
-    }
+    void newWienerIncrements(int t, int T, UTRRealMatrix& Z);
 	
 	/** String identifying the generator.
 	 */
-	string toString() const { return "Mersenne Twister"; }
+   std::ostream& printSelf(std::ostream& os) const;
+
 
 }; // end MonteCarloLiborDriver
 
@@ -180,26 +197,14 @@ public:
 	 *  simulation from discrete time t to discrete time T into the upper
 	 *  triangular matrix Z. Z must have zero based indices.
 	 */
-    void newWienerIncrements(int t, int T, UTRMatrix<Real>& Z)
-    {		
-			// number of normal deviates needed per path
-			int d = (T-t)*(2*n-(1+t+T))/2;
-			// check if Sobol generator is intialized in the right dimension
-			if(lds==0) lds=new Sobol(d);
-			else if ((lds->getDimension())!=d){ delete lds; lds=new Sobol(d); }
-
-			Real* x=lds->nextQuasiNormalVector();
-			int coordinate=0;
-		    for(int s=t;s<T;s++)
-            for(int k=s+1;k<n;k++){ Z(s,k)=x[coordinate]; coordinate++; }
-     
-    } // end newWienerIncrements
+    void newWienerIncrements(int t, int T, UTRRealMatrix& Z);
 	
-	void restart(){ if(lds) lds->restart(); }
+	void restart();
 	
     /** String identifying the generator.
 	 */
-	string toString() const { return "Sobol sequence"; }
+	std::ostream& printSelf(std::ostream& os) const;
+
 
 }; // end SobolLiborDriver
 
@@ -224,22 +229,18 @@ public:
 	 *  path from discrete time t to discrete time s into the 
 	 *  matrix Z. 
 	 */
-    void newWienerIncrements(int t, int s, Real** Z)
-    {
-		 for(int u=t;u<s;u++)
-         for(int k=0;k<n;k++) Z[u][k]=Random::sTN();
-    }
+    void newWienerIncrements(int t, int s, Real** Z);
 	
 	/** Writes standard normal deviates needed to drive one path 
 	 *  path from discrete time t to discrete time s into the 
 	 *  matrix Z. 
 	 */
-	void newWienerIncrements(int t, int s, Matrix<Real>& Z)
-    {   newWienerIncrements(t,s,Z.getData());  }
+	void newWienerIncrements(int t, int s, RealMatrix& Z);
 	
 	/** String identifying the generator.
 	 */
-	string toString() const { return "Mersenne Twister"; }
+	std::ostream& printSelf(std::ostream& os) const;
+	
 
 }; // end MonteCarloVectorDriver
 
@@ -264,32 +265,20 @@ public:
 	 *  path from discrete time t to discrete time s into the 
 	 *  matrix Z. 
 	 */
-    void newWienerIncrements(int t, int s, Real** Z)
-    {		
-	    // Use s Sobol vector of full dimension n*T otherwise the effective
-		// dimension of the simulation is underestimated if a path is computed 
-		// as a series of path segments.			
-		if(lds==0) lds=new Sobol(n*T);
-        Real* x=lds->nextQuasiNormalVector();
-	    int coordinate=0;
-		for(int u=t;u<s;u++)
-        for(int k=0;k<n;k++){ Z[u][k]=x[coordinate]; coordinate++; }
-     
-    } // end newWienerIncrements
+    void newWienerIncrements(int t, int s, Real** Z);
 	
     
 	/** Writes standard normal deviates needed to drive one path 
 	 *  path from discrete time t to discrete time s into the 
 	 *  matrix Z. 
 	 */
-	void newWienerIncrements(int t, int s, Matrix<Real>& Z)
-    {   newWienerIncrements(t,s,Z.getData());  }
+	void newWienerIncrements(int t, int s, RealMatrix& Z);
 	
-	void restart(){ if(lds) lds->restart(); }
+	void restart();
 	
     /** String identifying the generator.
 	 */
-	string toString() const { return "Sobol sequence"; }
+	std::ostream& printSelf(std::ostream& os) const;
 
 }; // end SobolVectorDriver
 
@@ -313,14 +302,11 @@ public:
 	/** Writes standard normal deviates needed to drive one path 
 	 *  path from discrete time t to discrete time s into the vector Z. 
 	 */
-    void newWienerIncrements(int t, int s, Real* Z)
-    {
-		 for(int u=t;u<s;u++) Z[u]=Random::sTN();
-    }
+    void newWienerIncrements(int t, int s, Real* Z);
 	
 	/** String identifying the generator.
 	 */
-	string toString() const { return "Mersenne Twister"; }
+	std::ostream& printSelf(std::ostream& os) const;
 
 }; // end MonteCarloScalarDriver
 
@@ -341,22 +327,13 @@ public:
 	/** Writes standard normal deviates needed to drive one path 
 	 *  path from discrete time t to discrete time s into the vector Z. 
 	 */
-    void newWienerIncrements(int t, int s, Real* Z)
-    {		
-			// Use s Sobol vector of full dimension T otherwise the effective
-		    // dimension of the simulation is underestimated if a path is computed 
-		    // as a series of path segments.
-			if(lds==0) lds=new Sobol(T);
-			Real* x=lds->nextQuasiNormalVector();
-		    for(int u=t;u<s;u++) Z[u]=x[u]; 
-     
-    } // end newWienerIncrements
+    void newWienerIncrements(int t, int s, Real* Z);
 	
-	void restart(){ if(lds) lds->restart(); }
+	void restart();
 	
     /** String identifying the generator.
 	 */
-	string toString() const { return "Sobol sequence"; }
+	std::ostream& printSelf(std::ostream& os) const;
 
 }; // end SobolScalarDriver
 

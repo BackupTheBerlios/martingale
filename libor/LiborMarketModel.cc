@@ -244,6 +244,7 @@ capletAggregateVolatility(int i) const
 
              
 Real 
+LiborMarketModel::
 swaptionAggregateVolatility(int p, int q, int t) const
 { 
     cout << "LiborMarketModel#swaptionAggregateVolatility(): " 
@@ -254,6 +255,7 @@ swaptionAggregateVolatility(int p, int q, int t) const
 
 
 Real 
+LiborMarketModel::
 bondAggregateVolatility(Bond* B, int t) const
 { 
      cerr << "LiborMarketModel#bondAggregateVolatility(): " 
@@ -261,6 +263,7 @@ bondAggregateVolatility(Bond* B, int t) const
 	 exit(1);
 	 return 0.0;
 } 
+
 
 
 

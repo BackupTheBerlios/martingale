@@ -545,6 +545,19 @@ typedef Array1D<Real> RealArray1D;
 typedef Array2D<Real> RealArray2D;
 typedef Array3D<Real> RealArray3D;
 
+typedef Array1D<int> IntArray1D;
+typedef Array2D<int> IntArray2D;
+typedef Array3D<int> IntArray3D;
+
+typedef Array1D<long> LongArray1D;
+typedef Array2D<long> LongArray2D;
+
+typedef Array1D<unsigned long> UnsignedLongArray1D;
+typedef Array2D<unsigned long> UnsignedLongArray2D;
+
+
+
+
 
 
 /**********************************************************************************

@@ -23,6 +23,7 @@ spyqqqdia@yahoo.com
 #ifndef martingale_stochasticprocess_h
 #define martingale_stochasticprocess_h
 
+#include "Array.h"
 #include "RandomObject.h"
 #include "StochasticGenerator.h"
 
@@ -174,9 +175,9 @@ public:
  * 
  ********************************************************************************************/ 
 
-/** Region G in Euclidean space, RangeType=vector<Real>. 
+/** Region G in Euclidean space, RangeType=RealVector. 
  */
-class EuclideanRegion : public Region< vector<Real> > {
+class EuclideanRegion : public Region< RealVector > {
 	
 protected:
 	
@@ -190,17 +191,17 @@ public:
 	EuclideanRegion(int d) : dim(d) { }
 	
 	/** Projection of x onto the boundary of G. */
-	virtual vector<Real>& boundaryProjection(vector<Real>& x) = 0;
+	virtual RealVector& boundaryProjection(const RealVector& x) = 0;
 	
 	/** Intersection of the straight line from u to v with the boundary  
 	 *  of G. It is assumed that u is inside and v outside of G. 
 	 *  Simply moves toward the boundary along this straight line using
 	 *  continued bisection N times and then projects onto the boundary.
 	 */
-	vector<Real>& boundaryIntersection
-	(vector<Real>& u, vector<Real>& v, int N=5)
+	RealVector& boundaryIntersection
+	(const RealVector& u, const RealVector& v, int N=5) 
     {
-		vector<Real> x(u), y(v), z(u);
+		RealVector x(u), y(v), z(u);
 		for(int i=0;i<N;i++){          
 			
 			z=x; z+=y; z*=0.5;
@@ -229,7 +230,7 @@ public:
 	 */
 	Ball(int d, Real r=1.0) : EuclideanRegion(d), R(r) {  }
 	
-	bool isMember(const vector<Real>& x)
+	bool isMember(const RealVector& x)
     {
 		Real sum=0;
 		for(int i=0;i<dim;i++) sum+=x[i]*x[i];
@@ -237,9 +238,9 @@ public:
 	}
 	
 	/** Projects x on the boundary of he ball. */
-	vector<Real>& boundaryProjection(vector<Real>& x)
+	RealVector& boundaryProjection(const RealVector& x)
     {
-		vector<Real>& u=*(new vector<Real>(x));
+		RealVector& u=*(new RealVector(x));
 		u*=R/x.norm();
 		return u;
 	}
@@ -285,8 +286,8 @@ public:
  * corresponds to continuous time t*dt. The case dt=1 is the special case of a 
  * sequential stochastic process.</p>
  *
- * @param RangeType range of functional (possibly vectors).
- * @param ScalarType type of vector components.
+ * @param RangeType range of process (possibly vectors).
+ * @param ScalarType type of RangeType vector components.
  *
  * @author  Michael J. Meyer
  */
@@ -310,7 +311,7 @@ public:
      *
      * @param t discrete time.
      */
-    virtual RangeType& currentPath(int t) const = 0;
+    virtual RangeType& currentPath(int t) = 0;
  
         
 // CONSTRUCTOR
@@ -475,7 +476,7 @@ private:
  * 
  ********************************************************************************************/
 
-typedef StochasticProcess< vector<Real>, Real > VectorProcess;
+typedef StochasticProcess< RealVector, Real > VectorProcess;
 
 
 /** <p>Vector valued process adapted to a Brownian filtration. Only the following aspect 
@@ -502,17 +503,18 @@ class BrownianVectorProcess : public VectorProcess {
 
 protected:
 	
-	vector<Real>** path;      // *(path[t]) is the state of the process at time t.
-	Real** Z;                 // the row Z[t][] is the vector driving the time step t->t+1.
-	StochasticGenerator* SG;  // the generator computing the Z-matrix
+	// rows addressed as Real*
+	Array1D< RealVector* > path;      // *(path[t]) is the state of the process at time t.
+	RealMatrix Z;                     // the row Z[t][] is the vector driving the time step t->t+1.	
+	StochasticGenerator* SG;          // the generator computing the Z-matrix
 	
 public:
 	
 	/** The state of the process at time t.*/
-	vector<Real>& currentPath(int t) const { return *(path[t]); }
+	RealVector& currentPath(int t) { return *(path[t]); }
 
 	/** Start the process off at the point x: X(0)=x. */
-	void setStart(vector<Real>& x){ currentPath(0)=x; }
+	void setStart(const RealVector& x){ currentPath(0)=x; }
  
 // CONSTRUCTOR
 	
@@ -520,18 +522,17 @@ public:
 	 *  @param T   number of time steps to the horizon.
 	 */
 	BrownianVectorProcess(int dim, int T) : VectorProcess(dim,T),
-	path(new vector<Real>*[T+1]),
-	Z(new Real*[T]), 
+	path(T+1), Z(T,dim), 
 	SG(new MonteCarloVectorDriver(dim))
     {   
-		for(int t=0;t<=T;t++) path[t]=new vector<Real>(dim);
-		for(int t=0;t<T;t++) Z[t]=new Real[dim];
+		for(int t=0;t<=T;t++) path[t]=new RealVector(dim);
 	}
 	
 	~BrownianVectorProcess()
-    {  for(int t=0;t<T;t++){ delete[] path[t], Z[t]; }
-	   delete[] path; delete[] Z; 
-    }
+	{  
+		for(int t=0;t<=T;t++) delete path[t];
+		delete SG; 
+	}
 
 
 // PATH GENERATION
@@ -622,30 +623,30 @@ class BrownianScalarProcess : public ScalarProcess {
 	
 protected:
 	
-	Real* path;               // path[t] is he state of the process at time t
-	Real* Z;                  // the row Z[t] is the standard normal increment driving 
+	RealVector path;          // path[t] is he state of the process at time t
+	RealVector  Z;            // the row Z[t] is the standard normal increment driving 
 	                          // the time step t->t+1.
 	StochasticGenerator* SG;  // the generator computing the Z-vector
 	
 public:
 	
-	/** The path array.*/
-	Real* getPath() const { return path; }
+	/** The path array. */
+	RealVector& getPath() { return path; }
 			
 	/** The state of the process at time t.*/
-	Real& currentPath(int t) const { return path[t]; }
+	Real& currentPath(int t) { return path[t]; }
 	
 // Constructor
 	
 	/** @param T   number of time steps to the horizon.
 	 */
 	BrownianScalarProcess(int T) : ScalarProcess(T),
-	path(new Real[T+1]),
-	Z(new Real[T]), 
+	path(T+1),
+	Z(T), 
 	SG(new MonteCarloScalarDriver())
     {   }
 	
-	~BrownianScalarProcess(){ delete[] path, Z; }
+	~BrownianScalarProcess(){ delete SG; }
 
 // the new path generation methods
 	
@@ -770,7 +771,7 @@ public:
 	  *  as a random object with values in RangeType.
 	  *
 	  *  <p>If RangeType==ScalarType==Real, this function returns a pointer
-	  *  to RandomVariable and if RangeType==vector<Real>, ScalarType==Real, 
+	  *  to RandomVariable and if RangeType==RealVector, ScalarType==Real, 
 	  *  this function returns a pointer to RandomVector. Here vector is our own
 	  *  light weigth vector class not std::vector.
 	  */
@@ -847,19 +848,19 @@ private:
  
  
  /** A simple path functional H=h(X) of a vector process X of dimension at least two:
-  *  h(X)=X_1(T)+X_2(T). Here ProcessRangeType==vector<Real>, and defaults for the
+  *  h(X)=X_1(T)+X_2(T). Here ProcessRangeType==RealVector, and defaults for the
   *  functional: RangeType==ScalarType==Real.
   */
-class SumFunctional : public PathFunctional< vector<Real> > {
+class SumFunctional : public PathFunctional< RealVector > {
 			 
 	VectorProcess* X; int T;		
 public:
 	SumFunctional(VectorProcess* Y, int T_oo) : 
-	PathFunctional< vector<Real> >(Y), X(Y), T(T_oo) {  }
+	PathFunctional< RealVector >(Y), X(Y), T(T_oo) {  }
 			 
 	Real valueAlongCurrentPath()
     {
-	    vector<Real>& x=X->currentPath(T);
+	    RealVector& x=X->currentPath(T);
 		return x[0]+x[1];
 	}
 }; // end SumFunctional

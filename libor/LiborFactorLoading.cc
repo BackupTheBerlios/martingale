@@ -25,6 +25,7 @@ spyqqqdia@yahoo.com
 #include "Matrices.h"
 #include "Array.h"
 #include "LiborFactorLoading.h"
+#include "Random.h"
 #include "Utils.h"
 #include <cmath>
 #include <iostream>
@@ -165,22 +166,6 @@ printSelf(std::ostream& os) const
 
 // M_VolSurface
 
-std::ostream& 
-M_VolSurface::
-printSelf(std::ostream& os) const
-{
-  	return os << "\n\nVolSurface, type book, 6.11.1, " 
-	          << "a=" << a << ", d=" << d << endl;
-}
-	
-
-VolSurface* 
-M_VolSurface::
-sample()
-{ 
-	Real _a=1.5, _d=2.0; 
-	return new M_VolSurface(_a,0.0,0.0,_d); 
-}
 
 
 // CONST_VolSurface

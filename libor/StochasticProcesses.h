@@ -23,21 +23,17 @@ spyqqqdia@yahoo.com
 #ifndef martingale_stochasticprocesses_h
 #define martingale_stochasticprocesses_h
 
-#include "Random.h"
+#include "TypedefsMacros.h"
 #include "StochasticProcess.h"
-#include "FactorLoading.h"
-
-/*
- * StochasticProcesses.h
- *
- * Created on April 16, 2003, 8:00 AM
- */
- 
-
-// some examples of stochastic processes 
-
+#include "Matrices.h"
 
 MTGL_BEGIN_NAMESPACE(Martingale)
+
+
+// we are using
+class FactorLoading;                     // FactorLoading.h
+
+
 
 /*! \file StochasticProcesses.h
  *  A collection of stochastic processes.
@@ -64,11 +60,10 @@ public:
 	 *  @param dt size of time step.
 	 *  @param x0 starting point of the Brownian motion (default: the origin).
 	 */
-	ScalarBrownianMotion(int T, Real dt, Real x0=0.0) : BrownianScalarProcess(T) 
-	{ sqrtdt=sqrt(dt); path[0]=x0; }
+	ScalarBrownianMotion(int T, Real dt, Real x0=0.0);
 	
 	/** Time step t->t+1 based on current Z-increments.*/
-	void timeStep(int t){ path[t+1]=path[t]+sqrtdt*Z[t]; }
+	void timeStep(int t);
 		
 }; // end ScalarBrownianMotion
 
@@ -87,9 +82,7 @@ public:
 	 *  @param T number of time steps to horizon.
 	 *  @param dt size of time step.
 	 */
-	VectorBrownianMotion(int dim, int T, Real dt) : 
-	BrownianVectorProcess(dim,T) 
-	{  sqrtdt=sqrt(dt); }
+	VectorBrownianMotion(int dim, int T, Real dt);
 	
 	
 	/** @param dim dimension.
@@ -97,21 +90,10 @@ public:
 	 *  @param dt size of time step.
 	 *  @param x starting point of Brownian motion.
 	 */
-	VectorBrownianMotion(int dim, int T, Real dt, vector<Real>& x0) : 
-	BrownianVectorProcess(dim,T) 
-	{ 
-		sqrtdt=sqrt(dt); 
-		vector<Real>& X0=currentPath(0);
-		for(int i=0;i<dim;i++) X0[i]=x0[i]; 
-	}
+	VectorBrownianMotion(int dim, int T, Real dt, RealVector& x0);
 	
 	/** Time step t->t+1 based on current Z-increments. */
-	void timeStep(int t)
-	{	
-		vector<Real>& Xt=currentPath(t);
-		vector<Real>& XT=currentPath(t+1);
-		for(int i=0;i<dim;i++) XT[i]=Xt[i]+sqrtdt*Z[t][i]; 
-	}
+	void timeStep(int t);
 	
 // A SMALL TEST PROGRAM
    
@@ -123,32 +105,8 @@ public:
 	  *  The conditional mean and variance are computed from a sample of size 
 	  *  nPath and compared with the analytic values.
       */
-     static void testPathFunctional(int t, int T, int nPath)
-     {
-         BrownianVectorProcess* X=new VectorBrownianMotion(2,T,0.01);
-         X->newPathSegment(t);
-         vector<Real>& x=X->currentPath(t);
-
-	     Real analyticConditionalMean=x[0]+x[1],
-	          analyticVariance=2*(T-t)*0.01;
-		 		 
-	     // Functional F(X)=X_1(T)+X_2(T)
-	     SumFunctional* SF=new SumFunctional(X,T);
-	     Real* vtMC=SF->conditionalMeanAndVariance(t,nPath,true,"Monte Carlo");
-	     X->switchToQMC();
-	     Real* vtQMC=SF->conditionalMeanAndVariance(t,nPath,true,"Quasi Monte Carlo");
-		 		 
-	     cout << endl << endl
-		      << "Paths: " << nPath << endl
-		      << "Analytic conditional mean = " << analyticConditionalMean << endl
-		      << "Monte Carlo conditional mean = " << vtMC[0] << endl
-		      << "Quasi Monte Carlo conditional mean = " << vtQMC[0] << endl
-		      << "Analytic variance = " << analyticVariance << endl
-		      << "Monte Carlo variance = " << vtMC[1] << endl
-		      << "Quasi Monte Carlo variance = " << vtQMC[1];
-		 
-     } // end testPathFunctional
-
+     static void testPathFunctional(int t, int T, int nPath);
+	 
 }; // end VectorBrownianMotion
 
 
@@ -173,7 +131,7 @@ class GaussianMartingale : public BrownianVectorProcess {
 	// covariationMatrixRoots[t] is the Cholesky root of the covariation matric C, 
 	// C_ij=integral_{t*dt}^{(t+1)*dt}nu_i(s).nu_j(s)ds, i,j>=0; t=0,...,T-1.
 	// this drives the time step t->t+1
-	UTRMatrix<Real>** covariationMatrixRoots;
+	Array1D<const UTRMatrix<Real>*> covariationMatrixRoots;
 	
 	FactorLoading* factorLoading;   // the factor loading
 	
@@ -185,41 +143,12 @@ public:
 	 *  x0 state at time t=0.
 	 *  fl the factor loading.
 	 */
-	GaussianMartingale(int dim, int T, int ds, vector<Real>& x0, FactorLoading* fl) :
-    BrownianVectorProcess(dim,T), 
-    dt(ds), 
-    covariationMatrixRoots(new UTRMatrix<Real>*[T])
-    {
-        // path intitialization
-	    vector<Real>& X0=*(path[0]);
-	    for(int j=0;j<dim;j++) X0[j]=x0[j];
-		
-	    for(int t=0;t<T;t++){			
-	        UTRMatrix<Real>& cv_t=factorLoading->covariationMatrix(t*dt,(t+1)*dt);
-	        covariationMatrixRoots[t]=&(cv_t.utrRoot());
-	    }
-    } // end constructor
+	GaussianMartingale(int dim, int T, int ds, RealVector& x0, FactorLoading* fl);
 
-
-	~GaussianMartingale() 
-    {
-		for(int t=0;t<T;t++) delete covariationMatrixRoots[t];		
-		delete covariationMatrixRoots;	
-	} 
+	~GaussianMartingale();
 
 	/** Time step t->t+1 based on current Z-increments.*/
-	void timeStep(int t)
-    {
-	    UTRMatrix<Real>& R=*(covariationMatrixRoots[t]);
-	    vector<Real>& Xt=*(path[t]);
-	    vector<Real>& X=*(path[t+1]);
-		
-	    for(int i=0;i<dim;i++){
-			
-		    X[i]=Xt[i];
-		    for(int j=i;j<dim;j++) X[i]+=R(i,j)*Z[t][j];
-	    }
-    } // end timeStep
+	void timeStep(int t);
 			
 			
 }; // end GaussianMartingale

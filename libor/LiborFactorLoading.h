@@ -26,16 +26,15 @@ spyqqqdia@yahoo.com
 #ifndef martingale_liborfactorloading_h    
 #define martingale_liborfactorloading_h
 
-#include <ostream>
+#include "TypedefsMacros.h"
+#include "Matrices.h"
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
-// forward declarations
-class RealArray1D;
-class RealVector;
-class UTRRealMatrix;             // Matrices.h
-class UTRMatrixSequence;
+// we are using
+class std::ostream;
+extern Real exp(Real);
 
 
 
@@ -234,7 +233,7 @@ public:
    
     
    /** Message and fields.*/
-	std::ostream& printSelf(std::ostream& os);
+	std::ostream& printSelf(std::ostream& os) const;
 	
 	/** Sample surface.*/
 	static VolSurface* sample();
@@ -339,7 +338,7 @@ public:
 	static const int JR=0, CS=1;
 	
 	/** CS or JR. */
-	int getCorrelationType() const { return corrType; }
+	int getType() const { return corrType; }
 	
 	/** n: index range [1,n). */
 	int getDimension() const { return n; }
@@ -408,6 +407,7 @@ std::ostream& operator <<
 class JR_Correlations : public Correlations {
 	
 	/** Tenor Structure of Liborprocess. */
+
 	RealArray1D T;
 	
 public:
@@ -698,22 +698,20 @@ public:
 
 //  EIGEN ANALYSIS OF THE COVARIATION MATRICES
 
-    /** Prints how much variability is captured by the r largest
-	 *  eigenvalues of the covariation matrix <a href="CVpqtT">CV(p,q,s,t)</a>.
-	 */
-	void factorAnalysis(int p, int q, Real s, Real t, int r) const
-    {
-	    logLiborCovariationMatrix(p,q,s,t).analyseFactors(r);
-	}
-    
-    
-	/** Prints how much variability is captured by the r largest
-	 *  eigenvalues of the covariation matrix <a href="CVt">CV(t)</a>.
-	 */
-	void factorAnalysis(int t, int r) const
-    {
-		logLiborCovariationMatrix(t).analyseFactors(r);
-	}
+	 /** Examines how dominant are the first r eigenvalues of the covariation 
+	  *  matrix CV(p,q,s,t)=(C_ij) with entries
+	  *  \f[C_{ij}=\int_s^t\sigma_i(u)\sigma_j(u)\rho_{ij}du,\quad p\leq i,j<q.\]
+	  *  This matrix is needed for the Libor time step s->t.
+	  */
+     void factorAnalysis(int p, int q, Real s, Real t, int r) const;
+	 
+	 
+	 /** Examines how dominant are the first r eigenvalues of the covariation 
+	  *  matrix CV(t)=(C_ij) with entries
+	  *  \f[C_{ij}=\int_{T_t}^{T_{t+1}}\sigma_i(u)\sigma_j(u)\rho_{ij}du,\quad t+1\leq i,j<n.\]
+	  *  This matrix is needed for the Libor time step \f$T_t\rightarrow T_{t+1}\f$.
+	  */
+     void factorAnalysis(int t, int r) const;
 
  
    

@@ -21,7 +21,7 @@ spyqqqdia@yahoo.com
 */
 
 #include "LowFactorDriftlessLMM.h"
-#include "Utils.h"
+#include "Array.h"
 #include "Matrices.h"
 #include "StochasticGenerator.h"
 #include "LiborFactorLoading.h"
@@ -34,6 +34,26 @@ using namespace Martingale;
  *                                 DriftlessLMM
  *
  ******************************************************************************/ 
+ 
+ 
+void 
+LowFactorDriftlessLMM::
+switchToQMC() 
+{  
+	if(SG) delete SG;
+// <--------- dimension is too big for partial paths, but probably won't matter --------->
+	SG = new SobolVectorDriver(r,n-1);
+}
+	
+	
+void 
+LowFactorDriftlessLMM::
+switchToMC() 
+{ 
+	if(SG) delete SG;
+	SG = new MonteCarloVectorDriver(r);
+} 
+
 
 	 
 // (X_p(T_t),...,X_{n-1}(T_t)) 
@@ -98,7 +118,7 @@ LowFactorDriftlessLMM::
 sample(int n, int r, int volType, int corrType)
 {
 	LiborFactorLoading* 
-	fl=LiborFactorLoading(n,volType,corrType);
+	fl=LiborFactorLoading::sample(n,volType,corrType);
 	return new LowFactorDriftlessLMM(fl,r);
 }
 
@@ -192,6 +212,54 @@ vol(int i) const
     Real Sigma=capletAggregateVolatility(i);
 	return Sigma/sqrt(T[i]);
 }
+
+
+// LIBORS
+
+Real 
+LowFactorDriftlessLMM::
+L(int j, int t) const 
+{ 
+	return XL(j,t)/delta[j]; 
+}
+
+
+Real 
+LowFactorDriftlessLMM::
+XL(int j, int t) const 
+{ 
+	 if(j<n-1) return U(t,j)/H(t,j+1); 
+	 return U(t,n-1);
+}
+
+
+// ACCRUAL FACTORS
+
+Real 
+LowFactorDriftlessLMM::
+H_i0(int i) const { return H(0,i); }
+
+
+Real 
+LowFactorDriftlessLMM::
+H_it(int i, int t) { return H(t,i); }
+
+
+Real 
+LowFactorDriftlessLMM::
+H_ii(int i) const { return H(i,i); }
+
+
+// BONDS
+
+Real 
+LowFactorDriftlessLMM::
+B0(int i) const {  return H(0,i)/H(0,0); }
+
+
+Real 
+LowFactorDriftlessLMM::
+B(int i, int t) { return H(t,i)/H(t,t); }
      
 
 
@@ -200,7 +268,7 @@ vol(int i) const
 // H_pq(T_t)
 Real 
 LowFactorDriftlessLMM::
-H_pq(int p, int q, int t) const 
+H_pq(int p, int q, int t)
 {
 	Real sum=0;
 	for(int k=p;k<q;k++) sum+=delta[k]*H_it(k+1,t);
@@ -209,13 +277,11 @@ H_pq(int p, int q, int t) const
 
 
 // FORWARD SWAP RATES                      
-             
-
-     
+                 
 // S_{pq}(T_t)=k(T_t,[T_p,T_q])
 Real 
 LowFactorDriftlessLMM::
-swapRate(int p, int q, int t) const 
+swapRate(int p, int q, int t) 
 { 
      Real num=U(t,p), denom=delta[p]*H(t,p+1);
      for(int j=p+1;j<q;j++){ num+=U(t,j); denom+=delta[j]*H(t,j+1); }
@@ -230,7 +296,7 @@ swapRate(int p, int q, int t) const
 // B_{pq}(T_t)=\sum_{k=p}^{q-1}\delta_kB_{k+1}(T_t).
 Real 
 LowFactorDriftlessLMM::
-B_pq(int p, int q, int t) const 
+B_pq(int p, int q, int t) 
 { 
      Real S=delta[p]*H(t,p+1);
 	 for(int j=p+1;j<q;j++) S+=delta[j]*H(t,j+1);
@@ -300,9 +366,18 @@ bondAggregateVolatility(Bond* B, int t) const
 } // end bondAggregateVolatility
 
 
+
+void 
+LowFactorDriftlessLMM::
+factorizationTest() const 
+{ 
+	factorLoading->factorizationTest(r); 
+}
+
+
 	 
 std::ostream& 
-DriftlessLMM::
+LowFactorDriftlessLMM::
 printSelf(std::ostream& os) const
 {
 	RealVector vols(n); vols[0]=0;

@@ -24,15 +24,15 @@ spyqqqdia@yahoo.com
 #ifndef martingale_lowfactordriftlesslmm_h    
 #define martingale_lowfactordriftlesslmm_h
 
+#include "TypedefsMacros.h"
 #include "LiborMarketModel.h"
+#include "Matrices.h"
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 
 // forward declarations
-class RealVector;
-class UTRRealMatrix;             // Matrices.h
 class UTRMatrixSequence;
 class StochasticGenerator;       // StochasticGenerator.h
 class SobolLiborDriver;
@@ -101,21 +101,12 @@ public:
 
 	/** Switches to quasi random dynamics based on Sobol sequence.
      */
-    void switchToQMC() 
-	{  
-		if(SG) delete SG;
-// <--------- dimension is too big for partial paths, but probably won't matter --------->
-		SG = new SobolVectorDriver(r,n-1);
-	}
+    void switchToQMC();
 	
 	
     /** Switches to pseudo random dynamics based on Mersenne Twister.
      */
-    void switchToMC() 
-	{ 
-		if(SG) delete SG;
-		SG = new MonteCarloVectorDriver(r);
-	}
+    void switchToMC();
 
 	
 // FACTOR ANALYSIS
@@ -124,7 +115,7 @@ public:
 	 *  of the covariation matrices C(t) which control the time steps.
 	 *  See {@link LiborFactorLoading#factorizationTest}.
 	 */
-   void factorizationTest() const { factorLoading->factorizationTest(r); }
+   void factorizationTest() const;
 
 
 // LIBORS
@@ -134,7 +125,7 @@ public:
       *
       * @param t time.
       */
-     Real L(int j, int t) const { return XL(j,t)/delta[j]; }
+     Real L(int j, int t) const;
 
      
      /** X-Libor \f$X_j(T_t)=\delta_jL_j(T_t)\f$, value in current path.
@@ -142,11 +133,7 @@ public:
       * @param j Libor index.
       * @param t discrete time.
       */
-     Real XL(int j, int t) const 
-	 { 
-		 if(j<n-1) return U(t,j)/H(t,j+1); 
-		 return U(t,n-1);
-	 }
+     Real XL(int j, int t) const;
 	 
 	 
 	 /** X-Libor vector \f$(X_p(T_t),...,X_{n-1}(T_t))\f$, 
@@ -270,7 +257,7 @@ public:
 	 /** Accrual factor \f$H_i(0)=B_i(0)/B_n(0)\f$, forward transport  
       *  \f$T_i\rightarrow T_n\f$ with Libors in state at time t=0.
       */
-     Real H_i0(int i) const { return H(0,i); }
+     Real H_i0(int i) const;
      
 
     /** <p>Accrual factor \f$H_i(T_t)=B_i(T_t)/B_n(T_t)\f$. This factor shifts
@@ -282,7 +269,7 @@ public:
      * @param t current discrete time (continuous time <code>T_t</code>).
      * @param i cashflow shifted from time <code>T_i</code> to horizon.
      */
-     Real H_it(int i, int t) const { return H(t,i); }
+     Real H_it(int i, int t);
 
 
      
@@ -291,7 +278,7 @@ public:
      *
      * @param i cashflow shifted from time \f$T_i\f$ to horizon.
      */
-     Real H_ii(int i) const { return H(i,i); }
+     Real H_ii(int i) const;
 	 
 	 
 	/** \f$H_{p,q}(T_t)=B_{p,q}(T_t)/B_n(T_t)\f$, the forward price at horizon of the 
@@ -300,7 +287,7 @@ public:
      * @param p,q annuity along \f$[T_p,T_q]\f$.
 	 * @param t price at time \f$T_t\f$ (accrued forward to time \f$T_n\f$).
      */
-     Real H_pq(int p, int q, int t) const;
+     Real H_pq(int p, int q, int t);
 
 
  
@@ -313,7 +300,7 @@ public:
      *  
      * @param i bond matures at time \f$T_i\f$.
      */
-     Real B0(int i) const {  return H(0,i)/H(0,0); }
+     Real B0(int i) const;
 
  
     /** The zero coupon bond \f$B_i(T_t)=B(s,T)\f$ with \f$s=T_t, T=T_i\f$. 
@@ -323,7 +310,7 @@ public:
      *  @param t bond evaluated at time \f$T_t\leq T_i\f$
      *  @param i bond matures at time \f$T_i\f$.
      */
-    Real B(int i, int t) const { return H(t,i)/H(t,t); }
+    Real B(int i, int t);
 
 	
 
@@ -341,14 +328,14 @@ public:
       * @param p,q swap along \f$[T_p,T_q]\f$.
       * @param t discrete time.
       */ 
-     Real swapRate(int p, int q, int t) const ;
+     Real swapRate(int p, int q, int t);
 
 
      /** <p>The forward swap rate \f$S_{pq}(t)=k(t,[T_p,T_q])\f$ at time t=0.
       *
       * @param p,q swap along \f$[T_p,T_q]\f$.
       */ 
-     Real swapRate(int p, int q) const { return swapRate(p,q,0); } 
+     Real swapRate(int p, int q) { return swapRate(p,q,0); } 
 
  
 	 
@@ -363,7 +350,7 @@ public:
       * @param p,q annuity along \f$[T_p,T_q]\f$.
       * @param t discrete time.
       */ 
-     Real B_pq(int p, int q, int t) const ;
+     Real B_pq(int p, int q, int t);
 
      
      /** The annuity \f$B_{pq}(t)=\sum\nolimits_{k=p}^{q-1}\delta_kB_{k+1}(t)\f$
@@ -371,7 +358,7 @@ public:
       *
       * @param p,q annuity along \f$[T_p,T_q]\f$.
       */ 
-     Real B_pq(int p, int q) const { return B_pq(p,q,0); }
+     Real B_pq(int p, int q) { return B_pq(p,q,0); }
 	 
 	 
 	 

@@ -23,9 +23,7 @@ spyqqqdia@yahoo.com
 #ifndef martingale_testlmm_h    
 #define martingale_testlmm_h
 
-
-
-
+#include "TypedefsMacros.h"
 #include "Derivatives.h"
 
 

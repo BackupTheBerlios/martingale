@@ -20,10 +20,12 @@ spyqqqdia@yahoo.com
 
 */
 
-
-#include "StochasticGenerator.h"
 #include "FastPredictorCorrectorLMM.h"
+#include "Array.h"
 #include "Matrices.h"
+#include "StochasticGenerator.h"
+#include "LiborFactorLoading.h"
+#include <cmath>
 using namespace Martingale;
 
 
@@ -33,9 +35,48 @@ using namespace Martingale;
  *                                 PredictorCorrectorLMM
  *
  ******************************************************************************/ 
+ 
+ 
+void 
+FastPredictorCorrectorLMM::
+switchToQMC() 
+{  
+	if(SG) delete SG;
+	SG = new SobolLiborDriver(n);
+}
+	
+	
+void 
+FastPredictorCorrectorLMM::
+switchToMC() 
+{ 
+	if(SG) delete SG;
+	SG = new MonteCarloLiborDriver(n);
+}
 
+
+// LIBORS
+
+Real 
+FastPredictorCorrectorLMM::
+L(int j, int t) const 
+{ 
+	return X(t,j)/delta[j]; 
+}
+
+
+Real 
+FastPredictorCorrectorLMM::
+XL(int j, int t) const 
+{ 
+	return X(t,j); 
+}
+ 
+ 
 // (X_p(T_t),...,X_{n-1}(T_t))\f$, 
-const RealVector& FastPredictorCorrectorLMM::XLvect(int t, int p) 
+const RealVector& 
+FastPredictorCorrectorLMM::
+XLvect(int t, int p) 
 { 
 	XVec.setDimension(n-p);
 	XVec.setIndexBase(p);
@@ -153,6 +194,28 @@ timeStep(int t, int p)
                            X(t+1,j)=exp(Y(t+1,j)); }  
       
 }  // end timeStep
+
+
+
+// PATHS
+
+
+void 
+FastPredictorCorrectorLMM::
+newPath()
+{
+    SG->newWienerIncrements(0,n-1,Z);
+	for(int t=0;t<n-1;t++)timeStep(t);
+}
+
+
+void 
+FastPredictorCorrectorLMM::
+newPath(int t, int p)
+{
+    SG->newWienerIncrements(0,t,Z);
+    for(int s=0;s<t;s++)timeStep(s,p);
+}
      
 
 

@@ -23,19 +23,17 @@ spyqqqdia@yahoo.com
 #ifndef martingale_lmmlattice_h    
 #define martingale_lmmlattice_h
 
+// template class LmmLattice must be implemented in header
+#include "TypedefsMacros.h"
 #include "Lattice.h"
+#include "Matrices.h"
+#include "LiborFactorLoading.h"         
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
-// forward declarations
-class RealVector;               // Matrices.h
-class LiborArray2D;
-class LTRRealMatrix;
-class RealMatrix;
+// we are using
 class LiborFactorLoading;       // LiborFactorLoading.h
-template<typename Node>         // Lattice.h
-class Lattice;
 class LmmNode;                  // Node.h
 class LmmNode2F;                
 class LmmNode3F;
@@ -159,19 +157,54 @@ public:
 	
 // CONSTRUCTOR
 	
-	/** 
-	 *  @param fl factor loading of the underlying LMM.
-	 *  @param s lattice is built for s time steps from time zero.
-	 *  @param steps number of equal sized time steps in each Libor accrual interval.
-	 */
-	LmmLattice(LiborFactorLoading* fl, int s, int steps=1);	
+/** 
+ *  @param fl factor loading of the underlying LMM.
+ *  @param s lattice is built for s time steps from time zero.
+ *  @param steps number of equal sized time steps in each Libor accrual interval.
+ */
+LmmLattice(LiborFactorLoading* fl, int s, int steps=1) : Lattice<LmmNode>(s),
+n(fl->getDimension()), nSteps(steps),
+U0(n),
+H0(n+1),
+factorLoading(fl),
+mu(n,nSteps)
+{  
+	// set log(U_j(0)), j=0,1,...,n-1
+    const RealArray1D& x=factorLoading->getInitialXLibors();     // x[j]=X_j(0)
+    for(int j=0;j<n;j++){ 
+			
+	    // U_j(0)=X_j(0)(1+X_{j+1}(0))...(1+X_{n-1}(0))
+		Real Uj0=x[j]; for(int k=j+1;k<n;k++) Uj0*=1+x[k]; 
+		U0[j]=Uj0;
+	}
+		
+	// set H_j(0)
+    H0[n]=1.0;
+	for(int j=n-1;j>=0;j--) H0[j]=H0[j+1]+U0[j];
+
+	// write the deterministic drifts mu_j(t)=mu_j(0,T_t)
+	for(int t=0;t<n-1;t++)
+	for(int u=0;u<nSteps;u++)
+	for(int j=t+1;j<n;j++){
+			
+		int s=t*nSteps+u;     // number of time step
+		mu(s,j)=-0.5*factorLoading->integral_sgi_sgj_rhoij(j,j,0.0,tau(s));
+	}
+} // end constructor
+	
 
 	
 private:
 	
 	// continuous time reached after time step s=0,1,...
-	Real tau(int s);
+	Real tau(int s)
+    {
+        const RealArray1D& T=factorLoading->getTenorStructure();
+    	int t=s/nSteps;
+    	Real delta_t=T[t+1]-T[t];
 		
+	    return T[t]+(delta_t*(s%nSteps))/nSteps;
+    }		
 		
 }; // end LmmLattice
 
@@ -244,7 +277,7 @@ public:
 
 /** Sets up a ConstVolLmmLattice2F in dimension n and runs the {@link #selfTest}.
  */
-static void test(int n) const;
+void test(int n) const;
 		
 		
 
@@ -327,7 +360,7 @@ public:
 
 /** Sets up a ConstVolLmmLattice3F in dimension n and runs the {@link #selfTest}.
  */
-static void test(int n) const;
+void test(int n) const;
 		
 		
 

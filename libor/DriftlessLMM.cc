@@ -21,8 +21,10 @@ spyqqqdia@yahoo.com
 */
 
 #include "DriftlessLMM.h"
-#include "Utils.h"
-//#include "Matrices.h"
+#include "Array.h"
+#include "Matrices.h"
+#include "StochasticGenerator.h"
+#include "LiborFactorLoading.h"
 #include <cmath>
 using namespace Martingale;
 
@@ -32,20 +34,25 @@ using namespace Martingale;
  *                                 DriftlessLMM
  *
  ******************************************************************************/ 
-
-	 
-// (X_p(T_t),...,X_{n-1}(T_t)) 
-const RealVector& 
+ 
+ 
+void 
 DriftlessLMM::
-XLvect(int t, int p) 
-{ 
-	XVec.setDimension(n-p);
-	XVec.setIndexBase(p);
-	for(int j=p;j<n-1;j++) XVec[j]=U(t,j)/H(t,j+1);
-	XVec[n-1]=U(t,n-1);
-	return XVec;
+switchToQMC() 
+{  
+	if(SG) delete SG;
+	SG = new SobolLiborDriver(n);
 }
-		 
+	
+	
+void 
+DriftlessLMM::
+switchToMC() 
+{ 
+	if(SG) delete SG;
+	SG = new MonteCarloLiborDriver(n);
+}
+
 
 	
 //  CONSTRUCTOR
@@ -184,12 +191,87 @@ vol(int i) const
 }
      
 
+
+// LIBORS
+
+Real 
+DriftlessLMM::
+L(int j, int t) const 
+{ 
+	return XL(j,t)/delta[j]; 
+}
+
+
+// XLibor
+Real 
+DriftlessLMM::
+XL(int j, int t) const
+{ 
+	 if(j<n-1) return U(t,j)/H(t,j+1); 
+	 return U(t,n-1);
+}
+
+	 
+// (X_p(T_t),...,X_{n-1}(T_t)) 
+const RealVector& 
+DriftlessLMM::
+XLvect(int t, int p) 
+{ 
+	XVec.setDimension(n-p);
+	XVec.setIndexBase(p);
+	for(int j=p;j<n-1;j++) XVec[j]=U(t,j)/H(t,j+1);
+	XVec[n-1]=U(t,n-1);
+	return XVec;
+}
+
+
 // ACCRUAL FACTORS, LIBORS  SWAP RATES, ANNUITIES
+
+
+Real 
+DriftlessLMM::
+H_i0(int i) const
+{ 
+	return H(0,i); 
+}
+
+
+Real 
+DriftlessLMM::
+H_it(int i, int t) 
+{ 
+	return H(t,i); 
+}
+
+
+Real 
+DriftlessLMM::
+H_ii(int i) 
+{ 
+	return H(i,i); 
+}
+
+
+Real 
+DriftlessLMM::
+B0(int i) const 
+{  
+	return H(0,i)/H(0,0); 
+}
+
+
+Real 
+DriftlessLMM::
+B(int i, int t)
+{ 
+	return H(t,i)/H(t,t); 
+}
+
 
 // H_pq(T_t)
 Real 
 DriftlessLMM::
-H_pq(int p, int q, int t)  const
+H_pq(int p, int q, int t)
 {
 	Real sum=0;
 	for(int k=p;k<q;k++) sum+=delta[k]*H_it(k+1,t);
@@ -203,7 +285,7 @@ H_pq(int p, int q, int t)  const
 // S_{pq}(T_t)=k(T_t,[T_p,T_q])
 Real 
 DriftlessLMM::
-swapRate(int p, int q, int t) const
+swapRate(int p, int q, int t)
 { 
      Real num=U(t,p), denom=delta[p]*H(t,p+1);
 	 for(int j=p+1;j<q;j++){ num+=U(t,j); denom+=delta[j]*H(t,j+1); }
@@ -216,7 +298,7 @@ swapRate(int p, int q, int t) const
 // B_{pq}(T_t)=\sum_{k=p}^{q-1}\delta_kB_{k+1}(T_t).
 Real 
 DriftlessLMM::
-B_pq(int p, int q, int t) const
+B_pq(int p, int q, int t)
 { 
      Real S=delta[p]*H(t,p+1);
 	 for(int j=p+1;j<q;j++) S+=delta[j]*H(t,j+1);
@@ -238,7 +320,7 @@ capletAggregateVolatility(int i) const
 	Real f=H(0,i+1); 
 	for(int j=i+1;j<n;j++)x[j]=-U(0,j)/f;
 	x*=R.transpose();
-	 return x.norm();
+	return x.norm();
 } 
 	 
 	 

@@ -30,12 +30,19 @@ spyqqqdia@yahoo.com
 #ifndef martingale_predictorcorrectorlmm_h    
 #define martingale_predictorcorrectorlmm_h
 
-#include "Random.h"
-#include "QuasiMonteCarlo.h"
+#include "TypedefsMacros.h"
 #include "LiborMarketModel.h"
-#include "StochasticGenerator.h"
+#include "Matrices.h"
 
 MTGL_BEGIN_NAMESPACE(Martingale)
+
+
+
+// we are using
+class StochasticGenerator;       // StochasticGenerator.h
+class SobolLiborDriver;
+class MonteCarloLiborDriver;
+class LiborFactorLoading;        // LiborFactorLoading.h
 
 
 
@@ -107,20 +114,12 @@ public:
 
 	/** Switches to quasi random dynamics based on Sobol sequence.
      */
-    void switchToQMC() 
-	{  
-		if(SG) delete SG;
-		SG = new SobolLiborDriver(n);
-	}
+    void switchToQMC();
 	
 	
     /** Switches to pseudo random dynamics based on Mersenne Twister.
      */
-    void switchToMC() 
-	{ 
-		if(SG) delete SG;
-		SG = new MonteCarloLiborDriver(n);
-	}
+    void switchToMC();
 	
 
 
@@ -132,7 +131,7 @@ public:
       *
       * @param t time.
       */
-     Real L(int j, int t) const { return X(t,j)/delta[j]; }
+     Real L(int j, int t) const;
 
      
      /** X-Libor \f$X_j(T_t)=\delta_jL_j(T_t)\f$, value in current path.
@@ -140,7 +139,7 @@ public:
       * @param j Libor index.
       * @param t discrete time.
       */
-     Real XL(int j, int t) const { return X(t,j); }
+     Real XL(int j, int t) const;
 	 
 	 
 	 /** X-Libor vector \f$(X_p(T_t),...,X_{n-1}(T_t))\f$, 
@@ -229,11 +228,7 @@ public:
      /** Computes a full Libor path from time zero to the horizon.
       *  Moves only the X-Libor path.
       */
-     void newPath()
-     {
-         SG->newWienerIncrements(0,n-1,Z);
-         for(int t=0;t<n-1;t++)timeStep(t);
-     }
+     void newPath();
      
     
      /** Path of Libors
@@ -244,11 +239,7 @@ public:
       * @param t discrete time up to which Libors are computed.
       * @param p Libors evolved are \f$L_j, j=p,p+1,\dots,n-1\f$.
       */
-     void newPath(int t, int p)
-     {
-         SG->newWienerIncrements(0,t,Z);
-         for(int s=0;s<t;s++)timeStep(s,p);
-     }
+     void newPath(int t, int p);
 	 
 	 
 // SWAPTION AND CAPLET AGGREGATE VOLATILITIES (SIGMA)
