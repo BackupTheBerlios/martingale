@@ -57,8 +57,9 @@ void timeSTN();
 	
 *******************************************************************************/
 
-/** Times N multiplications of an square matrix by an upper triangular matrix in 
- *  dimension dim.
+/** Timing of N multiplications of square matrices in dimension dim.
+ *  Compares row dot column (suboptimal) to row dot row (optimal) memory
+ *  access pattern.
  */
 void timeMatrixMultiply(int dim, int N);
 

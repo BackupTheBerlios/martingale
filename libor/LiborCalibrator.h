@@ -78,7 +78,10 @@ public:
 	
 	/** 7 parameters for volsurface and correlations.
 	 *
-	 *  @param cal the LMM calibrator.
+	 *  @param clbr the LMM calibrator.
+	 *  @param x0 initial guess for the parameter vector.
+	 *  @param nVals number of evaluations of the objective function.
+	 *  @param delta initial width of sliding search window.
 	 */
 	SobolLiborCalibrationOptimizer
 	(LmmCalibrator* clbr, const RealArray1D& x0, int nVals, const RealArray1D& delta) : 
@@ -505,7 +508,7 @@ public:
 	  *  directory.
 	  *  
 	  * @param n dimension of Libor process (number of accrual intervals).
-	  * @param volType type of {@link VolatilitySurface} VolSurface::JR,M,CONST.
+	  * @param volType type of {@link VolSurface} VolSurface::JR,M,CONST.
 	  * @param corrType type of {@link Correlations} Correlations::JR,CS.
 	  */ 
 	 static void writeSyntheticDataSample

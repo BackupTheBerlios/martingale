@@ -82,8 +82,8 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  *
  * <p><a name="lmm-lattice-3f"><B>Three factor basket lattice.</B></a>
  *  the lattice evolves the variables in time steps of equal length and each 
- *  {@link Node} stores the vector of assets \f$S_j\f$ and these are computed from the
- *  volatilities \f$V_j\f$ of the returns \f$Y_j\f$ which are now givn as
+ *  {@link StandardBrownianNode} computes the vector of assets \f$S_j\f$ 
+ *  from the volatilities \f$V_j\f$ of the returns \f$Y_j\f$ which are now given as
  *  \f[V_j(s)\simeq\sigma_j\left[U_{j1}Z_1(s)+U_{j2}Z_2(s)+U_{j3}Z_3(s)\right],\f]
  *  where the matrix U is the approximate root of rank 3 of the correlation matrix 
  *  \f$\rho\f$. The rows of U are scaled backe to unit norm to preserve the 

@@ -90,7 +90,7 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  *
  * @param S real scalar type (float, double, long double).
  * @param exact true value.
- * @approx approximation.
+ * @param approx approximation.
  * @param epsilon zero rounded up to epsilon to avoid division by zero.
  */
 template<typename S>
@@ -191,7 +191,7 @@ public:
   /** Initialize all  entries with the same value,
    *  index base is b=0.
    *
-   * @param d dimension
+   * @param n dimension
    * @param v constant entry
    */
    Vector(int n, S& v) : 
@@ -799,7 +799,6 @@ const S& operator()(int i, int j) const
  *  Equality is defined by an upper bound on the acceptable relative 
  *  error in percent.
  *  
- * @param B_Type type of the matrix A.
  * @param B matrix to compare this with.
  * @param precision upper bound on the acceptable relative error in percent.
  * @param epsilon zero denominator reset to epsilon.
@@ -1345,7 +1344,7 @@ UTRRealMatrix(int d, int b=0) : Matrix< Real,UpperTriangular<Real> >(d,d,b,b) { 
 
 	
 /** Construct from data array, only upper triangular half is used.<br>
- * @param a data array
+ * @param A data array
  * @param b index base (default 0).
  */
 template<int n>
@@ -1396,7 +1395,7 @@ UTRRealMatrix& exp() const;
 
 /** Computes the function f(A) of the symmetric matrix A of which <code>this</code> 
  *  is the upper half. The matrix funtion f(A) is computed as follows: diagonalize A as
- *  \f[A=U D U',\quad\hbox{where}\quad D=diag(\l_j)\f]
+ *  \f[A=U D U',\quad\hbox{where}\quad D=diag(\lambda_j)\f]
  *  is the diagonal matrix with the eigenvalues of A on the diagonal the columns of U 
  *  are associated eigenvectors. Set \f$f(D)=diag(f(\lambda_j))\f$ (f is applied to 
  *  each eigenvalue). Then

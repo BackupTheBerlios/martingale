@@ -59,7 +59,7 @@ class BondCall;
  */
 namespace LiborFunctional {
 	
-	/** Libor X_j.
+	/** Libor \f$X_j\f$.
 	 * @param H vector of accrual factors.
 	 */
 	inline Real X(int j, const RealArray1D& H){ return (H[j]-H[j+1])/H[j+1]; }

@@ -64,12 +64,8 @@ void testMatrixMultiply();
 
 /** <p>Computes the exponentials <code>H=exp(A), K=exp(-A)</code> for a randomly 
  *  initialized matrix <code>A</code> then prints the products <code>HK,KH</code>
- *  These must be the identity matrix or close to it. Goes through all the matrix
- *  classes: lower and upper triangular and square.</p>
- *
- * <p>The exponential <code>exp(A)</code> is computed as 
- * <code>lim_m(1+A/m)^m, m=2^n, n->oo</code>. The user chooses the precision 
- * level <code>n</code>.
+ *  These must be the identity matrix or close to it. The user chooses the matrix
+ *  class: lower and upper triangular and square.</p>
  */
 void reportMatrixElements(Real** data, int dim, int matrix_type);
 

@@ -46,14 +46,14 @@ spyqqqdia@yahoo.com
  *  defaults to 1.</p>
  *
  *  <p>The subscripting operators only come into play if covariances are computed.
- *  Need not be defined otherwise. The dimension of <code>RangeType<code> only comes into 
+ *  Need not be defined otherwise. The dimension of <code>RangeType</code> only comes into 
  *  play if the covariance matrix is computed. If no covariances are computed the ScalarType 
  *  does not come into play. In each case the defaults can be used.</p>
  *
  * <p><a name="expectation"><b>Expectation:</b></a> 
  *  For sample means to be computed the type <code>RangeType</code> must support 
  *  addition and division by integers in the form of overloaded operators 
- *  <code>+=(const RangeType& x</code> and <code>/=(int N)</code> (or some type that 
+ *  <code>+=(const RangeType&amp; x</code> and <code>/=(int N)</code> (or some type that 
  *  <code>int N</code> can be converted to). This is the minimum. More 
  *  structure in <code>RangeType</code> is required for variances, covariances and 
  *  covariance matrices.
@@ -62,8 +62,8 @@ spyqqqdia@yahoo.com
  *  <p><a name="variance"><b>Variance:</b></a> 
  *  Computed as \f$Var(X)=E(X^2)-E(X)^2\f$ this is defined only if 
  *  the type <code>RangeType</code> supports a multiplication operator * in the 
- *  form of an overloaded <code>operator *=(const RangeType& x)</code> and an
- *  operator <code>-=(const RangeType& x)</code>. Typically this
+ *  form of an overloaded <code>operator *=(const RangeType&amp; x)</code> and an
+ *  operator <code>-=(const RangeType&amp; x)</code>. Typically this
  *  will be true in the scalar case only.
  *  </p>
  *  
@@ -79,7 +79,7 @@ spyqqqdia@yahoo.com
  *  the covariance of the components computed as 
  *  \f[Cov(X_i,X_j)=E(X_iX_j)-E(X_i)E(X_j)\f]
  *  The type <code>ScalarType</code> must support operators
- *  <code>+=,-=,*=(const ScalarType& u), /=(int N)</code>.
+ *  <code>+=,-=,*=(const ScalarType&amp; u), /=(int N)</code>.
  *  </p>
  *
  *  <p><a name="covariance-matrix"><b>Covariance matrix:</b></a> 
@@ -433,7 +433,7 @@ class RandomObject {
     *  reported to the console.</p>
     *
     * @param N Size of sample used to estimate the variance.
-    * @apram message string describing computation.
+    * @param message string describing computation.
     */
    UTRMatrix<ScalarType> covarianceMatrix(int N, string message)
    {

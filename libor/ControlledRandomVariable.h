@@ -132,7 +132,7 @@ public:
     
 
     
-    /** <p>Same as {@link #conditionalExpectation(int)} but with 
+    /** <p>Same as {@link #expectation(int)} but with 
      * computational progress reported as count down.</p>
      *
      * @param N Sample size.

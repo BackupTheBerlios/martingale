@@ -131,7 +131,6 @@ RealArray2D& getTrainingPath(int i){ return *(path[i]); }
 
 /** @param lmm the Libor Market Model.
  *  @param swpn the Bermudan swaption.
- *  @param paths the number of training paths.
  *  @param vbose messages during initialization.
  */
 PjTrigger
@@ -143,7 +142,7 @@ PjTrigger
            
 // THE TRIGGER CONDITION
 
-/** True if exercise is triggered at time <code>t</cod> false otherwise.
+/** True if exercise is triggered at time <code>t</code> false otherwise.
  *
  * @param t irrelevant.
  * @param s current time.

@@ -57,7 +57,7 @@ class LmmLattice;
  *  Bermudan options. In fact Bermudan options allow exercise at an arbitrary 
  *  sequence of times and European respectively American options are treated as 
  *  a special case where exercise is possible only at expiry respectively at 
- *  each time step. See {@link Otion}, {@link LiborDerivative}, 
+ *  each time step. See {@link Option}, {@link LiborDerivative}, 
  *  {@link Caplet}, {@link Swaption} and {@link BondCall}.
  */
  
@@ -214,15 +214,21 @@ virtual int getPeriodsToExpiry(){ return t; }
 int  getDimension() const { return n; }
 	
 /** The effective dimension of computing one payoff. This is the number
- *  of independent uniform deviates generated to compute the necessary 
- *  Libors. Default implementation returns zero.
+ *  of independent uniform deviates generated to compute one sample of
+ *  the necessary Libors.
  */
 int effectiveDimension() const;
 
 
 /** The default lattice used for pricing: a two factor
  *  LmmLattice based on the underlying LMM. Constructed on the heap
- *  and must be deallocated by the user.
+ *  and must be deallocated by the user. This lattice is built with
+ *  steps=6 time steps per Libor compounding period unless the constant
+ *  <code>LATTICE_MAX_STEPS</code> defined in TypedefsMacros.h forces
+ *  reduction in the number steps. This is adequate up to semiannual 
+ *  compounding. The maximum number of possible time steps depends on
+ *  the available RAM. We assume 1GB. Otherwise adjust
+ *  <code>LATTICE_MAX_STEPS</code> by trial and error.
  */
 LmmLattice* getDefaultLattice();
 
@@ -254,7 +260,7 @@ std::ostream& printSelf(std::ostream& os) const;
  *  Reports error relative to the analytic price if this price is defined. 
  *  Note however that the analytic price itself may be an approximation.
  *
- * @param N number of payoff samples (usually computed from Libor paths).
+ * @param nPath number of payoff samples (usually computed from Libor paths).
  */
 virtual void testPrice(int nPath);
 
@@ -288,8 +294,8 @@ class Caplet : public LiborDerivative {
 public: 
 	
 /** Number t of Libor compounding periods to expiry (at T_t).*/
-int getPeriodsToExpiry(){ return t-1; }
-	
+int getPeriodsToExpiry(){ return i; }
+
 
 // CONSTRUCTOR
 
@@ -300,14 +306,14 @@ int getPeriodsToExpiry(){ return t-1; }
  * @param strike strike rate.
  * @param lmm underlying Libor market model.
  */
-Caplet(int k, Real strike, LiborMarketModel* lmm);
+Caplet(int j, Real strike, LiborMarketModel* lmm);
 	
 
 /** Sample at the money caplet with i=n/3, ie. one third of the way out to the horizon.
  *  Based on a {@link DriftlessLMM}.
  *
  * @param n dimension (number of Libor accrual intervals).
- * @param int lmmType type of Libor market model: {@link LiborMarketModel::DL,PC,FPC}.
+ * @param lmmType type of Libor market model: {@link LiborMarketModel}::DL,LFDL,PC,FPC.
  * @param volType type of volatility surface, VolSurface::CONST, JR, M.
  * @param corrType type of correlations, Correlations::CS, JR.
  */
@@ -379,7 +385,8 @@ std::ostream& printSelf(std::ostream& os) const;
 
 
 /** The payer swaption \f$Swpn(T,[T_p,T_q],\kappa)\f$ with strike rate \f$\kappa\f$ 
- *  exercisable at time \f$T_t\leq T_p\f$ pays off \f$h=B_{p,q}(T_t)*(S_{p,q}(T_t)-\kappa)^+$ 
+ *  exercisable at time \f$T_t\leq T_p\f$ pays off 
+ *  \f$h=B_{p,q}(T_t)*(S_{p,q}(T_t)-\kappa)^+\f$ 
  *  at time \f$T_t\f$. Here \f$B_{p,q}\f$ and \f$S_{p,q}\f$ are the annuity and swap 
  *  rate along \f$[T_p,T_q]\f$ as usual. It is based on a {@link LiborMarketModel}.
  */
@@ -391,7 +398,7 @@ class Swaption : public LiborDerivative {
 	
 	     
 public:
-	
+
 
 // CONSTRUCTOR
 
@@ -403,13 +410,13 @@ public:
  * @param t swaption exercises at time \f$T_t\leq T_p\f$.
  * @param lmm underlying Libor market model.
  */
-Swaption(int p_, int q_, int t_, Real strike, LiborMarketModel* lmm);
+Swaption(int p, int q, int t, Real strike, LiborMarketModel* lmm);
 	
 
 /** Sample at the money swaption with t=p.
  *	 
- * @param n dimension (number of Libor accrual intervals).
- * @param int lmmType type of Libor market model: {@link LiborMarketModel::DL,PC,FPC}
+ * @param p,q period of swap \f$[T_p,T_q]\f$.
+ * @param int lmmType type of Libor market model: {@link LiborMarketModel}::DL,LFDL,PC,FPC
  * @param volType type of volatility surface, VolSurface::CONST, JR, M.
  * @param corrType type of correlations, Correlations::CS, JR.
  */
@@ -480,6 +487,7 @@ class BondCall : public LiborDerivative {
 
 	     
 public:
+
 	
 /** The underlying bond.*/
 Bond* getBond(){ return B; }
@@ -490,7 +498,7 @@ Real getStrike(){ return K; }
 /** <p>Call on general bond portfolio \f$D(t)=\sum\nolimits_j=p^{q-1}c_jB_j(t)\f$
  *
  * @param D the underlying bond.
- * @apram strike the strike price.
+ * @param strike the strike price.
  * @param s call exercisable at time \f$T_s\f$.
  */
 BondCall(Bond* D, Real strike, int s);
@@ -501,7 +509,7 @@ BondCall(Bond* D, Real strike, int s);
  *	 
  * @param p coupons begin at \f$T_p\f$.
  * @param q coupons end at \f$T_q\f$.
- * @param lmmType type of Libor market model: {@link LiborMarketModel}::DL,PC,FPC.
+ * @param lmmType type of Libor market model: {@link LiborMarketModel}::DL,LFDL,PC,FPC.
  * @param volType type of volatility surface, {@link VolSurface}::CONST, JR, M.
  * @param corrType type of correlations, {@link Correlations}::CS, JR.
  */
@@ -519,7 +527,7 @@ static BondCall* sample
  *  Dimension of LMM is chosen to be p+3.
  *	 
  * @param p bond matures at \f$T_p\f$
- * @param lmmType type of Libor market model: {@link LiborMarketModel}::DL,PC,FPC.
+ * @param lmmType type of Libor market model: {@link LiborMarketModel}::DL,LFDL,PC,FPC.
  * @param volType type of volatility surface, {@link VolSurface}::CONST, JR, M.
  * @param corrType type of correlations, {@link Correlations}::CS, JR.
  */

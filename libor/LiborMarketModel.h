@@ -75,8 +75,8 @@ class Bond;  // defined below
 	  /** type flag: DL, LFDL, PC, FPC. */
 	  const int type;
 	 	 
-	  /** @param type DL, LFDL, PC, FPC
-	   *  @param correlations Correlations::JR,CS.
+	  /** @param lflType factorloading type (vols and corrs).
+	   *  @param lmmType LiborMarketModel::DL,LFDL,PC,FPC
 	   */
 	  LiborMarketModelType(const LiborFactorLoadingType* lflType, int lmmType) :
 	  flType(lflType), type(lmmType)  {    }                                                                         
@@ -214,7 +214,8 @@ public:
     /** Constructor
 	 *
      * @param fl volatility and correlation structure, see
-     * {@link FactorLoading}.
+     * {@link LiborFactorLoading}.
+     * @param lmmType type of Libor market model: {@link #DL}, LFDL, PC, FPC.
      */
     LiborMarketModel(LiborFactorLoading* fl, int lmmType=DL);
     virtual ~LiborMarketModel(){ }
@@ -223,7 +224,7 @@ public:
     /** Sample Libor market model, quarterly accrual.
 	 *
 	 * @param n dimension (number of Libor accrual intervals).
-	 * @param lmmType type of Libor market model: {@link LiborMarketModel::DL,PC,FPC}.
+	 * @param lmmType type of Libor market model: {@link #DL}, LFDL, PC, FPC.
 	 * @param volType type of volatility surface, VolSurface::CONST, JR, M.
 	 * @param corrType type of correlations, Correlations::CS, JR.
 	 */
@@ -352,7 +353,7 @@ public:
 	 *  Cashflow is shifted \f$T_t\rightarrow T_n\f$ with Libors in state
 	 *  at time \f$T_t\f$.
      *
-     * @param i cashflow shifted from time \f$T_i\f$ to horizon.
+     * @param t cashflow shifted from time \f$T_t\f$ to horizon.
      */
      virtual Real H_ii(int t);
 
@@ -495,7 +496,7 @@ public:
 	  *  to price the call on the bond \f$B\f$. See book, 6.9.2.</p>
 	  *
       *  <p>Default implementation: error message and abort.
-	  *  This is implemnted only in {@link LightSpeedLMM}.</p>
+	  *  This is implemnted only in {@link DriftlessLMM}.</p>
 	  *
 	  * @param B the bond.
 	  * @param t aggregate volatility until time \f$T_t\f$.

@@ -199,9 +199,6 @@ public:
 	} 
 	
 	
-	/** @param n_ number of array elements.
-	 *  @param b_ <a href="index-base">index base</a>.
-	 */
 	Array1D(const Array1D& x) : 
 	b(x.getIndexBase()), 
 	n(x.getDimension()) 
@@ -342,8 +339,8 @@ public:
 	
 // CONSTRUCTOR
 	
-	/** @param n1 number of array elements in dimension 1.
-	 *  @param b1 <a href="index-base">index base</a> in dimension 1.
+	/** @param n_1 number of array elements in dimension 1.
+	 *  @param b_1 <a href="index-base">index base</a> in dimension 1.
 	 */
 	Array2D(int n_1, int n_2, int b_1=0, int b_2=0) :
 	b1(b_1), b2(b_2),
@@ -473,8 +470,8 @@ public:
 	
 // CONSTRUCTOR
 	
-	/** @param n1 number of array elements in dimension 1.
-	 *  @param b1 <a href="index-base">index base</a> in dimension 1.
+	/** @param n_1 number of array elements in dimension 1.
+	 *  @param b_1 <a href="index-base">index base</a> in dimension 1.
 	 */
 	Array3D(int n_1, int n_2, int n_3, int b_1=0, int b_2=0, int b_3=0) : 
 	b1(b_1), b2(b_2), b3(b_3),

@@ -43,6 +43,9 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 // STANDARD NORMAL COVARIANCE MATRIX    
 
 /** Times the computation of a standard normal covariance matrix.
+ *  Then prints the largest and smallest diagonal and off diagonal elements.
+ *  This is a test of the random number generation. The true matrix is the
+ *  identity matrix.
  */
 void testSTNCovarianceMatrix(int d, int N);
 

@@ -229,13 +229,12 @@ public:
  *  k is the integer vector storing the state of Z.
  *  Here dt is the size of the time step and \f$a=\sqrt{dt}\f$ the tick size of a 
  *  standard Brownian motion over a time step of size dt. Code is limited to
- *  lattices built with {@link StandardBrownianNodes}.
+ *  lattices built with {@link StandardBrownianNode}s.
  */
 namespace LatticeBuilder {
 
 /** Builds a <a href=#lattice-builder>two factor lattice</a>. 
  * @param T number of time steps in the lattice.
- * @param nodeList nodeList[t] is a pointer to the list of nodes at time t.
  * @param theLattice lattice building itself.
  * @param verbose message during build.
  */
@@ -322,7 +321,6 @@ void buildTwoFactorLattice(LatticeType* theLattice, int T, bool verbose=false)
 
 /** Builds a <a href=#lattice-builder>three factor lattice</a>. 
  * @param T number of time steps in the lattice.
- * @param nodeList nodeList[t] is a pointer to the list of nodes at time t.
  * @param latticeData data object handed to nodes from lattice.
  * @param verbose message during build.
  */

@@ -13,14 +13,14 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 struct Square { int e; int n; Square() : e(0), n(0) { } };
 	
 /** Allocates a lattice for driftless LMM with constant volatility surface
- *  and plots the exercise decision for a Bermudan swaption on \f$[T_p,T_n\f$
+ *  and plots the exercise decision for a Bermudan swaption on \f$[T_p,T_n]\f$
  *  at all nodes at time \f$T_t\f$ as a function of the 
  *  statistics \f$x=L_t(T_t)\f$ and \f$y=S_{t+1,n}(T_t)\f$ used in the Jaeckel exercise
  *  boundary parametrization (P. Jaeckel, <i>Monte Carlo Methods in Finance</i>, 
  *  pp. 171-181). We traverse all these nodes in the lattice
  *  and compute the pair (x,y) at each node. With k denoting the strike rate the range
  *  \f[0\leq x,y\leq 5k\f]
- *  is divided into 100^2 squares by dividing each axis into 100 intervals of equal length.
+ *  is divided into 75^2 squares by dividing each axis into 100 intervals of equal length.
  *  Each square Q keeps count how often we have exercise (e) or no exercise (n) for a pair
  *  (x,y) falling into Q and is colored according to the exercise probability u=e/(e+n) as 
  *  follows:
@@ -34,9 +34,11 @@ struct Square { int e; int n; Square() : e(0), n(0) { } };
  *  \f$u < 0.01\f$: yellow (never exercised).
  * </p>
  * <p>To make this meaningful we must have enough nodes to cover the significant squares
- * with sufficently many pairs (x,y). We use the default lattice which allocates close
- * to the maximum number of nodes that will fit into memory. We should then let t be 
- * 2n/3 or bigger.</p>
+ * with sufficently many pairs (x,y). We use the default lattice and must see to it that
+ * it allocates close to the maximum number of nodes that will fit into memory. 
+ * A trivial change in the code of <code>LiborDerivative::getDefaultLattice()</code>
+ * has this effect: count the variable <code>steps</code> down from 100 instead of 6.
+ * Then let t be 2n/3 or bigger.
  *
  * <p>This needs the <strong>Gnu Plotutils</strong> library (&lt;plotter.h&gt;).
  */

@@ -89,8 +89,7 @@ using std::vector;
  *  <p>Please read the source code to determine the precise syntactic assumptions which 
  *  the code makes about the type of lattice <code>LatticeType</code>, the type of nodes
  *  within the lattice <code>LatticeType::NodeType</code> and the type 
- *  <code>OptionType</code> of option to be priced in the lattice
-	.
+ *  <code>OptionType</code> of option to be priced in the lattice.
  */
 template<typename LatticeType, typename OptionType>
 Real latticeForwardPrice(LatticeType* theLattice, OptionType* theOption)

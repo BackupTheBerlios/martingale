@@ -303,7 +303,7 @@ public:
 
 	 /** Examines how dominant are the first r eigenvalues of the covariation 
 	  *  matrix CV(p,q,s,t)=(C_ij) with entries
-	  *  \f[C_{ij}=\int_s^t\sigma_i(u)\sigma_j(u)\rho_{ij}du,\quad p\leq i,j<q.\]
+	  *  \f[C_{ij}=\int_s^t\sigma_i(u)\sigma_j(u)\rho_{ij}du,\quad p\leq i,j<q.\f]
 	  *  This matrix is needed for the Libor time step s->t.
 	  */
      void factorAnalysis(int p, int q, Real s, Real t, int r) const;
@@ -311,7 +311,7 @@ public:
 	 
 	 /** Examines how dominant are the first r eigenvalues of the covariation 
 	  *  matrix CV(t)=(C_ij) with entries
-	  *  \f[C_{ij}=\int_{T_t}^{T_{t+1}}\sigma_i(u)\sigma_j(u)\rho_{ij}du,\quad t+1\leq i,j<n.\]
+	  *  \f[C_{ij}=\int_{T_t}^{T_{t+1}}\sigma_i(u)\sigma_j(u)\rho_{ij}du,\quad t+1\leq i,j<n.\f]
 	  *  This matrix is needed for the Libor time step \f$T_t\rightarrow T_{t+1}\f$.
 	  */
      void factorAnalysis(int t, int r) const;
@@ -323,13 +323,13 @@ public:
 // TEST PROGRAM 
 
 		 
-/** Test the roots of all {@link logLiborCovariationMatrix(int t)}.
+/** Test the roots of all {@link #logLiborCovariationMatrix(int)}.
  */
 void selfTest() const;
 
 
 /** Computes approximate rank r factorizations C(t)=R(t)R(t)' for all the 
- *  matrices {@link logLiborCovariationMatrix(int t)} and prints the relative error.
+ *  matrices {@link #logLiborCovariationMatrix(int)} and prints the relative error.
  */
 void factorizationTest(int r) const;
 

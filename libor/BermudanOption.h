@@ -80,7 +80,7 @@ bool isExercisable(Real t);
 // CONSTRUCTOR
 
 /** 
- * @param p,q period of swap \f$[T_p,T_q]\f$.
+ * @param p_,q_ period of swap \f$[T_p,T_q]\f$.
  * @param paths number of training paths for the exercise trigger.
  * @param strike strike rate.
  * @param lmm underlying Libor market model.
@@ -95,7 +95,7 @@ BermudanSwaption
  * @param p,q swap interval \f$[T_p,T_q]\f$.
  * @param paths number of training paths for the exercise trigger.
  * @param verbose messages during trigger optimization.
- * @param int lmmType type of Libor market model: {@link LiborMarketModel::DL,PC,FPC}
+ * @param lmmType type of Libor market model: LiborMarketModel::DL, PC, FPC
  * @param volType type of volatility surface, VolSurface::CONST, JR, M.
  * @param corrType type of correlations, Correlations::CS, JR.
  */

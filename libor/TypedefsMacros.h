@@ -30,6 +30,7 @@ spyqqqdia@yahoo.com
 
 
 #define SMALL       30               // matrix optimizations below this size.
+#define SOBOL_MAX_DIM 300            // maximal dimension of the Sobol generator
 #define LMM_MAX_DIM 300              // maximal dimension of a Libor process for
                                      // which a lattice can be built.
 #define BASKET_MAX_DIM 300           // maximum number of assets in a basket for

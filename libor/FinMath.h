@@ -155,7 +155,7 @@ Real dBSF(Real Q, Real k, Real Sigma);
    *  <code>T</code> to expiry (from time zero) are needed since the formula 
    *  will be applied at time other than time zero and <code>S</code></p>
    *
-   * @param S the <i>forward</i> asset price at expiry <code<T</code>.
+   * @param S the <i>forward</i> asset price at expiry <code>T</code>.
    * @param K strike price
    * @param tau time to expiration
    * @param sigma annual asset volatility

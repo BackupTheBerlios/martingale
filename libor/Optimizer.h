@@ -87,9 +87,9 @@ public:
     virtual const RealArray1D& search() = 0;
     
     
-    /** @param n dimension of argument vector.
+    /** @param n_ dimension of argument vector.
      */
-    Optimizer(int _n) : n(_n) { }
+    Optimizer(int n_) : n(n_) { }
 	virtual ~Optimizer(){ }
 	
     
@@ -222,11 +222,12 @@ class ConcreteDownhillSimplex : public DownhillSimplex {
 	
 public:
 	
-	 /** @param _of pointer to objective function. */
+	 /** @param f pointer to objective function. 
+	  */
 	 ConcreteDownhillSimplex
-	 (Real (*_of)(const RealArray1D&), RealArray1D& x, Real delta, int steps, bool verbose) :
+	 (Real (*f)(const RealArray1D&), RealArray1D& x, Real delta, int steps, bool verbose) :
      DownhillSimplex(x,delta,steps,verbose),
-	 of(_of)
+	 of(f)
      {  
 		 // now we can call f
 		 setInitialConditions();
@@ -496,13 +497,13 @@ class ConcreteBFGS : public BFGS {
 	
 public:
 	
-	 /** @param _of pointer to objective function. 
+	 /** @param f pointer to objective function. 
 	  */
 	 ConcreteBFGS
-	 (Real (*_of)(const RealArray1D&), RealArray1D& x, int nVals, 
+	 (Real (*f)(const RealArray1D&), RealArray1D& x, int nVals, 
       Real stepmax, RealArray1D& h, int nRestarts=3, bool verbose=false) :
      BFGS(x,nVals,stepmax,h,nRestarts,verbose),
-	 of(_of)
+	 of(f)
      {   
 		 // now we can call f
 		 setInitialConditions();
@@ -546,7 +547,7 @@ protected:
 public:
 	
 	/** @param x0 initial point.
-	 *  @param nPoints total number of function evaluations.
+	 *  @param nVals total number of function evaluations.
 	 *  @param delta initial window all u with \f$x0_j-\delta_j<u_j<x0_j+\delta_j\f$.
 	 *  @param vbose announce each new min during search.
 	 */
@@ -573,13 +574,13 @@ class ConcreteSobolSearch : public SobolSearch {
 	
 public:
 	
-	 /** @param _of pointer to objective function. 
+	 /** @param f pointer to objective function. 
 	  */
 	 ConcreteSobolSearch
-	 (Real (*_of)(const RealArray1D&), const RealArray1D& x, 
+	 (Real (*f)(const RealArray1D&), const RealArray1D& x, 
 	  int nVals, const RealArray1D& delta, bool verbose=false) :
      SobolSearch(x,nVals,delta,verbose),
-	 of(_of)
+	 of(f)
      {    }
 	 
 	 Real f(const RealArray1D& x){ return (*of)(x); }

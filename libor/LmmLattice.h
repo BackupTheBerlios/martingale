@@ -55,7 +55,7 @@ class BondCall;
  *  equal size \f$\delta/nSteps\f$ where nSteps denotes the number of time steps 
  *  in each Libor accrual interval.
  *
- *  <p>The lattice uses {@link StandardBrownianNodes} since all functionals can
+ *  <p>The lattice uses {@link StandardBrownianNode}s since all functionals can
  *  be computed from the state of the driving Brownian motion 
  *  \f[Z=(Z_1,Z_2,\dots,Z_r)\f]
  *  at each node. Here r is th number of factors. Only r=2,3 are possible since 
@@ -63,8 +63,8 @@ class BondCall;
  *  (and time steps).
  *
  * <p><a name="lmm-lattice-3f">Three factor LMM lattice:</a>
- *  Nodes in a 3 factor lattice for the Libor market model {@link LmmLattice3F}
- *  compute the \f$H_j\f$ from the volatility parts \f$V_j\f$ of the forward transported
+ *  Nodes in a 3 factor lattice for the Libor market model compute the \f$H_j\f$ 
+ *  from the volatility parts \f$V_j\f$ of the forward transported
  *  Libors \f$U_j\f$ approximated as
  *  \f[V_j(s)\simeq\sigma_j\left[R_{j1}Z_1(s)+R_{j2}Z_2(s)+R_{j3}Z_3(s)\right],\f]
  *  where the matrix R is the approximate root of rank 3 of the correlation matrix 
@@ -129,8 +129,6 @@ class BondCall;
  *  with constant volatility surface and constant Libor accrual periods.
  *  See book 6.8, 8.1.1 for the details and notation. 
  *  For more details see the file reference for the file LmmLattice.h.
- *  Does not build a lattice, only the subclasses {@link LmmLattice2F} 
- *  {@link LmmLattice3F} do that.
  */
 class LmmLattice : public Lattice<StandardBrownianNode> {
 	

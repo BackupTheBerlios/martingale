@@ -218,7 +218,7 @@ public:
  *********************************************************************************/
 
 
-/** Stochastic generator for a {@link VectorProcess} based on the Mersenne Twister.
+/** Stochastic generator for a VectorProcess based on the Mersenne Twister.
  */
 class MonteCarloVectorDriver : public StochasticGenerator {
 	
@@ -247,7 +247,7 @@ public:
 
 
 
-/** Stochastic generator for a {@link VectorProcess} based on the Sobol sequence.
+/** Stochastic generator for a VectorProcess based on the Sobol sequence.
  */
 class SobolVectorDriver : public StochasticGenerator {
 	
@@ -292,7 +292,7 @@ public:
  *********************************************************************************/
 
 
-/** Stochastic generator for a {@link VectorProcess} based on the Mersenne Twister.
+/** Stochastic generator for a ScalarProcess based on the Mersenne Twister.
  */
 class MonteCarloScalarDriver : public StochasticGenerator {
 	
@@ -313,7 +313,7 @@ public:
 
 
 
-/** Stochastic generator for a {@link ScalarProcess} based on the Sobol sequence.
+/** Stochastic generator for a ScalarProcess based on the Sobol sequence.
  */
 class SobolScalarDriver : public StochasticGenerator {
 	

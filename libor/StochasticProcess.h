@@ -255,7 +255,8 @@ public:
  *  with components of type <code>ScalarType</code> (similar to class {@link RandomObject},
  *  Dimension 1 with <code>RangeType=ScalarType</code> is allowed and both types could be
  *  <code>std::complex</code> for example). The only reference to these types occurs in the 
- *  method {@link #sampledAt} which returns a pointer to <code>RandomObject</code>.
+ *  method {@link #operator()(int,StoppingTime*)} which returns a pointer to 
+ *  <code>RandomObject</code>.
  *  Unfortunately this method is fundamental in the theory of stochastic processes 
  *  (see book, 3.3) and so we cannot avoid the template parameters of 
  *  the class <code>RandomObject</code>.</p>

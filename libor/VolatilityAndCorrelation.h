@@ -34,7 +34,7 @@ spyqqqdia@yahoo.com
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
-/*! \file VolatilityAndCorrelations.h
+/*! \file VolatilityAndCorrelation.h
  * Interface and implementation of deterministic volatility surfaces and
  * constant correlations. These are used in the factor loadings of Ito processes
  * (such as asset or Libor logarithms (returns)), see {@link FactorLoading} and 
@@ -95,12 +95,12 @@ public:
 	static const int M=0, JR=1, CONST=2; 
 	
 	
-	/** @param a,b,c,d parameters of the vol surface
+	/** @param a_,b,c,d parameters of the vol surface
 	 *  @param type vol surface type M, JR or CONST.
 	 */
 	VolSurface
-	(Real _a, Real _b, Real _c, Real _d, int type) :
-	volType(type), a(_a), b(_b), c(_c), d(_d)
+	(Real a_, Real b_, Real c_, Real d_, int type) :
+	volType(type), a(a_), b(b_), c(c_), d(d_)
     {    }
 	
 	/** Type ID, implemented: M, JR, CONST.
@@ -178,8 +178,8 @@ class JR_VolSurface : public VolSurface {
 public:
 	
 	JR_VolSurface
-	(Real _a, Real _b, Real _c, Real _d) :
-	VolSurface(_a,_b,_c,_d,JR)
+	(Real a, Real b, Real c, Real d) :
+	VolSurface(a,b,c,d,JR)
     {    }
 
   
@@ -188,12 +188,12 @@ public:
 	
 	
    /** Volatility surface 
-    *  \$[\sigma(t,T)=d+(a+b(T-t)\,e^{-c(T-t)})\f$.
+    *  \f$\sigma(t,T)=d+(a+b(T-t)\,e^{-c(T-t)})\f$.
     */
    Real sigma(Real t, Real T) const;
 
   
-   /** See {@link VolatilitySurface#integral_sgsg}.
+   /** See {@link VolSurface#integral_sgsg}.
     */
    Real integral_sgsg(Real t, Real T_1, Real T_2) const;
    
@@ -221,8 +221,8 @@ class M_VolSurface : public VolSurface {
 public:
 	
 	M_VolSurface
-	(Real _a, Real _b, Real _c, Real _d) :
-	VolSurface(_a,_b,_c,_d,M)
+	(Real a, Real b, Real c, Real d) :
+	VolSurface(a,b,c,d,M)
     {    }
 
   
@@ -236,7 +236,7 @@ public:
    Real sigma(Real t, Real T) const { return g(1-t/T); }
 
   
-   /** See {@link VolatilitySurface#integral_sgsg}.
+   /** See {@link VolSurface#integral_sgsg}.
     */
    Real integral_sgsg(Real t, Real T_1, Real T_2) const;
    
@@ -281,8 +281,8 @@ class CONST_VolSurface : public VolSurface {
 	
 public:
 	
-	CONST_VolSurface(Real _a, Real _b, Real _c, Real _d) :
-	VolSurface(_a,_b,_c,_d,CONST)
+	CONST_VolSurface(Real a, Real b, Real c, Real d) :
+	VolSurface(a,b,c,d,CONST)
     {    }
 		
 // VOLATILITIES, CORRELATIONS, COVARIATION INTEGRALS
@@ -291,7 +291,7 @@ public:
     */
    Real sigma(Real t, Real T) const { return 1; }
    
-   /** See {@link VolatilitySurface#integral_sgsg}.
+   /** See {@link VolSurface#integral_sgsg}.
     */
    Real integral_sgsg(Real t, Real T_1, Real T_2) const { return t; }
       
@@ -359,8 +359,9 @@ public:
 	/** Correlation matrix is allocated but not initialized
 	 *  Do this from the concrete subclasses.
 	 *  @param correlationType JR or CS.
+	 *  @param alpha see class description.
 	 */
-	Correlations(int _n, Real _alpha, Real _beta, Real _r_oo, int correlationType);
+	Correlations(int n, Real alpha, Real beta, Real r_oo, int correlationType);
 	
 	virtual ~Correlations(){ }
 	
@@ -420,7 +421,7 @@ public:
 	/** @param T tenor structure of Libor process.
 	 *  @param beta see class description.
 	 */
-	JR_Correlations(const RealArray1D& _T, Real beta);	
+	JR_Correlations(const RealArray1D& T, Real beta);	
 	virtual ~JR_Correlations(){ }
 
 	   
@@ -454,7 +455,9 @@ class CS_Correlations : public Correlations {
 	
 public:
 	
-	CS_Correlations(int _n, Real _alpha, Real _beta, Real _r_oo);
+	/** @param alpha see class description.
+	 */
+	CS_Correlations(int n, Real alpha, Real beta, Real r_oo);
 	virtual ~CS_Correlations(){ }
 
 	   
@@ -470,7 +473,7 @@ public:
 	/** Sample correlations.
 	 *  @param n dimension.
 	 */
-	static Correlations* sample(int _n);
+	static Correlations* sample(int n);
 	
 	
 private:
