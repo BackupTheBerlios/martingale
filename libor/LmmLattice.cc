@@ -22,11 +22,14 @@ spyqqqdia@yahoo.com
 
 
 #include "LmmLattice.h"
+#include "LmmLatticeData.h"
 #include "Node.h"
 #include "Lattice.h"
 #include "Utils.h"
 #include "Matrix.h"
 #include "LiborFactorLoading.h" 
+#include "LiborFunctional.h"
+#include "Option.h"
 #include <cmath>
 
 
@@ -41,51 +44,35 @@ using std::log;
 // LMM LATTICE DATA
 
 
-LmmLatticeData::
-LmmLatticeData
-(int steps,
- Real dt,
- const RealArray1D& vols,
- const RealArray1D& Y_0, 
- const RealMatrix& Q
-) :
-n(1+Q.rows()), nSteps(steps), r(Q.cols()), 
-timestep(dt), ticksize(sqrt(dt)), delta(steps*dt),
-sg(vols), log_U0(Y_0), driftUnit(Q.rows(),1), R(Q)
-{  
-	for(int i=1;i<n;i++) driftUnit[i]=-sg[i]*sg[i]*dt/2; 
-}
-	
-
 
 // GENERAL LMM LATTICE
 
 LmmLattice::
-LmmLattice(int q, LiborFactorLoading* fl, int t, int steps=1) : 
-Lattice<LmmNode>(t*steps),
+LmmLattice(int q, LiborFactorLoading* fl, int t, int steps, bool verbose) : 
+// m=t*steps is the number of time steps
+Lattice<StandardBrownianNode>(t*steps),
+factorLoading(fl),
 n(fl->getDimension()), 
 r(q),
 nSteps(steps),
 delta(fl->getDeltas()[0]),
 dt(delta/steps),
 a(sqrt(dt)),
-Y0(n),
-factorLoading(fl),
 sg(n-1,1),
-R(fl->getRho().rankReducedRoot(r)),
-latticeData(0)
+log_U0(n),
+mu(n-1,1),
+R(fl->getRho().rankReducedRoot(r))
 { 
 	// check the number of factors
 	if((r!=2)&&(r!=3)){
 		
-	   cout << "\n\nLmmLatticeconstructor: number of factors must be 2 or 3 but is " << r
+	   cout << "\n\nLmmLattice constructor: number of factors must be 2 or 3 but is " << r
 	             << "\nTerminating.";
 	   exit(1);
     }		
 		
 	// check if Libor accrual periods are constant
 	const RealArray1D& deltas=fl->getDeltas();
-	Real delta=deltas[0];
 	for(int j=0;j<n;j++) if(deltas[j]!=delta) {
 			
 	   cout << "\n\nLmmLatticeconstructor: Libor accrual periods not constant."
@@ -107,15 +94,31 @@ latticeData(0)
 			
 	    // U_j(0)=X_j(0)(1+X_{j+1}(0))...(1+X_{n-1}(0))
 		Real Uj0=x[j]; for(int k=j+1;k<n;k++) Uj0*=1+x[k]; 
-		Y0[j]=log(Uj0);
+		log_U0[j]=log(Uj0);
 	}
 
     // set constant vols
 	for(int j=1;j<n;j++) sg[j]=factorLoading->sigma(j,0.0);
-			
-	latticeData = new LmmLatticeData(steps,dt,sg,Y0,R);
+	
+	// drifts of Y_j=log(U_j) over a single time step
+    for(int i=1;i<n;i++) mu[i]=-sg[i]*sg[i]*dt/2; 
+	
+	// m=t*steps is the number of time steps
+	buildLattice(t*steps,verbose);
 	
 } // end constructor
+
+
+
+LmmLattice* 
+LmmLattice::
+sample(int r, int n, int p, int nSteps, bool verbose=false) 
+{
+	LiborFactorLoading*
+	fl=LiborFactorLoading::sample(n,VolSurface::CONST,Correlations::CS);
+	LmmLattice* lattice = new LmmLattice(r,fl,p,nSteps,verbose);
+	return lattice;
+}
 
 
 
@@ -148,15 +151,113 @@ testFactorization() const
 }   // end factorAnalysis
 
 
-
 ostream& 
 LmmLattice::
 printSelf(ostream& os) const
 {
 	return
-	os << "LMM lattice:"
+	os << r << "factor LMM lattice: "
 	   << "\nNumber of time steps in each accrual interval: " << nSteps 
 	   << endl << *factorLoading;
+}
+
+
+const RealArray1D& 
+LmmLattice::
+Hvect
+(int p, StandardBrownianNode* node, int s)
+{
+	H_.setDimension(n-p+1);
+	H_.setIndexBase(p);	
+	H_[n]=1.0;
+	// needs special treatment since R starts with row index 1
+	if(s==0){          
+		
+        for(int j=n-1;j>=p;j--) H_[j]=std::exp(log_U0[j])+H_[j+1]; 
+		return H_;
+	}
+			
+    // the volatility parts V_j of log(U_j), j=t,...,n-1
+	int* k=node->getIntegerTicks();                         // Z_j=k[j]*a
+    V_.setDimension(n-p);
+	V_.setIndexBase(p);
+	for(int j=p;j<n;j++){
+		
+	    V_[j]=0.0;
+		for(int u=0;u<r;u++) V_[j]+=R(j,u)*k[u];
+	    V_[j]*=a*sg[j];
+	}                                                       // now V_=V
+		 
+    // add the initial value log(U_j(0) and drift mu_j(s)
+	for(int j=p;j<n;j++) {
+		
+        V_[j]+=log_U0[j]+s*mu[j];          // now V=log(U)
+		V_[j]=std::exp(V_[j]);                  // now V=U
+	}
+				 
+	// write the  H_n=1, H_j=U_j+H_{j+1}, j=t,...,n-1
+	// into the static workspace H_:
+    for(int j=n-1;j>=p;j--) H_[j]=V_[j]+H_[j+1]; 
+
+    return H_;
+	
+} // Hvect
+
+
+
+Real 
+LmmLattice::
+L(int j, StandardBrownianNode* node, int s)
+{
+	const RealArray1D& H=Hvect(j,node,s);
+	return (H[j]/H[j+1]-1)/delta;
+}
+	
+	
+Real 
+LmmLattice::
+H_pq(int p, int q, StandardBrownianNode* node, int s)
+{
+	const RealArray1D& H=Hvect(p,node,s);
+	return LiborFunctional::H_pq(p,q,H,delta);
+}
+
+
+Real 
+LmmLattice::
+swapRate(int p, int q, StandardBrownianNode* node, int s)
+{
+	const RealArray1D& H=Hvect(p,node,s);
+	return LiborFunctional::swapRate(p,q,H,delta);
+}
+		
+
+Real 
+LmmLattice::
+forwardSwaptionPayoff(int p, int q, Real kappa, StandardBrownianNode* node, int s)
+{
+	const RealArray1D& H=Hvect(p,node,s);
+	return LiborFunctional::forwardSwaptionPayoff(p,q,kappa,H,delta);
+}
+
+
+Real 
+LmmLattice::
+forwardCapletPayoff(int i, Real kappa, StandardBrownianNode* node, int s)
+{
+	const RealArray1D& H=Hvect(i,node,s);
+	return LiborFunctional::forwardCapletPayoff(i,kappa,H,delta);
+}
+
+
+
+Real 
+LmmLattice::
+forwardBondCallPayoff(BondCall* bc, StandardBrownianNode* node, int s)
+{
+	int t = bc->getPeriodsToExpiry();     // option expires at T_t 
+	const RealArray1D& H=Hvect(t,node,s);
+    return LiborFunctional::forwardBondCallPayoff(bc,H);
 }
 
 
@@ -170,113 +271,46 @@ tau(int s)
    	Real delta_t=T_[t+1]-T_[t];
 		
     return T_[t]+(delta_t*(s%nSteps))/nSteps;
-}	
-	
-
-
-// TWO FACTOR LMM LATTICE
-
-
-LmmLattice2F::
-LmmLattice2F
-(LiborFactorLoading* fl, int t, int steps=1,bool verbose=false) :
-LmmLattice(2,fl,t,steps) 
-{   
-	buildLattice(t*steps,verbose);     // m=t*steps is the number of time steps
-	if(verbose) testFactorization(); 
-}
-
-
-
-LmmLattice2F* 
-LmmLattice2F::
-sample(int n, int p, int nSteps, bool verbose=false) 
-{
-	LiborFactorLoading*
-	fl=LiborFactorLoading::sample(n,VolSurface::CONST,Correlations::CS);
-	LmmLattice2F* lattice = new LmmLattice2F(fl,p,nSteps,verbose);
-	return lattice;
 }
 
 
 void 
-LmmLattice2F::
-test(int n)
+LmmLattice::
+test(int r, int n)
 {
     Timer watch; watch.start();
-	LmmLattice2F* lattice = sample(n,n,1,true);
+	LmmLattice* lattice = sample(r,n,n,5,true);
 	lattice->rescaleVols();
 	lattice->selfTest();
 	delete lattice;
 	watch.stop();
-	watch.report("Two factor LmmLattice test");
+	watch.report("LmmLattice test");
 }
-		
+
 
 void 
-LmmLattice2F::
+LmmLattice::
 buildLattice(int m, bool verbose)
 {
 	if(verbose)
 	cout << "\n\nBuilding lattice: " << *this
 	          << "\n\nTime steps: " << m << endl << endl;
-	LatticeBuilder::
-	buildTwoFactorLattice<LmmNode,LmmLatticeData>(m,nodeList,latticeData,verbose);         		  
+	switch(r){
+		
+		case 3 :  LatticeBuilder::buildThreeFactorLattice(this,m,verbose); 
+			      break;
+		default : LatticeBuilder::buildTwoFactorLattice(this,m,verbose); 
+	}
 
 } // end buildLattice
 
 
 
-// THREE FACTOR LMM LATTICE
+// out of class intialization
+RealArray1D LmmLattice::H_(LMM_MAX_DIM); 
+RealArray1D LmmLattice::V_(LMM_MAX_DIM);
 
-
-LmmLattice3F::
-LmmLattice3F
-(LiborFactorLoading* fl, int t, int steps=1, bool verbose=false) :	
-LmmLattice(3,fl,t,steps) 
-{   
-	buildLattice(t*steps,verbose);     // m=t*steps is the number of time steps
-	if(verbose) testFactorization();
-}
-
-
-LmmLattice3F* 
-LmmLattice3F::
-sample(int n, int p, int nSteps, bool verbose=false) 
-{
-	LiborFactorLoading*
-	fl=LiborFactorLoading::sample(n,VolSurface::CONST,Correlations::CS);
-	LmmLattice3F* lattice = new LmmLattice3F(fl,p,nSteps,verbose);
-	return lattice;
-}
-
-
-void 
-LmmLattice3F::
-test(int n)
-{
-	Timer watch; watch.start();
-	LmmLattice3F* lattice = sample(n,n,1,true);
-	lattice->rescaleVols();
-	lattice->selfTest();
-	delete lattice;
-	watch.stop();
-	watch.report("Three factor LmmLattice test");
-}
-		
-		
-void 
-LmmLattice3F::
-buildLattice(int m, bool verbose)
-{
-	if(verbose)
-	cout << "\n\nBuilding lattice: " << *this
-	          << "\n\nTime steps: " << m << endl << endl;
-	LatticeBuilder::
-	buildThreeFactorLattice<LmmNode,LmmLatticeData>(m,nodeList,latticeData,verbose);         	
-
-} // end buildLattice
-
+	
 
 
 MTGL_END_NAMESPACE(Martingale)

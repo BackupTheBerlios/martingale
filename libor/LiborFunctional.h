@@ -89,7 +89,9 @@ namespace LiborFunctional {
 	
 	/** Payoff of a caplet with strike rate kappa on the interval [T_i,T_{i+1}]. 
 	 *  Payoff is accrued forward to the horizon T_n. It is assumed that the
-	 *  vector H is computed at time T_i.
+	 *  vector H is computed at time T_i. Slightly inaccurate since we are using
+	 *  \f$H_{i+1}(T_i)\f$ to compound the payoff forward instead of the correct
+	 *  accrual factor \f$H_{i+1}(T_{i+1})\f$.
 	 *
 	 * @param H vector of accrual factors.
 	 * @param delta length of all Libor accrual periods.

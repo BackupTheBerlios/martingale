@@ -346,6 +346,31 @@ without path generation. Class <code>PathGenerator</code> no longer needed.
 State: tested and working.
 
 
+<h3>9-6-03:</h3>
+
+Complete rewrite of the node and lattice classes. There is only one type of node
+<code>StandardBrownianNode</code>. All responsibility shifted from nodes to the lattice.
+Nodes only store the absolute minimum. Two factor nodes are down to 28 bytes and can be made even
+smaller by moving from <code>const Array1D&lt;Node*&gt;</code> to <code>Node**</code>
+(doesn't store the dimension = number of edges which is known to the lattice).
+Class <code>Edge</code> completely eliminated. An edge is simply a pointer to Node, the
+transition probabilities are state independent and known to the lattice so need not be stored in the nodes.
+<p>
+Classes affected <code>Option</code>, <code>BermudanOption</code>,  <code>LiborFunctional</code>,
+<code>Node</code>,  <code>Lattice</code>,  <code>LmmLattice</code>,  <code>BasketLattice</code>,
+<code>Pricing</code>.
+<p>
+Significant speedup. We can now tolerate 10 million nodes corresponding to 310 time steps in a
+two factor lattice. Strangely this needs about 700MB instead of 300MB. 
+Inefficiency of<code> operator new </code>?. Check out Alexandrescu's small object allocator.
+<p>
+The code is now slightly more specific to lattices built with <code>StandardBrownianNode</code>s.
+Rerun of the Bermudan exercise boundary computation with better resolution.
+<p>
+<b>State:</b> Option pricing tested. Code runs and is working.
+
+
+
 </body>
 </html>
 

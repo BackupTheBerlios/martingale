@@ -254,13 +254,9 @@ void testLmmLattice()
 	    int n; cin >> n;
 	    cout << "Enter number r of factors (2 or 3): r = ";
 	    int r; cin >> r;
-	    switch(r){
-		
-		    case 2 : LmmLattice2F::test(n); break;
-	        case 3 : LmmLattice3F::test(n); break;
-			default : cout << "\n\n\nNumber of factors must be two or three.";
-		}
-		
+		if((r!=2)&&(r!=3))
+			cout << "\n\n\nNumber of factors must be two or three.";
+		else LmmLattice::test(r,n); 
 		cout << "\n\nDo another run (yes = 1, no = 0) do_again = ";
 		cin >> do_again;
 	}

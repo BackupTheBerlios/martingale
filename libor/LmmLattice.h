@@ -25,11 +25,14 @@ spyqqqdia@yahoo.com
 
 // template class LmmLattice must be fully defined in header
 #include "TypedefsMacros.h"
-#include "Lattice.h"                      
+#include "Lattice.h"              // base class
+#include "Node.h"                 // base class
 #include "Utils.h"
-#include "Matrix.h"
+#include "Array.h"                // direct member
+#include "Matrix.h"               // direct member
 #include "LiborFactorLoading.h" 
-//#include <iostream>
+#include "Node.h"                 // problem with typedefed forward declarations
+
 
 class std::ostream;
 
@@ -39,8 +42,7 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 // forward declaration
-class LmmNode;                  // Node.h
-
+class BondCall;
 
 
 /*! \file LmmLattice.h
@@ -53,12 +55,12 @@ class LmmNode;                  // Node.h
  *  equal size \f$\delta/nSteps\f$ where nSteps denotes the number of time steps 
  *  in each Libor accrual interval.
  *
- * <p>Nodes have the smallest possible memory footprint to accommodate millions
- *  of nodes in a lattice. See {@link LmmNode}. The number of nodes depends on the
- *  number f of factors of the Brownian driver preserved in the simulation.
- *  Even though the lattice is fully recombining the number of nodes explodes with the 
- *  number of factors and time steps. Realistically only 3 factor latttices are possible
- *  on PC equipment.
+ *  <p>The lattice uses {@link StandardBrownianNodes} since all functionals can
+ *  be computed from the state of the driving Brownian motion 
+ *  \f[Z=(Z_1,Z_2,\dots,Z_r)\f]
+ *  at each node. Here r is th number of factors. Only r=2,3 are possible since 
+ *  number of nodes <a href="#num-nodes">explodes</a> with the number of factors 
+ *  (and time steps).
  *
  * <p><a name="lmm-lattice-3f">Three factor LMM lattice:</a>
  *  Nodes in a 3 factor lattice for the Libor market model {@link LmmLattice3F}
@@ -90,7 +92,7 @@ class LmmNode;                  // Node.h
  * arbitrage free. Our view here is that the lattice is an approximation of the arbitrage
  * free continuous time dynamics.
  *
- * <p><b>Number of nodes.</b>
+ * <p><a name="num-nodes"><b>Number of nodes.</b></a>
  * Each node has four edges in the case of a two factor lattice and eight edges in the case of
  * a three factor lattice. The total number of nodes allocated depends on the number of time steps
  * in the lattice:
@@ -120,92 +122,67 @@ class LmmNode;                  // Node.h
  *********************************************************************************/
  
  
-/** LmmLattice data which must be conveyed to the nodes.
- *  All arrays are indexed with natural indices from the Libor process context.
- */
-struct LmmLatticeData {
-	
-	int 
-	    /** dimension of Libor process: */                          n,        
-	    /** number of time steps in each Libor accrual interval:*/  nSteps,   
-	    /** number of factors: */                                   r;
-	
-	/** time step.*/
-	Real timestep;
-	/** ticksize a=sqrt(dt) of a standard Brownian motion over a single time step.*/
-	Real ticksize;
-	/** constant Libor accrual period length.*/
-	Real delta;
-	/** the volatility scaling factors c_j, book, 6.11.1.*/
-	const RealArray1D& sg;
-	/** the initial values \f$log(U_j(0))\f$, book 6.8.*/
-	const RealArray1D& log_U0;
-    /** drift -sigma_j^2*dt/2 of Y_j=log(U_j) over a single time step.*/
-	RealArray1D driftUnit;  
-	/** rank r approximate pseudo square root of the log(U_j) covariance matrix.*/
-	const RealMatrix& R;     
-	
-
-	/** @param steps number of time steps in each Libor accrual interval.
-	 *  @param dt size of time step.
-	 *  @param vols the constant volatilities \f$\sigma_j\f$, book, 6.11.1.
-	 *  @param Y_0 the initial values \f$Y_j(0)=log(U_j(0))\f$, book 6.8.
-	 *  @param drifts drifts of the log(U_j) over a single time step.
-	 *  @param Q low factor pseudo square root of the log(U_j) covariation matrix.
-	 */
-	LmmLatticeData
-	(int steps, Real dt, const RealArray1D& vols,
-	 const RealArray1D& Y_0, const RealMatrix& Q);
-	
-}; // end LmmLatticeInfo
-
 	
  
 
-/** <p>Lattice of the driftless Libor market model with constant volatility 
- *  surface, constant Libor accrual periods and nodes of type {@link LmmNode}.
+/** <p>Lattice of the driftless Libor market model 
+ *  with constant volatility surface and constant Libor accrual periods.
  *  See book 6.8, 8.1.1 for the details and notation. 
  *  For more details see the file reference for the file LmmLattice.h.
+ *  Does not build a lattice, only the subclasses {@link LmmLattice2F} 
+ *  {@link LmmLattice3F} do that.
  */
-class LmmLattice : public Lattice<LmmNode> {
+class LmmLattice : public Lattice<StandardBrownianNode> {
 	
 protected:
+	
+	// factor loading of the underlying driftless LMM
+	LiborFactorLoading* factorLoading; 
 	
 	int n,                  // dimension (number of accrual intervals)
 	    r,                  // number of factors
 	    nSteps;             // number of time steps in each accrual interval
 	
-	Real delta;             // constant accrual period
-	Real dt;                // size of time step
-	Real a;                 // a=sqrt(dt) ticksize of Brownian motion over one time step
-	
-	RealArray1D Y0;         // Y0[j]=Y_j(0)=log(U_j(0))
-
-	// factor loading of the underlying driftless LMM
-	LiborFactorLoading* factorLoading; 
-	
-	RealArray1D sg;         // the constant volatilities sigma_j, book, 6.11.1.
-	RealMatrix& R;          // rank r approximate pseudosquare root of the log(U_j) covariance matrix
-	
-	LmmLatticeData* latticeData;    // data object passed to nodes
+	/** constant Libor accrual period length.*/
+	Real delta;
+	/** time step.*/
+	Real dt;
+	/** ticksize a=sqrt(dt) of a standard Brownian motion over a single time step.*/
+	Real a;
+	/** the volatility scaling factors c_j, book, 6.11.1.*/
+	RealArray1D sg;
+	/** the initial values \f$log(U_j(0))\f$, book 6.8.*/
+	RealArray1D log_U0;
+    /** drift -sigma_j^2*dt/2 of Y_j=log(U_j) over a single time step.*/
+	RealArray1D mu;  
+	/** rank r approximate pseudo square root of the log(U_j) covariance matrix.*/
+	RealMatrix R;     
 
 	
 public:
 
-    /** The factor loading of the underlying LMM.*/
-    LiborFactorLoading* getFactorLoading(){ return factorLoading; } 
-	
-	/** The number of time steps per Libor compounding period. */
-	int getSteps(){ return nSteps; }
-	
-	/** The size of the time step.*/
-	Real getTimeStep(){ return delta/nSteps; }
 
-    /** Dimension of underlying LMM (number of accrual periods).
-	 */
-    const LmmLatticeData* getData(){ return latticeData; }
+/** The number of factors. */
+int getNumberOfFactors(){ return r; }
+
+/** The factor loading of the underlying LMM.*/
+LiborFactorLoading* getFactorLoading(){ return factorLoading; } 
 	
+/** The number of time steps per Libor compounding period. */
+int getSteps(){ return nSteps; }
 	
+/** The size of the time step.*/
+Real getTimeStep(){ return delta/nSteps; }
+
+/** Returns largest t such that \f$T_t\leq s*dt\f$.
+ * @param s number of time step.
+ */
+int getTenor(int s){ return (int)(s*dt/delta); }
+
+/** Time and state independent transition probability along edge i.*/
+Real transitionProbability(int i){ return 1.0/(1<<r); }
+
+		
 // CONSTRUCTOR
 	
 /** 
@@ -213,11 +190,20 @@ public:
  *  @param fl factor loading of the underlying LMM, must have {@link CONST_VolSurface}.
  *  @param t lattice is built until Libor reset time T_t.
  *  @param steps number of equal sized time steps in each Libor accrual interval.
+ *  @param verbose messages during build.
  */
-LmmLattice(int q, LiborFactorLoading* fl, int t, int steps=1);
+LmmLattice(int q, LiborFactorLoading* fl, int t, int steps=1, bool verbose=false);
 
-~LmmLattice(){ delete &R, delete latticeData; }
+virtual ~LmmLattice(){ }
 
+
+// SAMPLE LATTICE AND TEST
+
+/** A sample r=2,3 factor lattice in dimension n (number of Libor accrual periods)
+ *  built up to time T_p with nSteps time steps per accrual period.
+ *  @param verbose details on lattice during build.
+ */
+static LmmLattice* sample(int r, int n, int p, int nSteps, bool verbose=false);
 
 
 /** <a href="#rescale">Rescales</a> the rows of the rank reduced pseudo 
@@ -229,144 +215,82 @@ LmmLattice(int q, LiborFactorLoading* fl, int t, int steps=1);
  */
 void rescaleVols();
 
-
-
 /** Tests the accuracy of the rank r factorization of the correlation matrix.*/
 void testFactorization() const;
 
-
 std::ostream& printSelf(std::ostream& os) const;
-	
-private:
 
 
-// continuous time reached after time step s=0,1,...
-Real tau(int s);
-	
-
-		
-}; // end LmmLattice
-
-
-
-/**********************************************************************************
- *
- *            CONSTANT VOLATILITY TWO FACTOR LMM LATTICE
- *
- *********************************************************************************/
-		
-
-/** <p><a href="lmm-lattice-3f">Two factor lattice</a> for driftless Libor market model  
- *  {@link DriftlessLMM} with constant volatility functions \f$\sigma_j(t)=\sigma_j\f$. 
- *
- * <p>It is assumed that all Libor accrual intervals have equal length \f$\delta\f$.
- *  The lattice makes nSteps time steps of equal length \f$dt=\delta/nSteps\f$ in 
- *  each accrual interval. Consequently discrete time t corresponds to continuous time
- *  \f[t*dt=T_{t/nSteps}+(t\;mod\;nSteps)*dt.\f]
- *  For more details see the file reference for the file LmmLattice.h.
- */
-class LmmLattice2F : public LmmLattice {
-
-public:
-
-	
-// CONSTRUCTOR
-	
-/** The {@link VolSurface} of the factor loading must be of type CONST.
- *  @param fl factor loading of the underlying LMM, must have {@link CONST_VolSurface}.
- *  @param t lattice is built until Libor reset time T_t.
- *  @param steps number of time steps in each Libor accrual interval.
- *  @param verbose report details on lattice being built.
- */
-LmmLattice2F
-(LiborFactorLoading* fl, int t, int steps=1,bool verbose=false);
-
-/** The number of factors. */
-int nFactors(){ return 2; }
-	
-	
-// SAMPLE LATTICE
-
-/** A sample three factor lattice in dimension n (number of Libor accrual periods)
- *  built up to time T_p with nSteps time steps per accrual period.
- *  @param verbose details on lattice during build.
- */
-static LmmLattice2F* sample(int n, int p, int nSteps, bool verbose=false);
-
-/** Builds a lattice in in dimension n (number of Libor accrual periods)
- *  build with n time steps (one per accrual period) and runs the selfTest().
- */
-static void test(int n);
-		
-
-private:
-
-// build lattice with m time steps
-void buildLattice(int m, bool verbose);
-
-	
-
-}; // end LmmLattice2F
-
-
-
-/**********************************************************************************
- *
- *            CONSTANT VOLATILITY THREE FACTOR LMM LATTICE
- *
- *********************************************************************************/
-
-
-/** <p><a href="lmm-lattice-3f">Three factor lattice</a> for driftless Libor market model  
- *  {@link DriftlessLMM} with constant volatility functions \f$\sigma_j(t)=\sigma_j\f$. 
- *
- * <p>It is assumed that all Libor accrual intervals have equal length \f$\delta\f$.
- *  The lattice makes nSteps time steps of equal length \f$dt=\delta/nSteps\f$ in 
- *  each accrual interval. Consequently discrete time t corresponds to continuous time
- *  \f[t*dt=T_{t/nSteps}+(t\;mod\;nSteps)*dt.\f]
- */
-class LmmLattice3F : public LmmLattice {
-	
-public:
-
-	
-// CONSTRUCTOR
-	
-/** The {@link VolSurface} of the factor loading must be of type CONST.
- *  @param fl factor loading of the underlying LMM, must have {@link CONST_VolSurface}.
- *  @param t t lattice is built until Libor reset time T_t.
- *  @param steps number of time seps in each Libor accrual interval.
- *  @param verbose report details on lattice being built.
- */
-LmmLattice3F
-(LiborFactorLoading* fl, int t, int steps=1, bool verbose=false);
-
-
-/** The number of factors. */
-int nFactors(){ return 3; }
-	
-	
-// SAMPLE LATTICE AND TEST
-
-/** A sample three factor lattice in dimension n (number of Libor accrual periods)
- *  built up to time T_p with nSteps time steps per accrual period.
- *  @param verbose details on lattice during build.
- */
-static LmmLattice3F* sample(int n, int p, int nSteps, bool verbose=false);
-
-/** Builds a lattice in in dimension n (number of Libor accrual periods)
+/** Builds an r=2,3 factor lattice in in dimension n (number of Libor accrual periods)
  *  build with n-3 time steps (one per accrual period) and runs the selfTest().
  */
-static void test(int n);
+static void test(int r, int n);
+
+
+// LIBOR PATH FUNCTIONALS
+
+/** <p>The vector \f$H=(H_p,\dots,H_n)\f$ of accrual factors at the node.
+ *  Natural indices j=p,...,n.
+ *  <p>This is a view of this vector in a static workspace (speed, no memory allocation).
+ *  If the vector has to be preserved it must be copied before commands execute
+ *  which overwrite the workspace.
+ *
+ * @param s time step at which the node lives.
+ */
+// The parameters is only needed to recognize the case s=0.
+// It then propagates through all functions using this one.
+// Keep it anyway, it might be useful for more complicated option payoffs.
+const RealArray1D& Hvect(int p, StandardBrownianNode* node, int s);
+
+/** Libor \f$L_j\f$ at the node.
+ * @param s time step at which the node lives.*/
+Real L(int j, StandardBrownianNode* node, int s);
+
+
+/** The forward price \f$H_{p,q}\f$ of the annuity \f$B_{p,q}\f$ over the 
+ *  interval [T_p,T_q] at this node.
+ * @param s time step at which the node lives.*/
+Real H_pq(int p, int q, StandardBrownianNode* node, int s);
+
+
+/** The swaprate \f$S_{p,q}\f$ for a swap on [T_p,T_q] at the node.
+ * @param s time step at which the node lives.*/
+Real swapRate(int p, int q, StandardBrownianNode* node, int s);
 		
-		
+
+/** Payoff of a forward swaption with strike rate kappa exercising into 
+ *  a swap on the interval [T_p,T_q] if exercised at this node. 
+ *  Payoff is compounded forward to the horizon T_n. 
+ */
+Real forwardSwaptionPayoff(int p, int q, Real kappa, StandardBrownianNode* node, int s);
+
+
+/** Forward compounded payoff of caplet(i) with strike rate kappa at this node. 
+ *  Assumes that the node lives at the Libor reset point \f$T_i\f$ at which Libor 
+ *  for this caplet is set.
+ *  @param s time step at which the node lives.*/
+Real forwardCapletPayoff(int i, Real kappa, StandardBrownianNode* node, int s);
+
+
+/** Forward payoff of the BondCall bc if exercised at this node. 
+ * @param s time step at which the node lives.*/
+Real forwardBondCallPayoff(BondCall* bc, StandardBrownianNode* node, int s);
+
+			
 private:
 	
 // build lattice with m time steps.
 void buildLattice(int m, bool verbose);
 
-	
-}; // end LmmLattice3F
+// continuous time reached after time step s=0,1,...
+Real tau(int s);
+
+	static RealArray1D H_;     // workspace for accrual factors H_j
+	static RealArray1D V_;     // workspace for volatility parts V_j of the log(U_j)
+	                           // book, 8.1	
+
+		
+}; // end LmmLattice
 
 
 

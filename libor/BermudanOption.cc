@@ -105,13 +105,15 @@ nextForwardPayoff()
 }
 
 
+
 Real 
 BermudanSwaption::
-forwardPayoff(LmmNode* node)
+forwardPayoff(StandardBrownianNode* node, LmmLattice* theLattice, int s)
 { 
-	int t=node->get_t();                // node lives in (T_{t-1},T_t]
-	return node->forwardSwaptionPayoff(t,q,kappa); 
+	int t=theLattice->getTenor(s);                // s*dt=T_t
+	return theLattice->forwardSwaptionPayoff(t,q,kappa,node,s);
 }
+
  
 
 ostream& 

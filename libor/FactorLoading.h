@@ -206,6 +206,8 @@ public:
 	 */
 	ConstantFactorLoading(int dim, const RealArray1D& vols, const UTRRealMatrix& rho) :
 	FactorLoading(dim), corr(rho), sg(vols) {  }
+	
+	virtual ~ConstantFactorLoading(){ }
 
 	
 // CORRELATIONS, VOLATILITIES, LOG-COVARIATION INTEGRALS

@@ -39,6 +39,7 @@ spyqqqdia@yahoo.com
 #include "LowFactorDriftlessLMM.h"
 #include "LiborMarketModel.h"          // Bond
 #include <algorithm>                   // max
+#include <stdlib.h>                    // exit
 
 
 
@@ -159,25 +160,33 @@ LiborDerivative::
 getDefaultLattice()
 {
 	LiborFactorLoading* fl = LMM->getFactorLoading();
-	Real delta=LMM->getDeltas()[0];
 	// time steps per accrual interval: 
 	int steps=1;                               
 	// lattice built up to time T_t, total time steps: t*nSteps
 	while(t*steps+t<LATTICE_MAX_STEPS) steps++;
 	bool verbose = false;
-	return new LmmLattice2F(fl,t,steps,verbose);
+	int r=2;   // number of factors
+	return new LmmLattice(r,fl,t,steps,verbose);
 }
 
 
 Real 
 LiborDerivative::
-latticeForwardPrice()
+forwardPayoff(StandardBrownianNode* node, LmmLattice* theLattice, int s)
 {
-    LmmLattice* theLattice = getDefaultLattice();
-	Real latticePrice = Option::latticeForwardPrice(theLattice);
-	delete theLattice;
-	return latticePrice;
-}		
+	cout << "\n\nLiborDerivative::forwardPayoff(StandardBrownianNode*, LmmLattice*, int):"
+	     << "\nNot implemented in this generality. Aborting.";
+	exit(1);
+	return -1.0;
+}
+
+
+Real 
+LiborDerivative::
+latticeForwardPrice(LmmLattice* theLattice)
+{
+	return Pricing::latticeForwardPrice(theLattice,this);
+}
 
 
 void 
@@ -212,14 +221,14 @@ testPrice(int N)
 	  if(hasLattice_){
 		  
 	      LmmLattice* theLattice = getDefaultLattice();
-	      lPrice = Option::latticeForwardPrice(theLattice);
+	      lPrice = latticeForwardPrice(theLattice);
 	      cout << "Default lattice: " << lPrice;
 		  if(hasAnalytic_)
 		  cout << "\nRelative error: " << relativeError(aPrice,lPrice,epsilon) << "%" ;
 		  cout << endl << endl;
 		  
 		  theLattice->rescaleVols();
-		  lPrice = Option::latticeForwardPrice(theLattice);
+		  lPrice = latticeForwardPrice(theLattice);
 	      cout << "Default lattice (volatilities rescaled): " << lPrice;
 		  if(hasAnalytic_)
 		  cout << "\nRelative error: " << relativeError(aPrice,lPrice,epsilon) << "%";
@@ -290,7 +299,7 @@ Caplet::
 Caplet(int k, Real strike, LiborMarketModel* lmm) :
  // Libors L_j, j>=k needed until time t=min(k+1,n-1)
 LiborDerivative
-(lmm,min(k+1,lmm->getDimension()-1),true,false,true,true),              
+(lmm,min(k+1,lmm->getDimension()-1),true,true,true,true),              
 i(k), 
 kappa(strike),
 delta_i((lmm->getDeltas())[i])
@@ -349,6 +358,14 @@ nextControlledForwardPayoff()
 	
 	return Z;
 } 
+
+
+Real 
+Caplet::
+forwardPayoff(StandardBrownianNode* node, LmmLattice* theLattice, int s)
+{ 
+	return theLattice->forwardCapletPayoff(i,kappa,node,s); 
+}
     
        
 Real 
@@ -406,7 +423,7 @@ nextForwardPayoff()
 	// Libors X_j, j>=t until time T_t
 	LMM->newPath(t,t);     	
 	
-	Real S_pqT,H_pqT,h;
+	Real S_pqT,H_pqT;
 	S_pqT=LMM->swapRate(p,q,t);                   // swaprate S_{p,q}(T_t)
 	if(S_pqT<kappa) return 0.0;
     H_pqT=LMM->H_pq(p,q,t);
@@ -432,7 +449,7 @@ nextControlledForwardPayoff()
 	LMM->newPath(t,t); 
 	RealArray1D Z(2);
 	
-	Real S_pqT,H_pqT,h;
+	Real S_pqT,H_pqT;
 	S_pqT=LMM->swapRate(p,q,t);         // swaprate S_{p,q}(T_t)
 	if(S_pqT<kappa) Z[0]=0.0;
 	else{
@@ -452,12 +469,11 @@ nextControlledForwardPayoff()
 
 Real 
 Swaption::
-forwardPayoff(LmmNode* node)
+forwardPayoff(StandardBrownianNode* node, LmmLattice* theLattice, int s)
 { 
-	return node->forwardSwaptionPayoff(p,q,kappa); 
+	return theLattice->forwardSwaptionPayoff(p,q,kappa,node,s); 
 }
-    
- 
+
 
 Real 
 Swaption::
@@ -565,11 +581,12 @@ nextControlledForwardPayoff()
 
 Real 
 BondCall::
-forwardPayoff(LmmNode* node)
-{	
-	return node->forwardBondCallPayoff(this); 
-}		 
- 
+forwardPayoff(StandardBrownianNode* node, LmmLattice* theLattice, int s)
+{ 
+	return theLattice->forwardBondCallPayoff(this,node,s); 
+}
+
+
 
 Real 
 BondCall::

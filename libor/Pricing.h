@@ -27,7 +27,6 @@ spyqqqdia@yahoo.com
 // function templates, fully definded in the header
 // thus the need for the includes
 #include "TypedefsMacros.h"
-#include "Edge.h"
 #include "Array.h"
 #include <vector>               
 
@@ -77,7 +76,9 @@ namespace Pricing {
 using std::vector;
 	
 
-/** The forward price of theOption when priced in theLattice.
+/** The forward price of theOption when priced in theLattice. Read the source code 
+ *  to see what member functions the types LatticeType and OptionType must
+ *  implement.
  */
 template<typename LatticeType, typename OptionType>
 Real latticeForwardPrice(LatticeType* theLattice, OptionType* theOption)
@@ -105,7 +106,7 @@ Real latticeForwardPrice(LatticeType* theLattice, OptionType* theOption)
 	while(theNode!=nodes_at_expiry->end()) {
 	
 		NodeType* node=*theNode;
-		node->setPi(theOption->forwardPayoff(node));
+		node->setValue(theOption->forwardPayoff(node,theLattice,expiry));
 		theNode++;
 	}
 	
@@ -120,21 +121,19 @@ Real latticeForwardPrice(LatticeType* theLattice, OptionType* theOption)
     	while(theNode!=nodes_t->end()) {
 	    
 			NodeType* node = *theNode; 
-			vector<Edge*>* edges=node->getEdges();
+			const Array1D<NodeType*> edges=node->getEdges();    // list of edges
+			int nEdge = edges.getDimension();                   // number of edges
 				
-			 Real E_t=0.0;              // E_t(pi_{t+1})
-			 vector<Edge*>::const_iterator theEdge=edges->begin();
-			 while(theEdge!=edges->end()) {
+			Real V=0.0;           // option forward price at the node
+			for(int i=0;i<nEdge;i++) {
 	        
-		         Edge* edge = *theEdge;
-				 Real p=edge->probability;          // transition prob. along the edge
-				 Real pi_t1=edge->node->getPi();    // pi_{t+1} at target node of edge
-				 E_t+=p*pi_t1;
-				 ++theEdge;
+				 Real V_i=edges[i]->getValue();                   // value at node *edges[i]
+				 Real p_i=theLattice->transitionProbability(i);   // transition probability along edge_i
+				 V+=p_i*V_i;
 	         }	
 			 
-			 if(!exercise_t) node->setPi(E_t);	
-			 else            node->setPi( max( E_t, theOption->forwardPayoff(node) ) );	
+			 if(!exercise_t) node->setValue(V);	
+			 else  node->setValue( max( V, theOption->forwardPayoff(node,theLattice,t) ) );	
 			 ++theNode;
 	    } // end while(theNode)
 			
@@ -142,7 +141,7 @@ Real latticeForwardPrice(LatticeType* theLattice, OptionType* theOption)
 	
 	// report the price at the root node
     NodeType* root=theLattice->getRoot();
-	return root->getPi();
+	return root->getValue();
 	
 } // end 
 

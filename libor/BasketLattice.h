@@ -135,87 +135,56 @@ class ConstantFactorLoading;
 class std::ostream;
  
  
- 
-/** Information about the LmmLattice which must be conveyed to the nodes.
- */
-struct BasketLatticeData {
-	
-	int 
-	    /** number of assets: */     n,        
-	    /** number of time steps:*/  T,   
-	    /** number of factors: */    r;
-	
-	/** time step.*/
-	Real timestep;
-	/** ticksize a=sqrt(dt) of a standard Brownian motion over a single time step.*/
-	Real ticksize;
-	/** the volatilities \f$\sigma_j\f$.*/
-	const RealArray1D& sg;
-	/** the initial values \f$Y_j(0)=log(S_j(0))\f$.*/
-	const RealArray1D& log_S0;
-	/** drift -sigma_j^2*dt/2 of Y_j over a single time step.*/	
-	RealArray1D driftUnit;  
-	/** rank r approximate pseudo square root of the log(S_j) covariance matrix.*/
-	const RealMatrix& R;     
-	
-
-	/** @param steps number of time steps.
-	 *  @param dt size of time step.
-	 *  @param vols the volatilities \f$\sigma_j\f$.
-	 *  @param Y0 the initial values \f$Y_j(0)=log(S_j(0))\f$.
-	 *  @param Q rank r approximate pseudo square root of the log(S_j) covariation matrix.
-	 */
-	BasketLatticeData
-	(int steps, Real dt, const RealArray1D& vols,
-	 const RealArray1D& Y0, const RealMatrix& Q);
-
-	
-}; // end BasketLatticeInfo
 
 
 /** Lattice for a basket of constant volatility assets.
  *  No decision on the number of factors.
  *  For more details see the file reference BasketLattice.h.
  */
-class BasketLattice : public Lattice<BasketNode> {
+class BasketLattice : public Lattice<StandardBrownianNode> {
 	
 protected:
 	
 	ConstantFactorLoading* fl;   // the asst factor loading
 	
-	int n_,       // number of assets
-	    T_,       // number of time steps to the horizon
-	    r_;       // the number of factors
-	    
-	Real dt_;     // size of time step
+	int 
+	/** number of assets: */     n_,        
+	/** number of time steps:*/  T_,   
+	/** number of factors: */    r_;
 	
-	// all indices start at zero
-	RealArray1D Y0_;         // initial asset price logs Y0[j]=log(S_j(0))
-	RealArray1D sg_;         // volatilities sg[j]=sigma_j
+	/** time step.*/
+	Real dt;
+	/** ticksize a=sqrt(dt) of a standard Brownian motion over a single time step.*/
+	Real a;
+	/** the volatilities \f$\sigma_j\f$.*/
+	const RealArray1D& sg;
+	/** the initial values \f$Y_j(0)=log(S_j(0))\f$.*/
+	RealArray1D log_S0;
+	/** drift -sigma_j^2*dt/2 of Y_j over a single time step.*/	
+	RealArray1D mu;  
 	/** rank r approximate pseudo square root of the log(S_j) covariance matrix.*/
-	const RealMatrix& R_; 
-	
-	// data object handed to nodes
-	BasketLatticeData* latticeData;
-	
+	const RealMatrix& R;     
+
 	
 public:
 
 // ACCESSORS
 
-    /** Number of assets
-	 */
-    int getDimension() const { return n_; }
+/** Number of assets
+ */
+int getDimension() const { return n_; }
 	
-	/** The size of the time step. */
-	Real getTimeStep(){ return dt_; }
+/** The size of the time step. */
+Real getTimeStep(){ return dt; }
 	
-    /** The vector of initial asset price logs.
-	 */
-    RealArray1D& get_log_S0() { return Y0_; }
+/** The vector of initial asset price logs.*/
+RealArray1D& get_log_S0() { return log_S0; }
 	
-	/** The factor loading of the asset prices.*/
-	ConstantFactorLoading* getFactorLoading(){ return fl; }
+/** The factor loading of the asset prices.*/
+ConstantFactorLoading* getFactorLoading(){ return fl; }
+	
+/** Time and state independent transition probability along edge i.*/
+Real transitionProbability(int i){ return 1.0/(2<<r_); }
 
 	
 // ERROR IN THE RANK 2 FATCORIZATION OF THE COVARIANCE MATRICES
@@ -239,124 +208,43 @@ void testFactorization() const;
 BasketLattice
 (int r, ConstantFactorLoading* fl, int T, Real dt, RealArray1D S0);
 
+virtual ~BasketLattice(){ }
+
+
+/** Sample r factor lattice with n assets and T time steps of size dt=0.1.
+ *  All asset prices start at S_j(0)=100.0 and all volatilities are 0.3.
+ *  The correlation of returns are given by 
+ *  \f$\rho_{ij}=exp(0.2(i-j))\ i\leq j\f$.
+ */
+static BasketLattice* sample(int r, int n, int T);
 
 std::ostream& printSelf(std::ostream& os) const;
+
+
+/** Builds an r factor lattice in in dimension n (number of Libor accrual periods)
+ *  build with T time steps (one per accrual period) and runs the selfTest().
+ */
+static void test(int r, int n, int T);
+		
+
+private:
+	
+// build lattice with m time steps.
+void buildLattice(int m, bool verbose);
+
+
+	static RealArray1D S_;           // workspace for the assets H_j
+	static RealArray1D V_;           // workspace for volatility parts V_j of the log(S_j)
+	                                 // book, 3.11 and 8.1.
 
   
 }; // end BasketLattice
 
 
+// out of class initialization necessary
+RealArray1D BasketLattice::S_(BASKET_MAX_DIM);
+RealArray1D BasketLattice::V_(BASKET_MAX_DIM);
 
-
-
-/**********************************************************************************
- *
- *            TWO FACTOR BASKET LATTICE
- *
- *********************************************************************************/
-		
-
-/** <p>Two factor lattice for a basket of constant volatility assets.
- *  You must have at least two assets.
- *  For more details see the file reference for the file BasketLattice.h.
- */
-class BasketLattice2F : public BasketLattice {
-
-	
-public:
-	
-// CONSTRUCTOR
-	
-/** Use index base zero throughout.
- *  @param fl the asset factor loading.
- *  @param T number of time steps.
- *  @param dt size of time step.
- *  @param S0 initial asset prices.
- */
-BasketLattice2F
-(ConstantFactorLoading* fl, int T, Real dt, RealArray1D S0);
-
-
-// SAMPLE LATTICE AND TEST
-			
-/** Sample lattice with n assets and T time steps of size dt=0.1.
- *  All asset prices start at S_j(0)=100.0 and all volatilities are 0.3.
- *  The correlation of returns are given by 
- *  \f$\rho_{ij}=exp(0.2(i-j))\ i\leq j\f$.
- */
-static BasketLattice2F* sample(int n,int T);
-
-
-/** Builds a lattice in in dimension n (number of Libor accrual periods)
- *  build with T time steps (one per accrual period) and runs the selfTest().
- */
-static void test(int n, int T);
-		
-
-private:
-	
-// build lattice with m time steps.
-void buildLattice(int m);
-	
-
-}; // end BasketLattice2F
-
-
-
-
-/**********************************************************************************
- *
- *            THREE FACTOR BASKET LATTICE
- *
- *********************************************************************************/
-		
-
-/** <p>Three factor lattice for a basket of constant volatility assets.
- *  You must have at least three assets.
- *  For more details see the file reference for the file BasketLattice.h.
- */
-class BasketLattice3F : public BasketLattice {
-	
-
-public:
-	
-// CONSTRUCTOR
-	
-/** Use index base zero throughout.
- *  @param fl the asset factor loading.
- *  @param T number of time steps.
- *  @param dt size of time step.
- *  @param S0 initial asset prices.
- */
-BasketLattice3F
-(ConstantFactorLoading* fl, int T, Real dt, RealArray1D S0);
-
-
-// SAMPLE LATTICE AND TEST
-
-/** Sample lattice with n assets and T time steps of size dt=0.1.
- *  All asset prices start at S_j(0)=100.0 and all volatilities are 0.3.
- *  The correlation of returns are given by 
- *  \f$\rho_{ij}=exp(0.2(i-j))\ i\leq j\f$.
- */
-static BasketLattice3F* sample(int n, int T);
-
-
-/** Builds a lattice in in dimension n (number of Libor accrual periods)
- *  build with T time steps (one per accrual period) and runs the selfTest().
- */
-static void test(int n, int T);
-
-
-private:
-	
-// build lattice with m time steps.
-void buildLattice(int m);
-	
-
-}; // end BasketLattice3F
-
-	
 
 
 

@@ -26,6 +26,7 @@ spyqqqdia@yahoo.com
 // definitions are in the header
 #include "TypedefsMacros.h"
 #include "Node.h"
+#include "Array.h"
 #include <vector>
 #include <cstdlib> // exit()
 #include <cmath>
@@ -71,10 +72,8 @@ using std::vector;
  * is handled with equal ease and this is the main advantage of lattices over Monte Carlo
  * path simulation.
  *
- * <p>The Lattice consists of nodes of type Node. The class Node must 
- * have a member function getEdges() returning a std::vector<Edge*> of the edges in the node.
- * Since the type of node varies with the lattice we make it a template parameter.
-
+ * <p>The Lattice consists of nodes of type Node. Only {@link StandardNrownianNode}s are
+ * implemented and transition probabilities are assumed independent of state and time.
  *
  * @param Node the type of nodes in this lattice.
  */
@@ -111,6 +110,14 @@ public:
 	 */
 	Node* getRoot(){ return nodeList[0]->front(); }
 	
+	/** The transition probability along edge[i],
+	 *  state and time independent. Since this function is critical we will
+	 *  usually try to get around the (slow) virtual function call by passing
+	 *  the concrete LatticeType as a template parameter rather than going 
+	 *  through the interface.
+	 */
+	virtual Real transitionProbability(int i) = 0;
+	
 	
 // CONSTRUCTOR
 	
@@ -129,7 +136,7 @@ public:
 	// at each time t we have to manuallay iterate through the list
 	// and deallocate each pointee node. Only then can we use
 	// list deallocation to free the list of pointers.
-	~Lattice(){ 
+	virtual ~Lattice(){ 
 		
 		for(int t=0;t<=T;t++){ 
 			
@@ -147,6 +154,7 @@ public:
 	 *  probabilities are in [0,1] and sum to 1. Note however that this class does 
 	 *  not allocate any nodes or edges. This is left to the derived classes.
 	 */
+	// code is more general than necessary.
 	void selfTest()
     {	
 		cout << endl << endl << "Checking nodes until time T-1 = " << T-1 << endl;
@@ -167,17 +175,15 @@ public:
 			while(theNode!=nodes->end()){
 		
 				Node* node=*theNode;
-				vector<Edge*>* edges=node->getEdges();
-				// *theEdge is pointer to edge
-		        vector<Edge*>::const_iterator theEdge=edges->begin();        
+				const Array1D<Node*>& edges=node->getEdges();
+				int nEdge = edges.getDimension();    
 				psum=0.0;
-	        	while(theEdge!=edges->end()){
-						
-					Edge* edge = *theEdge;
-					p=edge->probability;
+	        	for(int i=0;i<nEdge;i++) {
+					
+					Node* edge=edges[i];
+					p=transitionProbability(i);
 					if((p<0)||(p>1)) prob_failure=true;
 					psum+=p;
-					++theEdge;
 				}
 		        
 				if(abs(psum-1.0)>0.0000001) prob_failure=true;
@@ -185,7 +191,6 @@ public:
 									
 		         	cout << " *** t = " << t 
 			             << "; transition probabilities defective, sum = " << psum;
-					node->printTransitionProbabilities();
 				    exit(0);
 				 } // endif
 				 
@@ -218,30 +223,35 @@ public:
  *  k is the integer vector storing the state of Z and latticeData is an object
  *  containing necessary information about the lattice the nodes live in.
  *  Here dt is the size of the time step and \f$a=\sqrt{dt}\f$ the tick size of a 
- *  standard Brownian motion over a time step of size dt. The type Node must 
- *  define a function <code>int* getIntegerTicks()</code> returning 
- *  the state vector k.
+ *  standard Brownian motion over a time step of size dt. Code is limited to
+ *  lattices built with on {@link StandardBrownianNodes}.
  */
 namespace LatticeBuilder {
 
 /** Builds a <a href=#lattice-builder>two factor lattice</a>. 
  * @param T number of time steps in the lattice.
  * @param nodeList nodeList[t] is a pointer to the list of nodes at time t.
- * @param latticeData data object handed to nodes from lattice.
+ * @param theLattice lattice building itself.
  * @param verbose message during build.
  */
-template<class Node, class LatticeData>
-void buildTwoFactorLattice
-(int T, Array1D< vector<Node*>* >& nodeList, LatticeData* latticeData, bool verbose=false)
+template<typename LatticeType>
+void buildTwoFactorLattice(LatticeType* theLattice, int T, bool verbose=false)
 {
-	int nodes=0;                                        // counter
-	vector<Node*>* nodes_0 = nodeList[0];               // list of nodes at time t
+	typedef typename LatticeType::NodeType Node;
+	int nodes=0;                                          // counter
+	// list of nodes at time t
+	vector<Node*>* nodes_0 = theLattice->getNodeList(0);  
 
 	// array of integer tick multiples Z_j=k[j]*a, j=0,1, at each node
 	IntArray1D k(2);
 
 	// the initial node n(s,k0,k1), k0=k1=0.
-	Node* nextNode=new Node(0,k,latticeData);
+	// 4 edges per node
+	Node* nextNode=new Node(4,k);
+	
+	// how big is this?
+	if(verbose)
+	cout << "\nNode size: " << sizeof(*nextNode) << " bytes" << endl;
 			
 	// enter into node list at time s=0
 	nodes_0->push_back(nextNode); 
@@ -250,8 +260,8 @@ void buildTwoFactorLattice
 	// for s=0,...,T-1 build nodes at time s+1 from nodes at time s
 	for(int s=0;s<T;s++) {
 
-		vector<Node*>* listCurrentNodes = nodeList[s];     // list of nodes at time t
-		vector<Node*>* listNewNodes = nodeList[s+1];       // list of nodes at time t+1
+		vector<Node*>* listCurrentNodes = theLattice->getNodeList(s);   // list of nodes at time t
+		vector<Node*>* listNewNodes = theLattice->getNodeList(s+1);     // list of nodes at time t+1
         listNewNodes->reserve((2*s+3)*(2*s+3));
 		
 		// registry for possible nodes at time s+1, n(s+1,i,j), 
@@ -264,38 +274,36 @@ void buildTwoFactorLattice
 		while(theNode!=listCurrentNodes->end())			
 		{
 			Node* currentNode=*theNode;
+			Array1D<Node*>& edges=currentNode->getEdges();  // edge list 
+			int i=0;                                        // edge counter
+			
 			// state of this node
 			int* l=currentNode->getIntegerTicks();
-			// list of edges of this node
-			vector<Edge*>* edgeList=currentNode->getEdges();
-			edgeList->reserve(4);                                    // 4 edges
-				
-				// loop over transitions p,q=-1,+1 (up/down tick)
-				for(int p=-1;p<2;p+=2)
-				for(int q=-1;q<2;q+=2) 
-				{	
-					// integer state we transition to
-					k[0]=l[0]+p; k[1]=l[1]+q;
-					// connect to this node in the registry
-					nextNode=newNodes(k[0],k[1]);
-					// if it does not exist yet
-					if(!nextNode){ 
+
+			// allocate the four successor nodes
+			// loop over transitions p,q=-1,+1 (up/down tick)
+			for(int p=-1;p<2;p+=2)
+			for(int q=-1;q<2;q+=2) 
+			{	
+				// integer state we transition to
+				k[0]=l[0]+p; k[1]=l[1]+q;
+				// connect to this node in the registry
+				nextNode=newNodes(k[0],k[1]);
+				// if it does not exist yet
+				if(!nextNode){ 
 						
-						  nextNode=new Node(s,k,latticeData); 
-						  newNodes(k[0],k[1])=nextNode;                       // register the node
-						  listNewNodes->push_back(nextNode);                   // append to list
-						  nodes++; 
-					}
-					
-					// make an edge to the new node
-					Edge* edge=new Edge();
-					edge->node=nextNode;
-					edge->probability=0.25;
-					edgeList->push_back(edge);
-					
-			   } // end for p,q
+					  nextNode=new Node(4,k);                // 4 edges per node
+					  newNodes(k[0],k[1])=nextNode;          // register the node
+					  listNewNodes->push_back(nextNode);     // append to list
+					  nodes++; 
+				}
+	
+				edges[i]=nextNode;	// connect the current node
+				++i;
+				
+		   } // end for p,q
 			   
-			   ++theNode;
+		   ++theNode;
 			   
 	    } // end while(theNode)
 
@@ -303,7 +311,7 @@ void buildTwoFactorLattice
 		cout << "\nTime step = " << s+1 << ";  total nodes = " << nodes;
 		
 	} // end for s
-} // end buildLattice
+} // end buildTwoFactorLattice
 
 	
 
@@ -313,17 +321,22 @@ void buildTwoFactorLattice
  * @param latticeData data object handed to nodes from lattice.
  * @param verbose message during build.
  */
-template<class Node, class LatticeData>
-void buildThreeFactorLattice
-(int T, Array1D< vector<Node*>* >& nodeList, LatticeData* latticeData, bool verbose=false)
+template<typename LatticeType>
+void buildThreeFactorLattice(LatticeType* theLattice, int T, bool verbose=false)
 {
-	int nodes=0;                                        // counter
-	vector<Node*>* nodes_0 = nodeList[0];               // list of nodes at time t
+	typedef typename LatticeType::NodeType Node;
+	int nodes=0;                                          // counter
+	vector<Node*>* nodes_0 = theLattice->getNodeList(0);  // list of nodes at time t
 
 	// array of integer tick multiples Z_j=k[j]*a, j=0,1, at each node
 	IntArray1D k(3);
 	// the initial node n(s,k0,k1), k0=k1=0.
-	Node* nextNode=new Node(0,k,latticeData);
+	// 8 edges per node
+	Node* nextNode=new Node(8,k);
+	
+	// how big is this?
+	if(verbose)
+	cout << "\nNode size: " << sizeof(*nextNode) << " bytes" << endl;
 			
 	// enter into node list at time s=0
 	nodes_0->push_back(nextNode); 
@@ -332,8 +345,8 @@ void buildThreeFactorLattice
 	// for s=0,...,T-1 build nodes at time s+1 from nodes at time s
 	for(int s=0;s<T;s++) {
 	
-		vector<Node*>* listCurrentNodes = nodeList[s];    // list of nodes at time t
-		vector<Node*>* listNewNodes = nodeList[s+1];      // list of nodes at time t+1
+		vector<Node*>* listCurrentNodes = theLattice->getNodeList(s);    // list of nodes at time t
+		vector<Node*>* listNewNodes = theLattice->getNodeList(s+1);      // list of nodes at time t+1
         listNewNodes->reserve((2*s+3)*(2*s+3)*(2*s+3));
 		
 		// registry for possible nodes at time s+1, n(s+1,i,j), 
@@ -346,39 +359,37 @@ void buildThreeFactorLattice
 		while(theNode!=listCurrentNodes->end())			
 		{
 			Node* currentNode=*theNode;
+			Array1D<Node*>& edges=currentNode->getEdges();  // edge list 
+			int i=0;                                        // edge counter
+			
 			// state of this node
 			int* l=currentNode->getIntegerTicks();
-			// list of edges of this node
-			vector<Edge*>* edgeList=currentNode->getEdges();
-			edgeList->reserve(8);                                    // 8 edges
-				
-				// loop over transitions p,q=-1,+1 (up/down tick)
-				for(int p=-1;p<2;p+=2)
-				for(int q=-1;q<2;q+=2) 
-				for(int r=-1;r<2;r+=2) 
-				{	
-					// integer state we transition to
-					k[0]=l[0]+p; k[1]=l[1]+q; k[2]=l[2]+r;
-					// connect to this node in the registry
-					nextNode=newNodes(k[0],k[1],k[2]);
-					// if it does not exist yet
-					if(!nextNode){ 
+			
+			// allocate the 8 successor nodes
+			// loop over transitions p,q=-1,+1 (up/down tick)
+			for(int p=-1;p<2;p+=2)
+			for(int q=-1;q<2;q+=2) 
+			for(int r=-1;r<2;r+=2) 
+			{	
+				// integer state we transition to
+				k[0]=l[0]+p; k[1]=l[1]+q; k[2]=l[2]+r;
+				// connect to this node in the registry
+				nextNode=newNodes(k[0],k[1],k[2]);
+				// if it does not exist yet
+				if(!nextNode){ 
 						
-						  nextNode=new Node(s,k,latticeData); 
-						  newNodes(k[0],k[1],k[2])=nextNode;                  // register the node
-						  listNewNodes->push_back(nextNode);                  // append to list
-						  nodes++; 
-					}
+					  nextNode=new Node(8,k);               // 8 edges per node
+					  newNodes(k[0],k[1],k[2])=nextNode;    // register the node
+					  listNewNodes->push_back(nextNode);    // append to list
+					  nodes++; 
+				}
+	
+				edges[i]=nextNode;	// connect the current node
+				++i;
 					
-					// make an edge to the new node
-					Edge* edge=new Edge();
-					edge->node=nextNode;
-					edge->probability=0.125;
-					edgeList->push_back(edge);
-					
-			   } // end for p,q
+		   } // end for p,q,r
 			   
-			   ++theNode;
+		   ++theNode;
 			   
 	    } // end while(theNode)
 		
@@ -386,7 +397,7 @@ void buildThreeFactorLattice
 		cout << "\nTime step = " << s+1 << ";  total nodes = " << nodes;
 		
 	} // end for s
-} // end buildLattice
+} // end buildThreeFactorLattice
 
 
 }; // end LatticeBuilder

@@ -26,14 +26,17 @@ spyqqqdia@yahoo.com
 
 #include "Option.h"
 #include "Trigger.h"
-
+                
 
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 // dependencies
 class LiborMarketModel;
-class LmmNode;
+class StandardBrownianNode;
+class LmmLattice; 
+
+
 
 
 
@@ -118,8 +121,11 @@ Real nextForwardPayoff();
  */
 Real currentForwardPayoff(int s);
 
-/** Payoff at LmmNode compounded forward to time \f$T_n\f$.*/
-Real forwardPayoff(LmmNode* node);
+/** Payoff at node compounded forward to time \f$T_n\f$.
+ *  Specialization overrides base class template.
+ *  @param s irrelevant here.
+ */
+Real forwardPayoff(StandardBrownianNode* node, LmmLattice* theLattice, int s);
   
 /** Message identifying the derivative. */
 std::ostream& printSelf(std::ostream& os) const;

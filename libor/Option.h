@@ -33,6 +33,7 @@ spyqqqdia@yahoo.com
 
 #include "TypedefsMacros.h"
 #include "Pricing.h"                   // needed in template function
+#include "Node.h"                      // problem with template forward declarations
 #include <cstdlib>                     // exit(int)
 
 
@@ -45,8 +46,10 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 class LiborMarketModel;
 class Bond;
 // class RealVector;
-class LmmLattice;
-class LmmNode;
+class StandardBrownianNode;
+class LmmLattice; 
+
+
 
 
 /*! \file Option.h
@@ -118,8 +121,13 @@ virtual Real controlVariateMean(){ return 0.0; }
  */
 virtual const RealArray1D nextControlledForwardPayoff();
 
-/** Returns -1.0. Override meaningfully.*/
-virtual Real forwardPayoff(LmmNode* node){ return -1.0; }
+/** Forward compounded payoff of the option if exercised at node node
+ *  living at time step t in lattice theLattice. Returns -1.0. 
+ *  To be overriddden by appropriate specializations.
+ */
+template<typename LatticeType, int t>
+Real forwardPayoff
+(typename LatticeType::NodeType* node, LatticeType* theLattice, int t){ return -1.0; }
 	
 	 
 /** Error message that nothing is implemented in this generality. 
@@ -139,14 +147,6 @@ Real controlledMonteCarloForwardPrice(int nPaths);
  *  computed from N sample payoff - controlVariate pairs of the option.
  */
 Real correlationWithControlVariate(int N);
-
-/** Forward price computed in theLattice.*/
-// must be a template since Lattice is a class template not a class.
-template<class LatticeType>
-Real latticeForwardPrice(LatticeType* theLattice)
-{
-	return Pricing::latticeForwardPrice(theLattice,this);
-}
 
 /** Forward price computed in the default lattice.
  *  Error message that nothing is implemented in this generality. 
@@ -216,18 +216,30 @@ int  getDimension() const { return n; }
  *  Libors. Default implementation returns zero.
  */
 int effectiveDimension() const;
-	
-	
+
+
 /** The default lattice used for pricing: a two factor
  *  LmmLattice based on the underlying LMM. Constructed on the heap
  *  and must be deallocated by the user.
  */
 LmmLattice* getDefaultLattice();
 
+
+/** Payoff at a node living at time step s in theLattice. 
+ *  Empty default implementation: aborts with error message.
+ */
+virtual Real forwardPayoff(StandardBrownianNode* node, LmmLattice* theLattice, int s);
+
+
+/** Price computed in theLattice. */
+Real latticeForwardPrice(LmmLattice* theLattice);
+	
+	
 /** Forward price computed in the default lattice.
  *  See {@link getDefaultLattice()}.
  */
-Real latticeForwardPrice();
+Real latticeForwardPrice(){ return latticeForwardPrice(getDefaultLattice()); }
+
 	
 /** Message announcing a generic Libor derivative. */
 std::ostream& printSelf(std::ostream& os) const;
@@ -319,6 +331,16 @@ Real controlVariateMean();
 /** Vector Z with Z[0] the next forward payoff random sample and Z[1] 
  *  the corresponding control variate. Return by value since it is so small.*/
 const RealArray1D nextControlledForwardPayoff();
+
+/** Payoff at node compounded forward to time \f$T_n\f$.
+ *  Specialization overrides base class template.
+ *  Slightly inaccurate (see {@link LiborFunctional#capletForwardPayoff})
+ *  but we can do no better in a lattice.
+ *
+ *  @param s lattice time step at which the node lives.
+ */
+Real forwardPayoff(StandardBrownianNode* node, LmmLattice* theLattice, int s);
+
 
 
 // Payoffs at nodes not implemented. Delay problem: payoff determined at time T_i
@@ -413,8 +435,14 @@ Real controlVariateMean();
  *  the corresponding control variate. Return by value since it is so small.*/
 const RealArray1D nextControlledForwardPayoff();
 
-/** Payoff at LmmNode compounded forward to time \f$T_n\f$.*/
-Real forwardPayoff(LmmNode* node);
+
+/** Payoff at node compounded forward to time \f$T_n\f$.
+ *  Specialization overrides base class template.
+ *
+ *  @param s lattice time step at which the node lives.
+ */
+Real forwardPayoff(StandardBrownianNode* node, LmmLattice* theLattice, int s);
+
 
 // PRICING
 	 
@@ -516,8 +544,12 @@ Real controlVariateMean();
  *  the corresponding control variate. Return by value since it is so small.*/
 const RealArray1D nextControlledForwardPayoff();
 
-/** Payoff at LmmNode compounded forward to time \f$T_n\f$.*/
-Real forwardPayoff(LmmNode* node);
+/** Payoff at node compounded forward to time \f$T_n\f$.
+ *  Specialization overrides base class template.
+ *  
+ *  @param s lattice time step at which the node lives.
+ */
+Real forwardPayoff(StandardBrownianNode* node, LmmLattice* theLattice, int s);
    
 /** See book, 6.9.4.*/
 Real analyticForwardPrice() const;

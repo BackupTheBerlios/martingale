@@ -362,6 +362,8 @@ public:
 	 */
 	Correlations(int _n, Real _alpha, Real _beta, Real _r_oo, int correlationType);
 	
+	virtual ~Correlations(){ }
+	
 	
 	/** A sample correlation in dimension n of type = JR, CS.
 	 */
@@ -418,7 +420,8 @@ public:
 	/** @param T tenor structure of Libor process.
 	 *  @param beta see class description.
 	 */
-	JR_Correlations(const RealArray1D& _T, Real beta);
+	JR_Correlations(const RealArray1D& _T, Real beta);	
+	virtual ~JR_Correlations(){ }
 
 	   
 	/** Updates correlation matrix using the current parameters.
@@ -452,6 +455,7 @@ class CS_Correlations : public Correlations {
 public:
 	
 	CS_Correlations(int _n, Real _alpha, Real _beta, Real _r_oo);
+	virtual ~CS_Correlations(){ }
 
 	   
 	/** Updates correlation matrix using the current parameters.

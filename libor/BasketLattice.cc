@@ -39,24 +39,6 @@ using std::log;
 using std::exp;
 
  
-// BASKET LATTICE DATA
-
-
-BasketLatticeData::
-BasketLatticeData
-(int steps,
- Real dt,
- const RealArray1D& vols,
- const RealArray1D& Y0,
- const RealMatrix& Q
-) :
-n(Q.rows()), T(steps), r(Q.cols()), 
-timestep(dt), ticksize(sqrt(dt)),
-sg(vols), log_S0(Y0), driftUnit(n), R(Q)
-{  
-	// drifts per time step
-	for(int i=0;i<n;i++) driftUnit[i]=-sg[i]*sg[i]*dt/2;
-}
 	
 
 // GENERAL BASKET LATTICE
@@ -72,44 +54,25 @@ testFactorization() const
 	
 BasketLattice::
 BasketLattice
-(int r, ConstantFactorLoading* fl, int T, Real dt, RealArray1D S0) : 
-Lattice<BasketNode>(T),
-n_(fl->getDimension()), T_(T), 
-dt_(dt), Y0_(n_), sg_(fl->getVols()),
-R_(fl->correlationMatrix().rankReducedRoot(r)),
-latticeData(0)
+(int r, ConstantFactorLoading* fl, int T, Real ds, RealArray1D S0) : 
+Lattice<StandardBrownianNode>(T),
+n_(fl->getDimension()), 
+T_(T), 
+r_(r),
+dt(ds), 
+sg(fl->getVols()),
+log_S0(n_), 
+mu(n_),
+R(fl->getCorrelationMatrix().rankReducedRoot(r))
 {   
-	for(int i=0;i<n_;i++) Y0_[i]=log(S0[i]);
-	latticeData = new BasketLatticeData(T,dt,sg_,Y0_,R_);
+	for(int i=0;i<n_;i++) log_S0[i]=log(S0[i]);
+	for(int i=0;i<n_;i++) mu[i]=-sg[i]*sg[i]*dt/2;
 }
 
 
-ostream& 
+BasketLattice* 
 BasketLattice::
-printSelf(ostream& os) const
-{
-	int r = latticeData->r;
-	return
-	os << "Basket lattice: " << r << "factors.";
-}
-
-
-
-// TWO FACTOR BASKET LATTICE
-
-BasketLattice2F::
-BasketLattice2F
-(ConstantFactorLoading* fl, int T, Real dt, RealArray1D S0) : 
-BasketLattice(2,fl,T,dt,S0) 
-{    
-	buildLattice(T);
-	testFactorization();
-}
-
-
-BasketLattice2F* 
-BasketLattice2F::
-sample(int n,int T)
+sample(int r, int n, int T)
 {
 	// initial asset prices
 	RealArray1D S0(n);
@@ -130,95 +93,49 @@ sample(int n,int T)
 	// time step
 	Real dt=0.1;
 		
-	return new BasketLattice2F(fl,T,dt,S0);
+	return new BasketLattice(r,fl,T,dt,S0);
 }
 
 
-void 
-BasketLattice2F::
-test(int n, int T)
+
+ostream& 
+BasketLattice::
+printSelf(ostream& os) const
 {
-	BasketLattice2F* lattice = sample(n,T);
+	return
+	os << "Basket lattice: " << r_ << "factors.";
+}
+
+
+
+
+void 
+BasketLattice::
+test(int r, int n, int T)
+{
+	BasketLattice* lattice = sample(r,n,T);
 	lattice->selfTest();
 	delete lattice;
 }
 		
 
 void 
-BasketLattice2F::
-buildLattice(int m)
+BasketLattice::
+buildLattice(int m, bool verbose)
 {
 	std::cout << "\n\nBuilding lattice: " << *this
 	          << "\nTime steps: " << m << endl << endl;
-	LatticeBuilder::
-	buildTwoFactorLattice<BasketNode,BasketLatticeData>(m,nodeList,latticeData);         	
-
-} // end buildLattice
-	
-
-
-// THREE FACTOR LATTICE
-
-
-BasketLattice3F::
-BasketLattice3F
-(ConstantFactorLoading* fl, int T, Real dt, RealArray1D S0) : 
-BasketLattice(3,fl,T,dt,S0) 
-{    
-	buildLattice(T);
-	testFactorization();
-}
-
-
-BasketLattice3F* 
-BasketLattice3F::
-sample(int n, int T)
-{
-	// initial asset prices
-	RealArray1D S0(n);
-	for(int j=0;j<n;j++) S0[j]=100.0;
-			
-	// volatilities
-	RealArray1D sg(n);
-	for(int j=0;j<n;j++) sg[j]=0.3;
-			
-	// correlation of returns
-	UTRRealMatrix rho(n);
-    for(int j=0;j<n;j++)
-	for(int k=j;k<n;k++) rho(j,k)=exp(0.2*(j-k));
-	
-	// the factorloading
-	ConstantFactorLoading* fl = new ConstantFactorLoading(n,sg,rho);
-			
-	// time step
-	Real dt=0.1;
+	switch(r_){
 		
-	return new BasketLattice3F(fl,T,dt,S0);
-}
-
-
-
-void 
-BasketLattice3F::
-test(int n, int T)
-{
-	BasketLattice3F* lattice = sample(n,T);
-	lattice->selfTest();
-	delete lattice;
-}
-
-
-
-void 
-BasketLattice3F::
-buildLattice(int m)
-{
-	std::cout << "\n\nBuilding lattice: " << *this
-	          << "\nTime steps: " << m << endl << endl;
-	LatticeBuilder::
-	buildThreeFactorLattice<BasketNode,BasketLatticeData>(m,nodeList,latticeData);         	
+	    case 3 :  LatticeBuilder::buildThreeFactorLattice(this,m,verbose); 
+			      break;
+		default : LatticeBuilder::buildTwoFactorLattice(this,m,verbose); 
+	}      	
 
 } // end buildLattice
+	
+
+
 	
 
 	
