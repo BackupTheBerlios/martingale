@@ -26,7 +26,8 @@ spyqqqdia@yahoo.com
 // template class LmmLattice must be implemented in header
 #include "TypedefsMacros.h"
 #include "Lattice.h"
-#include "Matrices.h"
+//#include "Matrices.h"
+#include "Matrix.h"
 #include "LiborFactorLoading.h" 
 #include <iostream>
 

@@ -26,7 +26,8 @@ spyqqqdia@yahoo.com
 
 #include <complex>
 #include "TypedefsMacros.h"
-#include "Matrices.h"
+//#include "Matrices.h"
+#include "Matrix.h"
 #include "Utils.h"
 #include "Random.h"
 
@@ -82,42 +83,146 @@ void testMatrixInverse()
  *  multiplication are embedded in the tests of the matrix exponential.
  */
 
-void testMatrixMultiply()
-{
-    Real x[3][3]={{2,1,3},{0,2,-1},{1,-1,3}};
-	RealMatrix X(x), X1=X;
-		
-	Real u[3][3]={{1,2,-1},{0,-1,3,},{0,0,2}};
-	UTRRealMatrix U(u), U1=U;
-		
-    Real l[3][3]={{1,0,0},{2,-1,0},{-1,3,2}};
-	LTRRealMatrix L(l), L1=L;
-		
-	// X^U hand computed
-	Real xwu[3][3]={{1,8,6},{5,-5,-2},{-4,10,6}};
-	RealMatrix XwedgeU(xwu);
-		
-     // X*U hand computed
-	Real xsu[3][3]={{2,3,7},{0,-2,4},{1,3,2}};
-	RealMatrix XstarU(xsu);
-		
-    // U^L hand computed
-	Real uwl[3][3]={{1,0,3},{0,1,3},{0,0,4}};
-	UTRRealMatrix UwedgeL(uwl);
-		
-    // L^U hand computed = (U^L)'
-	Real lwu[3][3]={{1,0,0},{0,1,0},{3,3,4}};
-	LTRRealMatrix LwedgeU(lwu);
-		
-	Real precision=0.001,       // maximum acceptable relative error in percent
-		 epsilon=0.00000000001; // zero denominator reset to epsilon
+void testMatrixMultiply() {
 	
-	XwedgeU.testEquals(X1^=U,precision,epsilon,"X^U test");
-	XstarU.testEquals(X*=U,precision,epsilon,"X*U test");
-	UwedgeL.testEquals(U1^=L,precision,epsilon,"U^L test");
-	UwedgeL.testEquals((L^=U).transpose(),precision,epsilon,"U^L=(L^U)' test");	
+Real sq1[5][5]=
+{{2,-1,3,-2,4},
+ {1,0,-2,-1,3},
+ {-2,-1,0,-3,2},
+ {3,0,-1,1,2},
+ {2,3,-4,-2,1}};
+RealMatrix SQ1(sq1), SQ11(sq1);					 
 
-    
+ 
+Real sq2[5][5]=
+{{1,-1,2,-3,4},
+ {-1,2,-2,-1,1},
+ {-3,-1,0,-1,2},
+ {3,2,-1,-2,2},
+ {2,-1,3,-2,1}};
+RealMatrix SQ2(sq2);							 
+ 
+ 
+Real utr1[5][5]  = 
+{{2,-1,3,-2,4},
+ {0,3,-2,-1,3},				         
+ {0,0,4,-1,2},					    
+ {0,0,0,2,-3},
+ {0,0,0,0,4}};
+UTRRealMatrix UTR1(utr1), UTR11(utr1);								 
+
+ 
+Real utr2[5][5]  = 
+{{3,1,2,-3,-1},
+ {0,1,-2,1,-3},
+ {0,0,2,-3,1},
+ {0,0,0,1,2},
+ {0,0,0,0,-3}};
+UTRRealMatrix UTR2(utr2);							 
+
+ 
+Real ltr1[5][5]  = 
+{{2,0,0,0,0},
+ {-3,2,0,0,0},
+ {3,-2,4,0,0},
+ {-2,-1,5,3,0},
+ {-3,1,-1,0,4}};
+LTRRealMatrix LTR1(ltr1), LTR11(ltr1);								 
+ 
+ 
+Real ltr2[5][5]  = 
+{{3,0,0,0,0},
+ {-2,1,0,0,0},
+ {2,-1,4,0,0},
+ {-1,1,4,-5,0},
+ {-2,2,4,-1,-3}};
+LTRRealMatrix LTR2(ltr2);					  
+
+
+Real precision=0.001,       // maximum acceptable relative error in percent
+     epsilon=0.00000000001; // zero denominator reset to epsilon
+ 
+
+// tests of rectangular matrix products
+cout << "\n\n\nTesting rectangular matrix products:\n";
+ 
+// SQ1*SQ2
+Real sq1_sq2[5][5]=
+{{-4, -15, 20, -12, 13},
+ {10, -4, 12, -5, 1},
+ {-6, -8, 7, 9, -13},
+ {13, -2, 11, -14, 14},
+ {7, 3, 3, -3, 0}};
+RealMatrix SQ1_SQ2(sq1_sq2);
+ 
+SQ1_SQ2.testEquals(SQ1*=SQ2,precision,epsilon,"SQ1*=SQ2 test");
+
+
+// SQ1*SQ2' : 
+Real sq1_sq2t[5][5]=
+{{31, -4, 5, 13, 22},
+{12, 7, 4, 13, 1},
+{16, 5, 14, 2, 5},
+{6, 0, -6, 12, 3},
+{1, 15, -5, 22, -6}};
+RealMatrix SQ1_SQ2t(sq1_sq2t);
+
+SQ1_SQ2t.testEquals(SQ11^=SQ2,precision,epsilon,"SQ1^=SQ2 test");
+
+
+// tests of lower triangular matrix products
+cout << "\n\n\nTesting lower triangular matrix products:\n";
+
+// LTR1*LTR2 : 
+Real ltr1_ltr2[5][5]=
+{{6, 0, 0, 0, 0},
+{-13, 2, 0, 0, 0},
+{21, -6, 16, 0, 0},
+{3, -3, 32, -15, 0},
+{-21, 10, 12, -4, -12}};
+LTRRealMatrix LTR1_LTR2(ltr1_ltr2);
+
+LTR1_LTR2.testEquals(LTR1*=LTR2,precision,epsilon,"LTR1*=LTR2 test");
+
+// LTR1*UTR2' : 
+Real ltr1_utr2t[5][5]=
+{{6, 0, 0, 0, 0},
+{-7, 2, 0, 0, 0},
+{15, -10, 8, 0, 0},
+{-6, -8, 1, 3, 0},
+{-14, -9, 2, 8, -12}};
+LTRRealMatrix LTR1_UTR2t(ltr1_utr2t);
+
+LTR1_UTR2t.testEquals(LTR11^=UTR2,precision,epsilon,"LTR1^=UTR2 test");
+
+
+// tests of upper triangular matrix products
+cout << "\n\n\nTesting upper triangular matrix products:\n";
+
+// UTR1*UTR2 : 
+Real utr1_utr2[5][5]=
+{{6, 1, 12, -18, -12},
+{0, 3, -10, 8, -22},
+{0, 0, 8, -13, -4},
+{0, 0, 0, 2, 13},
+{0, 0, 0, 0, -12}};
+UTRRealMatrix UTR1_UTR2(utr1_utr2);
+
+UTR1_UTR2.testEquals(UTR1*=UTR2,precision,epsilon,"UTR1*=UTR2 test");
+
+
+
+// UTR1*LTR2' : 
+Real utr1_ltr2t[5][5]=
+{{6, -5, 17, 19, -4},
+{0, 3, -11, 0, -10},
+{0, 0, 16, 21, 11},
+{0, 0, 0, -10, 7},
+{0, 0, 0, 0, -12}};
+UTRRealMatrix UTR1_LTR2t(utr1_ltr2t);
+
+UTR1_LTR2t.testEquals(UTR11^=LTR2,precision,epsilon,"UTR1^=LTR2 test");
+
 } // end testMatrixMultiply
 
 
@@ -194,7 +299,10 @@ void reportMatrixElements(Real** data, int dim, int matrix_type)
 
 
 
-
+/** Randomly intializes a square matrix A and computes exp(A), exp(-A).
+ *  Then tests how close exp(A)*exp(-A) and exp(-A)*exp(A) are to the identity
+ *  matrix.
+ */
 void testMatrixExponentials()
 {
     int repeat=1;
@@ -224,7 +332,7 @@ void testMatrixExponentials()
 		          << "Lower triangular (1)" << endl
 		          << "Square (2)" << endl
 		          << "matrix type = ";
-		int type=2; cin>>type;
+		int type=3; cin>>type;
 		
 	    std::cout << "Enter dimension: ";
 	    int dim; std::cin>>dim; 
@@ -287,6 +395,53 @@ void testMatrixExponentials()
     } // end main loop   
 		
 } // end testMatrixExponentials
+
+
+
+/** Randomly intializes a symmetric matrix A and computes exp(A) in two different ways:
+ *  <p>
+ *  (A) Using the general approach to matrix exponentials.<br>
+ *  (B) Diagonalizing the matrix A and applying exp() to each eigenvalue while leaving
+ *  the eigenvectors unchanged.
+ *  <p>
+ *  It is then tested if the two computations agree.
+ */
+void testSymmetricMatrixExponentials()
+{
+    int repeat=1;
+	while(repeat==1){
+	
+	    std::cout << endl << endl
+		          << "A symmetric matrix A will be initialized with random entries from [-r,r]." << endl
+		          << "We then compute the products exp(A) by diagonalization of A " 
+		          << " and by series expansion." << endl
+		          << "It is then tested if the two results agree." << endl;
+		
+		std::cout << "Enter r: ";
+		Real r; cin>>r;
+		
+	    std::cout << "Enter dimension: ";
+	    int dim; std::cin>>dim; 
+
+	    RealMatrix A(dim); 
+		UTRRealMatrix U(dim);
+	    for(int i=0;i<dim;i++)
+	    for(int j=i;j<dim;j++) A(j,i)=A(i,j)=U(i,j)=r*Random::U01(); 
+
+		RealMatrix E(A.exp()), E1(U.matrixFunction(&exp));
+	    
+		Real precision=0.001,       // maximum acceptable relative error in percent
+		     epsilon=0.00000000001; // zero denominator reset to epsilon
+	
+		E.testEquals(E1,precision,epsilon,"The matrix exponentials agree:");
+	
+	    std::cout << endl << endl << endl
+	              << "Repeat (1/0)? repeat= ";
+	    cin >> repeat;
+    } // end main loop   
+		
+} // end testMatrixExponentials
+
 
 
 

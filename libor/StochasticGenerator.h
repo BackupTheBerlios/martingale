@@ -25,7 +25,8 @@ spyqqqdia@yahoo.com
 
 #include "TypedefsMacros.h"
 #include "Random.h"
-#include "Matrices.h"
+//#include "Matrices.h"
+#include "Matrix.h"
 #include <iostream>
 
 MTGL_BEGIN_NAMESPACE(Martingale) 

@@ -43,7 +43,7 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 /** Sets up a sample CS_FactorLoading in dimension n and then runs
  *  the self test {@link FactorLoading#selfTest}.
  */
-void testFactorLoading(int n)
+void testLiborFactorLoading(int n)
 {
 	LiborFactorLoading* fl=0;
 	for(int volType=0;volType<3;volType++)

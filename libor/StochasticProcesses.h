@@ -25,7 +25,8 @@ spyqqqdia@yahoo.com
 
 #include "TypedefsMacros.h"
 #include "StochasticProcess.h"
-#include "Matrices.h"
+//#include "Matrices.h"
+#include "Matrix.h"
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
@@ -131,7 +132,7 @@ class GaussianMartingale : public BrownianVectorProcess {
 	// covariationMatrixRoots[t] is the Cholesky root of the covariation matric C, 
 	// C_ij=integral_{t*dt}^{(t+1)*dt}nu_i(s).nu_j(s)ds, i,j>=0; t=0,...,T-1.
 	// this drives the time step t->t+1
-	Array1D<const UTRMatrix<Real>*> covariationMatrixRoots;
+	Array1D<const UTRRealMatrix*> covariationMatrixRoots;
 	
 	FactorLoading* factorLoading;   // the factor loading
 	

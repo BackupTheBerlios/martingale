@@ -23,9 +23,9 @@ spyqqqdia@yahoo.com
 #ifndef martingale_basketlattice_h    
 #define martingale_basketlattice_h
 
-// template class BasketLattice must be implemented in header
 #include "TypedefsMacros.h"
-#include "Matrices.h"
+//#include "Matrices.h"
+#include "Matrix.h"
 #include "Lattice.h"
 
 MTGL_BEGIN_NAMESPACE(Martingale)

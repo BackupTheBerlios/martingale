@@ -25,7 +25,8 @@ spyqqqdia@yahoo.com
 #define martingale_node_h
 
 #include "TypedefsMacros.h"
-#include "Matrices.h"
+//#include "Matrices.h"
+#include "Matrix.h"
 #include <list>
 
 MTGL_BEGIN_NAMESPACE(Martingale)

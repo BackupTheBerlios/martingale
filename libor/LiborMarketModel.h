@@ -31,9 +31,8 @@ spyqqqdia@yahoo.com
 #define martingale_libormarketmodel_h
 
 #include "TypedefsMacros.h"
-#include "Matrices.h"
-//#include <string>
-//#include <iostream>
+//#include "Matrices.h"
+#include "Matrix.h"
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 

@@ -27,7 +27,8 @@ spyqqqdia@yahoo.com
 #define martingale_volatilityandcorrelation_h
 
 #include "TypedefsMacros.h"
-#include "Matrices.h"
+//#include "Matrices.h"
+#include "Matrix.h"
 #include <string>
 #include <iostream>
 

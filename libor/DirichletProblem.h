@@ -24,7 +24,8 @@ spyqqqdia@yahoo.com
 #define martingale_dirichletproblem_h
 
 #include "TypedefsMacros.h"
-#include "Matrices.h"
+//#include "Matrices.h"
+#include "Matrix.h"
 
 MTGL_BEGIN_NAMESPACE(Martingale) 
 

@@ -24,7 +24,8 @@ spyqqqdia@yahoo.com
 #define martingale_examples_h
 
 #include "TypedefsMacros.h"
-#include "Matrices.h"
+//#include "Matrices.h"
+#include "Matrix.h"
 #include "Utils.h"
 #include "Random.h"
 #include "RandomObject.h"
