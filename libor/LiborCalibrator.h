@@ -25,6 +25,7 @@ spyqqqdia@yahoo.com
 
 #include "FinMath.h"
 #include "LiborFactorLoading.h"
+#include "Optimizer.h"
 #include <iostream>
 #include <fstream>
 #include <list>
@@ -134,9 +135,6 @@ std::istream& operator >> (std::istream& is, CapletData* cplt)
 
 class LmmCalibrator {
 	
-	friend void CS_FactorLoading::calibrateSelf<LmmCalibrator>(LmmCalibrator* cal);
-	friend void JR_FactorLoading::calibrateSelf<LmmCalibrator>(LmmCalibrator* cal);
-	friend void ConstVolLiborFactorLoading::calibrateSelf<LmmCalibrator>(LmmCalibrator* cal);
 	
 protected:
 
@@ -182,7 +180,7 @@ public:
 	
 // ACCESSORS
 	
-	void setFactorLoading(LiborFactorLoading* fl){ factorLoading=fl; }
+	LiborFactorLoading* getFactorLoading(){ return factorLoading; }
 	
 	
 // READING AND WRITING CAPLETS AND SWAPTIONS
@@ -815,9 +813,46 @@ public:
 		cal->writeSwaptions();
 	}
 	
-
 	
 }; // end PredictorCorrectorLmmCalibrator
+
+
+
+/**********************************************************************************
+ *
+ *               LmmOptimizer
+ *
+ *********************************************************************************/
+
+
+
+/** Optimizer to calibrate a {@link CV_FactorLoading}.
+ *  We use a BFGS optimizer.
+ */
+class CV_Optimizer : public BFGS {
+	
+protected:
+	
+	LmmCalibrator* cal;
+	LiborFactorLoading* factorLoading;    // the factorloading calibrated by cal
+	
+public:
+	
+	/** @param n dimension (number of variables).
+	 *  @param cal the LMM calibrator.
+	 */
+	LmmOptimizer(int n, LmmCalibrator* _cal) : Optimizer(n) 
+	cal(_cal),
+	factorLoading(cal->getFactorLoading())
+	{  }
+	
+	
+};
+
+
+/** Optimizer for 
+	
+	
 
 
 
