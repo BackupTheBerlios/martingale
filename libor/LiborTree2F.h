@@ -32,6 +32,19 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 
+
+/**********************************************************************************
+ *
+ *            TWO FACTOR LMM LATTICE
+ *
+ *********************************************************************************/
+ 
+ 
+// forward declarations
+struct Edge;
+struct Node;
+ 
+
 /** <p>Two factor lattice of the driftless Libor market model.
  *  See book 6.8, 8.1.1 for the details and notation. The variables
  *  evolved in the tree are \f$V1=V_{n-1},\ V2=V_{n-2}-V_{n-1}\f$ and 
@@ -55,6 +68,7 @@ class LiborTree2F {
 	    nodes;         // number of nodes
 	
 	vector<Real> logU0;     // logU0[j]=log(U_j(0))
+	
 // <------------- TO DO ------------> 
 // work with 2 independent tick sizes	
 	Real a;            // minimum tick size a_1=a_2=a
@@ -68,7 +82,7 @@ class LiborTree2F {
 	// forward declarations
 	struct Edge;
 	struct Node;
-	
+			
 	// nodeList[t] is the list of pointers to nodes at time t
 	// need this up to time t=n-2 (lattice ends t=n-2).
 	vector< std::list<Node*>* > nodeList; 
@@ -91,29 +105,41 @@ public:
 
 // ACCESSORS
 
+    /** The factor loading of the underlying LMM.
+	 */
+    LiborFactorLoading* getFactorLoading(){ return factorLoading; } 
+
     /** Dimension of underlying LMM (number of accrual periods).
 	 */
-    int getDimension(){ return n; }
+    int getDimension() const { return n; }
 	
 	/** The matrix of deterministic drifts
 	 *  \f[\mu(j,t)=\mu_j(0,T_t)=-{1\over2}\int_0^{T_t}\sigma_j^2(s)ds,\q t\leq j,\f]
 	 *  of the logarithms \f$Y_j=log(U_j)\f$.
 	 */
-    LTRMatrix<Real>& getDrifts(){ return mu; }
+    LTRMatrix<Real>& getDrifts() { return mu; }
 	
 	/** The rank 2 approximate root R(t) of the covariation matrix C(t) 
 	 *  of the vector V(t)=(V_t(T_t),...,V_{n-1}(T_t)). See book 8.1.1.
 	 */
-    Matrix<Real>& getR(int t){ return *R[t]; }
+    Matrix<Real>& getR(int t) { return *R[t]; }
 	
     /** The 2 by 2 inverse of the last two rows of
-	 *  {@link #getRank2CovariationMatrixRoot(int t)}.
+	 *  {@link #getR(int t)}.
 	 */
-    Matrix<Real>& getRQ(int t){ return *RQ[t]; }
+    Matrix<Real>& getRQ(int t) { return *RQ[t]; }
 	
     /** The vector logU0[j]=log(U_j(0)), initial values.
 	 */
-    vector<Real>& getLogU0(){ return logU0; }
+    vector<Real>& getLogU0() { return logU0; }
+	
+	/** The list of nodes at time t.
+	 */
+	std::list<Node*>& getNodeList(int t) { return *(nodeList[t]); }
+	
+	/** The root node of the lattice.
+	 */
+	Node* getRoot(){ return nodeList[0]->front(); }
 	
 	
 // CONSTRUCTOR
@@ -177,6 +203,7 @@ public:
 		setRank2CovariationMatrixRoots(m);
         setTickSize(m);
 		buildLattice(m);
+		testFactorization();
 		
 	} // end constructor
 	
@@ -235,7 +262,31 @@ public:
 	} // end selfTest()
 				
 	
+// FACTOR ANALYSIS
 	
+/** Computes the relative errors in the trae norm of the	approximate rank two 
+ *  factorization C(t)=R(t)R(t)' of the rlevant covariance matrices C(t). See
+ *  Book, 8.1.2.
+ */
+void testFactorization()
+{
+	cout << "\n\nRelative errors of the approximate rank 2 factorizations of all"
+	     << "\ncovariation matrices C(t) as C(t)= R(t)R(t)' with R(t) of rank 2,"
+	     << "\n(trace norm): " << endl << endl;
+	
+	Real* Tc=factorLoading->getTenorStructure();
+	for(int t=1;t<n-2;t++){
+		
+		Real T_t=Tc[t];
+		UTRMatrix<Real> Ct(n-t,t);
+		for(int i=t;i<n;i++)
+		for(int j=i;j<n;j++) Ct(i,j)=factorLoading->integral_sgi_sgj_rhoij(i,j,0.0,T_t);
+        
+		Ct.testFactorization(2);
+	}
+}   // end factorAnalysis
+
+
 	
 	
 	
@@ -432,130 +483,183 @@ private:
 	}
 	
 		
-						
-// EDGES AND NODES
-
 
 	
-	struct Edge {
 	
-	    Node* node;              // node we transition to along this edge	
-	    Real probability;        // transition probability
+	
+/****************************************
+ *         EDGES AND NODES
+ ****************************************/						
 
-	}; // end edge	
+
+
+
+struct Edge {
+	
+	 Node* node;              // node we transition to along this edge	
+	 Real probability;        // transition probability
+
+}; // end edge	
 	
 
-	/** Single node containing the vector \f$V(T_t)=(V_t(T_t),...,V_{n-1}(T_t))\f$
-	 *  as well as the variables \f$V1=V_{n-1}, V2=V_{n-2}-V_{n-1}\f$ which the lattice 
-	 *  evolves.
+
+
+
+/** Single node containing the vector \f$V(T_t)=(V_t(T_t),...,V_{n-1}(T_t))\f$
+ *  as well as the variables \f$V1=V_{n-1}, V2=V_{n-2}-V_{n-1}\f$ which the lattice 
+ *  evolves.
+ */
+struct Node {
+	
+    LiborTree2F* theTree;   // the tree the node lives in
+		
+	Real V1, V2;            // the variables which are evolved
+	int n,                  // n dimension of the underlying Libor process.     
+		t,                  // discrete time at which the node lives
+		i,                  // V2=V2(0)+ja
+		j;                  // V1=V1(0)+ia, 
+		
+	vector<Real> H;         // the accrual factors H_j(T_t), j=t,...,n at this node
+		                    // natural indexation, index base t
+	Real  pi;               // value of some path functional at this node
+	
+	Matrix<Edge*> edges;    // edges with transition probabilities p_ij, i,j=-1,0,1.
+		                    // natural indexation, index base -1 
+		
+
+		
+	/** @param tree the Libor tree the node lives in.
+	 *  @param s discrete time t (continuous time T_t) at which the node lives.
+	 *  @param k state V_1=V_1(0)+ka
+	 *  @param l state V_2=V_2(0)+la
 	 */
-    struct Node {
-	
-    	LiborTree2F* theTree;   // the tree the node lives in
-		
-		Real V1, V2;            // the variables which are evolved
-		int n,                  // n dimension of the underlying Libor process.     
-		    t,                  // discrete time at which the node lives
-		    i,                  // V2=V2(0)+ja
-		    j;                  // V1=V1(0)+ia, 
-		
-		vector<Real> H;         // the accrual factors H_j(T_t), j=t,...,n at this node
-		                        // natural indexation, index base t
-	    Real  F;                // value of some path functional at this node
-	
-	    Matrix<Edge*> edges;    // edges with transition probabilities p_ij, i,j=-1,0,1.
-		                        // natural indexation, index base -1 
-		
-
-		/** @param tree the Libor tree the node lives in.
-		 *  @param s discrete time t (continuous time T_t) at which the node lives.
-		 *  @param k state V_1=V_1(0)+ka
-		 *  @param l state V_2=V_2(0)+la
-		 */
-		Node(LiborTree2F* tree, int s, int k, int l) : 
-		theTree(tree),
-		n(tree->getDimension()), t(s), i(k), j(l), 
-		H(n-t+1,t), edges(3,3,-1,-1) 
-	    {
-		     // loop over transitions k,l=-1,0,1
-			 for(int k=-1;k<2;k++)
-			 for(int l=-1;l<2;l++) edges(l,k)=new Edge();
-		}
+	Node(LiborTree2F* tree, int s, int k, int l) : 
+	theTree(tree),
+	n(tree->getDimension()), t(s), i(k), j(l), 
+	H(n-t+1,t), edges(3,3,-1,-1) 
+	{
+		 // loop over transitions k,l=-1,0,1
+	     for(int k=-1;k<2;k++)
+		 for(int l=-1;l<2;l++) edges(l,k)=new Edge();
+	}
 				 
 		
-		~Node()
-	    {
-			for(int k=-1;k<2;k++)
-			for(int l=-1;l<2;l++) delete edges(k,l); 
+    ~Node()
+	{
+	    for(int k=-1;k<2;k++)
+		for(int l=-1;l<2;l++) delete edges(k,l); 
 				
-	 	}
+	}
 		
-		
-		/** Prints the transition probabilities and corresponding Q_ij(t) values.
-		 *  Diagnostic.
-		 */
-		void printTransitionProbabilities()
-	    {
-			 for(int k=-1;k<2;k++)
-			 for(int l=-1;l<2;l++)
-			 if((k!=0)||(l!=0))
-		     {	
-				  Edge* edge=edges(k,l);
-			      Real p=edge->probability;
-			      cout << "\np(" << k << "," << l << ") = " << p;
-		     }		
-		 } // end printTransitionProbabilities
+
+	
+// DIAGNOSTIC
+	
+	/** Prints the transition probabilities and corresponding Q_ij(t) values.
+	 *  Diagnostic.
+	 */
+	void printTransitionProbabilities()
+	{
+	    for(int k=-1;k<2;k++)
+		for(int l=-1;l<2;l++)
+		if((k!=0)||(l!=0))
+		{	
+			Edge* edge=edges(k,l);
+			Real p=edge->probability;
+			cout << "\np(" << k << "," << l << ") = " << p;
+		}		
+     } // end printTransitionProbabilities
+
+	 
+	 
+// COMPUTATION OF THE STATE	 
 
 		 
-		 /** Computes the vector V from the variables V1,V2 which are evolved in the 
-		  *  lattice. Needs the vector logU0[j]=log(U_j(0)) and the matrices Rt=*R[t], 
-		  *  RQt=*RQ[t] from the LiborTree2F. Unfortunately we have to hand these in as 
-		  *  parameters since the class Node is unaware
-		  *
-		  */
-		 void setStateVariables()
-	     {
-             vector<Real> V(n-t,t);   // the volatility parts V_j of log(U_j)
+     /** Computes the vector V from the variables V1,V2 which are evolved in the 
+	  *  lattice. Needs the vector logU0[j]=log(U_j(0)) and the matrices Rt=*R[t], 
+	  *  RQt=*RQ[t] from the LiborTree2F. Unfortunately we have to hand these in as 
+	  *  parameters since the class Node is unaware
+	  */
+	 void setStateVariables()
+	 {
+         vector<Real> V(n-t,t);   // the volatility parts V_j of log(U_j)
 			                          // j=t,...,n-1
-			 V[n-1]=V1;
-			 V[n-2]=V1+V2;
+		 V[n-1]=V1;
+		 V[n-2]=V1+V2;
 			 
-			 // matrices needed to derive V_j, j<n-2, from V_{n-2}, V_{n-1}
-			 Matrix<Real>& Rt=theTree->getR(t);
-			 Matrix<Real>& RQt=theTree->getRQ(t);
+		 // matrices needed to derive V_j, j<n-2, from V_{n-2}, V_{n-1}
+		 Matrix<Real>& Rt=theTree->getR(t);
+		 Matrix<Real>& RQt=theTree->getRQ(t);
 			 
-			 // the "factors" Z_1, Z_2 for V_{n-2}, V_{n-1}
-			 vector<Real> Z(2);   
-			 Z[0]=V[n-2]; Z[1]=V[n-1]; Z*=RQt;
+		 // the "factors" Z_1, Z_2 for V_{n-2}, V_{n-1}
+		 vector<Real> Z(2);   
+		 Z[0]=V[n-2]; Z[1]=V[n-1]; Z*=RQt;
 		 
-			 // use these to compute the remaining V_j
-			 // Rt=*R[t] has row index base t.
-			 for(int j=t;j<n-2;j++) V[t]=Rt(t,0)*Z[0]+Rt(t,1)*Z[1];
+		 // use these to compute the remaining V_j
+		 // Rt=*R[t] has row index base t.
+		 for(int j=t;j<n-2;j++) V[t]=Rt(t,0)*Z[0]+Rt(t,1)*Z[1];
 				 
-			 // add the initial value log(U_j(0) and drift mu_j(t)=mu_j(0,T_t) 
-			 // to obtain the log(U_j(T_t))
-			 vector<Real>& logU0=theTree->getLogU0();
-			 LTRMatrix<Real>& mu=theTree->getDrifts();
-			 for(int j=t;j<n;j++) V[j]+=logU0[j]+mu(j,t);
+		 // add the initial value log(U_j(0) and drift mu_j(t)=mu_j(0,T_t) 
+		 // to obtain the log(U_j(T_t))
+		 vector<Real>& logU0=theTree->getLogU0();
+		 LTRMatrix<Real>& mu=theTree->getDrifts();
+		 for(int j=t;j<n;j++) V[j]+=logU0[j]+mu(j,t);
 				 
-			 // move from log(U_j) to U_j
-			 for(int j=t;j<n;j++) V[j]=exp(V[j]);    // now V=U
+		 // move from log(U_j) to U_j
+		 for(int j=t;j<n;j++) V[j]=exp(V[j]);    // now V=U
 				 
-			 // write the H_j=U_j+H_{j+1}, H_n=1, j=t,...,n
-			 H[n]=1.0; Real f=1.0;
-	         for(int j=n-1;j>=t;j--){ f+=V[j]; H[j]=f; }
+		 // write the H_j=U_j+H_{j+1}, H_n=1, j=t,...,n
+		 H[n]=1.0; Real f=1.0;
+	     for(int j=n-1;j>=t;j--){ f+=V[j]; H[j]=f; }
 			 
-		 }
+	}
+	
+// LIBORS, SWAPRATES, ANNUITY (PBV)
+	
+	/** Libor \f$X_j=\delta_jL_j\f$ at this node.
+	 */
+	Real X()
+    {
+		if(t==n-1) return (H[t]-1.0);
+		else return (H[t]-H[t+1])/H[t+1];
+	}
 
-		
+	
+	/** Forward price of the annuity (PBV)
+	 *  \f$H_{p,q}=B_{p,q}/B_n=\sum\nolimits_{j=p}^{q-1}\delta_jH_{j+1}\f$
+	 *  at this node.
+	 */
+	Real Hpq(int p, int q)
+    {
+		Real* delta=theTree->getFactorLoading()->getDeltas();
+		Real sum=0.0;
+		for(int j=p;j<q;j++) sum+=delta[j]*H[j+1];
+			
+		return sum;
+	}
+	
+	
+	/** Forward swaprate \f$S_{p,q}\f$ at this node, swap interval
+	 *  \f$[T_p,T_q]\f$, where \f$t\leq p<q\f$. Here t is the discrete time
+	 *  at which the node lives.
+	 */	  
+	Real swapRate(int p, int q){ return (H[p]-H[q])/Hpq(p,q); }
 		
 
+// ZERO COUPON BONDS
+		
+    /** The zero coupon bond \f$B_i\f$ expiring at time \f$T_i\f$ at this
+	 *  node. We must have \f$t\leq i\f$ where t is the discrete time at which
+	 *  the node lives.
+	 */
+	Real B_j(int j){ return H[i]/H[t]; }
 	
-    }; // end Node
+
+}; // end Node
 	
-	
+
+
 }; // end LiborTree2F
-
 
 
 	
