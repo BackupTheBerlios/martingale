@@ -31,10 +31,15 @@ Working on LiborTree2F.h
 TnT.h can be eliminated. Integrated into Matrices.h as global functions.
 
 
+
 6-20-03:
 
-Libortree2F: 
+Libortree2F:
 
+<-------BUG---------> Node::setStateVariables():
+in the computation of the V_j "V[t]" should read "V[j]".
+
+ 
 Matrix inversion of the last two rows of the rank 2 root of the covariation matrix
 is ill conditioned because of the high correlation of V_{n-2}, V_{n-1}.
 Decorrelate these from the beginning.
