@@ -28,7 +28,9 @@ spyqqqdia@yahoo.com
 #include <cmath>
 //#include <math.h>
 #include <algorithm>
-using namespace Martingale;
+
+
+MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 /*******************************************************************************
@@ -373,16 +375,14 @@ std::ostream&
 DriftlessLMM::
 printSelf(std::ostream& os) const 
 {
-	os << "\nDriftless Libor Market Model, random dynamics: ";
-	SG->printSelf(os);
-	os << "\nState variables: Gaussian forward transported Libors" << endl 
+	return
+	os << "\nDriftless Libor Market Model, random dynamics: " << *SG
+	   << "\nState variables: Gaussian forward transported Libors" << endl 
 	   << "U_j=X_j(1+X_{j+1})...(1+X_{n-1})" << endl
-	   << "These are driftless, very fast exact simulation.";
-	factorLoading->printSelf(os);
-    return os;
+	   << "These are driftless, very fast exact simulation." << *factorLoading;
 }
 	 
              
 
 
-
+MTGL_END_NAMESPACE(Martingale)

@@ -29,7 +29,9 @@ spyqqqdia@yahoo.com
 #include <cmath>
 //#include <math.h>
 #include <algorithm>
-using namespace Martingale;
+
+
+MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 
@@ -249,16 +251,14 @@ std::ostream&
 PredictorCorrectorLMM::
 printSelf(std::ostream& os) const 
 {
+	return
 	os << "\nLibor market model: predictor-corrector type" << endl
-	   << "\nRandom dynamics: ";
-	SG->printSelf(os);
-	factorLoading->printSelf(os);
-	return os;
+	   << "\nRandom dynamics: " << *SG << *factorLoading;
 }
  
  
 	 
              
-
+MTGL_END_NAMESPACE(Martingale)
 
 

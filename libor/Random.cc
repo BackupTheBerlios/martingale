@@ -8,7 +8,9 @@
 #include "Random.h"
 #include "Utils.h"
 
-using namespace Martingale;
+
+MTGL_BEGIN_NAMESPACE(Martingale)
+
 
 // Mersenne twister mt19937 based uniform random number generator
 boost::uniform_01<boost::mt19937,Real> uniform01(*(new boost::mt19937()));
@@ -132,6 +134,13 @@ int Random::Uint(int n)
 
 // standard normal deviate 
 Real Random::sTN(){ return nInverse(uniform01()); }
+
+
+
+MTGL_END_NAMESPACE(Martingale)
+
+
+
    
 
  

@@ -26,7 +26,10 @@ spyqqqdia@yahoo.com
 
 #include "RandomVariables.h"
 #include "Random.h"
-using namespace Martingale;
+
+
+
+MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 /*******************************************************************************    
@@ -88,4 +91,10 @@ test(int n)
 	EmpiricalRandomVariable X(data_set,n);
 	for(int j=0;j<200;j++) std::cout << X.nextValue() << ", ";
 }
+
+
+
+MTGL_END_NAMESPACE(Martingale)
+
+
    

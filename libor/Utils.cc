@@ -22,8 +22,8 @@ spyqqqdia@yahoo.com
 
 
 #include "Utils.h"
-using namespace Martingale;
 
+MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 
@@ -108,4 +108,9 @@ void LoopStatus::consoleReport(int n, int N)
 	} // endif
 	
 } // end consoleReport
+
+
+
+MTGL_END_NAMESPACE(Martingale)
+
 

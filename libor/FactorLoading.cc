@@ -25,7 +25,9 @@ spyqqqdia@yahoo.com
 #include "Matrices.h"
 //#include <string>
 //#include <iostream>
-using namespace Martingale;
+
+
+MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 /*******************************************************************************
@@ -144,4 +146,6 @@ printSelf(std::ostream& os) const
 }
 
 
+
+MTGL_END_NAMESPACE(Martingale)
 

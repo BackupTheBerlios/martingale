@@ -22,9 +22,9 @@ spyqqqdia@yahoo.com
 
 
 #include "ControlledRandomVariable.h"
-using namespace Martingale;
 
 
+MTGL_BEGIN_NAMESPACE(Martingale)
 
 		 
 Real 
@@ -108,5 +108,5 @@ correlationWithControlVariate(int N){ return correlation(0,1,N); }
         
  
 
-
+MTGL_END_NAMESPACE(Martingale)
  

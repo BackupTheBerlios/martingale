@@ -30,11 +30,12 @@ spyqqqdia@yahoo.com
 // #include "TestProbability.h"
 // #include "TestLMM.h"
 // #include "TestOptimizers.h"
-// #include "LatticeOption.h"
+ #include "LatticeOption.h"
 // #include "TestFormulas.h"
 // #include "Examples.h"
 // #include "DirichletProblem.h"
- #include "LiborCalibrator.h"
+// #include "VolatilityAndCorrelation.h"
+// #include "LiborCalibrator.h"
 
 
 using namespace Martingale;
@@ -52,7 +53,7 @@ int main()
 	
 	// testDownhillSimplex(5,500);
 	// testBFGS(5,500);
-	// testSobolSearch(5,500);
+	// testSobolSearch(50,500000);
 	
 	
 /*******************************************************************************
@@ -78,6 +79,18 @@ int main()
 	// testComplexExponential();
 	// TnT::factorizationTest(80);
 	
+	
+	
+/*******************************************************************************
+ *
+ *                       VOLATILITY AND CORRELATION
+ *
+*******************************************************************************/
+
+
+    // testVolSurfaceIntegrals(1000000,0.5);
+	
+	
 /*******************************************************************************
  *
  *                        LIBOR PROCESS, LMM
@@ -85,7 +98,7 @@ int main()
 *******************************************************************************/
 	
 	
-	// testVolSurfaceIntegrals(1000000,0.5);
+	
 	
 	// testFactorLoading(20);
 	// testLiborFactorLoadingFactorization(60,3);    // rank 3 factorization
@@ -96,9 +109,9 @@ int main()
 	
 	
 	// anomalies in high dimensions (n>=70) for all but DriftlessLMM,
-	//   int lmmType=LiborMarketModel::DL;  // DL, LFDL, PC, FPC
-	//   int volType=VolSurface::M;        // JR, M, CONST
-	//   int corrType=Correlations::CS;     // JR, CS
+	     int lmmType=LiborMarketModel::DL;  // DL, LFDL, PC, FPC
+	     int volType=VolSurface::M;        // JR, M, CONST
+         int corrType=Correlations::CS;     // JR, CS
 	// testCapletPrice(lmmType,volType,corrType); 
 	// testSwaptionPrice(lmmType,volType,corrType);
 	// testCallOnBondPrice(lmmType,volType,corrType);
@@ -116,7 +129,8 @@ int main()
 
     // test the calibrator for the driftless LMM on a 
 	// constant volatility LiborFactorLoading
-    DriftlessLmmCalibrator::testCalibration(1000);
+	// DriftlessLmmCalibrator::testIO();
+    // DriftlessLmmCalibrator::testCalibration(200);
 	// DriftlessLmmCalibrator::writeSyntheticDataSample();
 	
 	// PredictorCorrectorLmmCalibrator::writeSyntheticDataSample();
@@ -130,7 +144,7 @@ int main()
 	
 	
 	 
-	 // LatticeSwaption3F::test(15,19,30);
+	  LatticeSwaption3F::test(15,19,30);
      // ConstVolLmmLattice2F::test(50);
 	 
 	 

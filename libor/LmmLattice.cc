@@ -27,10 +27,20 @@ spyqqqdia@yahoo.com
 #include "Matrices.h"
 #include "Utils.h"
 #include <cmath>
-using namespace Martingale;
+
+
+MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 
+
+
+
+template<typename LmmNode>
+std::ostream& operator << (std::ostream& os, const LmmLattice<LmmNode>& ltt)
+{
+	ltt.printSelf(os);
+}
 
 
 				
@@ -109,8 +119,8 @@ void
 ConstVolLmmLattice2F::
 buildLattice(int m)
 {
-	printSelf(std::cout);
-	std::cout << "\nTime steps: " << m << endl << endl;
+	std::cout << "\n\nBuilding lattice: " << *this
+	          << "\nTime steps: " << m << endl << endl;
 	          		  
 	std::list<LmmNode2F*>& nodes_0=*(nodeList[0]);               // list of nodes at time t
 		
@@ -301,8 +311,8 @@ void
 ConstVolLmmLattice3F::
 buildLattice(int m)
 {
-	printSelf(std::cout);
-	std::cout << "\nTime steps: " << m << endl << endl;
+	std::cout << "\n\nBuilding lattice: " << *this
+	          << "\nTime steps: " << m << endl << endl;
 		  
 	std::list<LmmNode3F*>& nodes_0=*(nodeList[0]);               // list of nodes at time t
 		
@@ -415,5 +425,12 @@ test(int n) const
 	watch.stop();
 	watch.report("3 factor LMM lattice construction and self test");
 }
+
+
+
+
+MTGL_END_NAMESPACE(Martingale)
+
+
 
 

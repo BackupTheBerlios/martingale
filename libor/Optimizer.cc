@@ -27,7 +27,9 @@ spyqqqdia@yahoo.com
 #include "QuasiMonteCarlo.h"
 #include <math.h>
 #include <cmath>
-using namespace Martingale;
+
+
+MTGL_BEGIN_NAMESPACE(Martingale)
 
    
 /*******************************************************************************
@@ -90,7 +92,7 @@ setHiLowIndices()
      }
 } // setHiLowIndices
 
-    
+ 
 Real 
 DownhillSimplex::
 reflectVertex(int i, Real k)
@@ -550,7 +552,8 @@ search()
    RealArray1D& xOpt=*(new RealArray1D(x));
 		
    while(nPoints>0){
-			
+		
+	    if(verbose) std::cout << "\n\nPoints left to evaluate: "<< nPoints << endl << endl;
     	for(int k=0;k<nPoints/2;k++){
 				
 			// next quasi random point in the search window 
@@ -606,5 +609,9 @@ function_1(int n, Real* x)
     return 1/u;
 }
               
+
+
+MTGL_END_NAMESPACE(Martingale)
+
 
 

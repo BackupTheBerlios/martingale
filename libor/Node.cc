@@ -25,7 +25,9 @@ spyqqqdia@yahoo.com
 #include "LiborFactorLoading.h"
 #include <iostream>
 #include <cstdlib>                        // exit()
-using namespace Martingale;
+
+
+MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 
@@ -170,5 +172,5 @@ printType(std::ostream& os) { return os << "3 factor asset basket node."; }
 
 	
 	
-	
+MTGL_END_NAMESPACE(Martingale)	
 

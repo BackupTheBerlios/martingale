@@ -30,7 +30,9 @@ spyqqqdia@yahoo.com
 #include "LiborFactorLoading.h"
 #include <string>
 
-using namespace Martingale;
+
+MTGL_BEGIN_NAMESPACE(Martingale)
+
 
 /*******************************************************************************
  *
@@ -415,6 +417,6 @@ std::ostream& operator <<
 
 
 	
-
+MTGL_END_NAMESPACE(Martingale)
 
 

@@ -24,7 +24,8 @@ spyqqqdia@yahoo.com
 #include "DirichletProblem.h"
 #include "StochasticProcesses.h"
 #include <iostream>
-using namespace Martingale; 
+
+MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 
@@ -101,3 +102,6 @@ runExample(int d, int T)
 } 
 
 
+
+
+MTGL_END_NAMESPACE(Martingale)

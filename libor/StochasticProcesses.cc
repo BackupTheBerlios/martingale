@@ -25,8 +25,9 @@ spyqqqdia@yahoo.com
 #include "Random.h"
 #include "StochasticProcess.h"
 #include "FactorLoading.h"
-using namespace Martingale;
 
+
+MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 /********************************************************************************************
@@ -153,5 +154,10 @@ timeStep(int t)
 	    for(int j=i;j<dim;j++) X[i]+=R(i,j)*Z(t,j);
     }
 } // end timeStep
+
+
+
+MTGL_END_NAMESPACE(Martingale)
+
 			
 

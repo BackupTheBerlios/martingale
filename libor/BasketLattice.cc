@@ -27,8 +27,8 @@ spyqqqdia@yahoo.com
 //#include <string>
 #include <iostream>
 #include <math.h>
-using namespace Martingale;
 
+MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 
@@ -395,7 +395,7 @@ test(int n, int T)
 	
 	
 	
-	
+MTGL_END_NAMESPACE(Martingale)	
 	
 	
 	

@@ -25,15 +25,9 @@ spyqqqdia@yahoo.com
 #include "FinMath.h"
 #include <cmath>
 #include <iostream>
-using namespace Martingale;
 
 
-
-/** Standalone methods to compute functions or solve eqations
- *  useful in basic financial mathematics.
- *
- * @author Michael J. Meyer
- */
+MTGL_BEGIN_NAMESPACE(Martingale)
 
     
  
@@ -263,6 +257,6 @@ blackImpliedAggregateCallVolatility(Real Q, Real k, Real y)
 
 
 
-
+MTGL_END_NAMESPACE(Martingale)
 
 

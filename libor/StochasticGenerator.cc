@@ -24,7 +24,10 @@ spyqqqdia@yahoo.com
 #include "QuasiMonteCarlo.h"
 #include "Matrices.h"
 #include <iostream>
-using namespace Martingale;
+
+
+MTGL_BEGIN_NAMESPACE(Martingale)
+
 
 
 /*********************************************************************************
@@ -203,6 +206,9 @@ restart(){ if(lds) lds->restart(); }
 std::ostream& 
 SobolScalarDriver::
 printSelf(std::ostream& os) const { return os << "Sobol sequence."; }
+
+
+MTGL_END_NAMESPACE(Martingale)
 
 
 
