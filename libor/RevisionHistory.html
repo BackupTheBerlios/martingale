@@ -196,7 +196,7 @@ possible with high acuracy..
 
 <h3>7-28-03:</h3>
 
-Fixed bug in PC-LMM swaption price computation.
+Fixed bug in PC-LMM swaption aggregate vol (missing division by swaprate).
 Cross calibration predictor-corrector LMM  to driftless LMM and conversely is now working.
 
 
@@ -204,7 +204,18 @@ Cross calibration predictor-corrector LMM  to driftless LMM and conversely is no
 
 Moved to a more elegant Matrix class.
 General functions of symmetric matrices based on diagonalization implemented.
+Checked matrix exponentials against the new computation.
 
+
+<h3>8-4-03:</h3>
+
+Fixed bug in LiborMarketModel::B(int i, int t). Affects swaption price computation.
+The analytic swaption price approximation now works in the predictor-corrector model as well 
+as in the driftless model.  The implementation still uses the old formula for the aggregegate
+swaption volatility. Maybe include this formula in the book as a remark.
+<p>
+Aggregate volatilities moved to square root of quadraticForm instead of
+norm. Avoids matrix pseudo squareroots.
 
 
 </body>

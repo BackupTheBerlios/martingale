@@ -317,13 +317,12 @@ LowFactorDriftlessLMM::
 capletAggregateVolatility(int i) const 
 { 
     const UTRRealMatrix& 
-	R=factorLoading->logLiborCovariationMatrix(i,n,0,T[i]).utrRoot();
+	C=factorLoading->logLiborCovariationMatrix(i,n,0,T[i]);
     RealVector x(n-i,i);
 	x[i]=1;
 	Real f=H(0,i+1); 
 	for(int j=i+1;j<n;j++)x[j]=-U(0,j)/f;
-	x*=R.transpose();
-	return x.norm();
+	return sqrt(C.quadraticForm(x));
 } // end capletAggregateVolatility
 	 
 	 
@@ -333,7 +332,7 @@ LowFactorDriftlessLMM::
 swaptionAggregateVolatility(int p, int q, int t) const 
 { 
     const UTRRealMatrix& 
-	Q=factorLoading->logLiborCovariationMatrix(p,n,0,T[t]).utrRoot();
+	C=factorLoading->logLiborCovariationMatrix(p,n,0,T[t]);
 	RealVector x(n-p,p);
 	Real denom1=H(0,p)-H(0,q),
 		 denom2=0;
@@ -342,8 +341,7 @@ swaptionAggregateVolatility(int p, int q, int t) const
 	x[p]=U(0,p)/denom1;
 	for(int j=p+1;j<q;j++)x[j]=U(0,j)/denom1-(T[j]-T[p])*U(0,j)/denom2;
 	for(int j=q;j<n;j++)  x[j]=-(T[q]-T[p])*U(0,j)/denom2;
-	x*=Q.transpose();
-	return x.norm();
+	return sqrt(C.quadraticForm(x));
 } // end swaptionAggregateVolatility
 
 
@@ -359,14 +357,13 @@ bondAggregateVolatility(Bond* B, int t) const
 		 		 
     
 	const UTRRealMatrix& 
-	R=factorLoading->logLiborCovariationMatrix(t,n,0,T[t]).utrRoot();
+	C=factorLoading->logLiborCovariationMatrix(t,n,0,T[t]);
 	RealVector x(n-t,t);
 			 
 	for(int j=t;j<p;j++)  x[j]=-U(0,j)/H_i0(t);
 	for(int j=p;j<q;j++)  x[j]=b[j]*U(0,j)/F-U(0,j)/H_i0(t);
 	for(int j=q;j<n;j++)  x[j]=b[q-1]*U(0,j)/F-U(0,j)/H_i0(t);
-	x*=R.transpose();
-	return x.norm();
+	return sqrt(C.quadraticForm(x));
 } // end bondAggregateVolatility
 
 

@@ -240,11 +240,10 @@ FastPredictorCorrectorLMM::
 swaptionAggregateVolatility(int p, int q, int t) const
 { 
      const UTRRealMatrix& 
-     Q=factorLoading->logLiborCovariationMatrix(p,q,0,T[t]).utrRoot();
+     C=factorLoading->logLiborCovariationMatrix(p,q,0,T[t]);
      RealVector x_pq(q-p,p);
 	 for(int j=p;j<q;j++) x_pq[j]=(B0(j)-B0(j+1))/B_pq(p,q);
-     x_pq*=Q.transpose();
-	 return x_pq.norm()/swapRate(p,q);
+	 return sqrt(C.quadraticForm(x_pq))/swapRate(p,q);
 } 
     
      

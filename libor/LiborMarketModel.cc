@@ -198,11 +198,12 @@ B0(int i) const
 Real 
 LiborMarketModel::
 B(int i, int t) 
-{     
-    const RealVector& X_t=XLvect(t,i);         // X_t[k]=X_k(T_t), j>=i
+{ 
+    const RealVector& X_t=XLvect(t,t);         // X_t[k]=X_k(T_t), j>=i
 	Real f=1.0; 
     // accumulate 1 forward from time t to time i
     for(int k=t;k<i;k++)f*=(1.0+X_t[k]); 
+
     return 1.0/f;                                 // B_i(T_t)=1/f  
 }
 	
@@ -269,7 +270,7 @@ b_pq(int p, int q, int t)
 Real 
 LiborMarketModel::
 B_pq(int p, int q, int t) 
-{ 
+{
      const RealVector& X_t=XLvect(t,p);         // X_t[k]=X_k(T_i), k>=p
      Real S=0.0, F=B(q,t);
      for(int k=q-1;k>=p;k--){ S+=delta[k]*F; F*=(1.0+X_t[k]); }

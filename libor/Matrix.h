@@ -22,7 +22,7 @@ spyqqqdia@yahoo.com
 
 #ifndef martingale_matrix_h
 #define martingale_matrix_h
-#define SUBSCRIPT_CHECK                   // comment this out for risky significant speedup
+
 
 #include <string>
 #include <sstream>
@@ -146,8 +146,9 @@ public:
    /** Set index base b: indices i=b,b+1,...,b+dim-1. */
    void setIndexBase(int base) { b=base; }
    S* getData() const { return dptr; }
+ 
       
-   /** Subscripting, no bounds checking */
+   /** Subscripting relative to index base. */
    S& operator[](int i)
    {
 	   #ifdef SUBSCRIPT_CHECK
@@ -155,7 +156,8 @@ public:
 	   #endif	   
 	   return dptr[i-b]; 
     }
-     
+   
+   /** Subscripting relative to index base. */
    const S& operator[](int i) const 
    { 
 	   #ifdef SUBSCRIPT_CHECK
@@ -974,6 +976,29 @@ Matrix& scaleCol(int j, Real f)
 	
 
 // ALGEBRAIC OPERATIONS
+
+/** The quadratic form \f$(Cx,x)\f$ where C is the symmetric matrix of 
+ *  which this is the upper half.
+ */
+S quadraticForm(const vector<S>& x) const
+{
+	int dim_x=x.getDimension(), 
+	    b_x=x.getIndexBase();
+	if((rows()!=dim_x)||(cols()!=dim_x)){
+		
+		cout << "\n\nMatrix::quadraticForm(): dimensional mismatch. Terminating.";
+		exit(1);
+	}
+	S d=0, u=0, x_i,x_j;
+	// diagonal
+	for(int i=0;i<rows();i++) { x_i=x[i+b_x]; d+=x_i*x_i*entry(i,i); }
+	// above the diagonal
+	for(int i=0;i<rows();i++)
+	for(int j=i+1;j<cols();j++) { x_i=x[i+b_x]; x_j=x[j+b_x]; u+=x_i*x_j*entry(i,j); }
+
+	return d+2*u;
+}
+
 
 
 /** Transpose. Must allocate new memory to preserve row major order.

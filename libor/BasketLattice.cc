@@ -27,7 +27,7 @@ spyqqqdia@yahoo.com
 #include "Utils.h"
 //#include <string>
 #include <iostream>
-#include <math.h>
+#include <cmath>
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
@@ -76,7 +76,7 @@ sample(int n, int T)
 	// correlation of returns
 	UTRRealMatrix rho(n);
     for(int j=0;j<n;j++)
-	for(int k=j;k<n;k++) rho(j,k)=exp(0.2*(j-k));
+	for(int k=j;k<n;k++) rho(j,k)=std::exp(0.2*(j-k));
 			
 	// time step
 	Real dt=0.1;
@@ -256,7 +256,7 @@ sample(int n, int T)
 	// correlation of returns
 	UTRRealMatrix rho(n);
     for(int j=0;j<n;j++)
-	for(int k=j;k<n;k++) rho(j,k)=exp(0.2*(j-k));
+	for(int k=j;k<n;k++) rho(j,k)=std::exp(0.2*(j-k));
 			
 	// time step
 	Real dt=0.1;

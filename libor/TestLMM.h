@@ -136,10 +136,11 @@ void testLmmPaths(int n)
  */
 void testSwaptionPrice(int n, int lmmType, int volType, int corrType)
 { 
+	Timer watch; watch.start();
     Swaption* swpn=Swaption::sample(n,lmmType,volType,corrType);
 	swpn->testPrice();
-	
-} // end testSwaptionPrice
+	watch.stop(); watch.report(" ");	
+} 
 
 
 
@@ -164,11 +165,12 @@ void testSwaptionPrice(int n, int lmmType, int volType, int corrType)
  * @param corrType type of log-Libor correlations: {@link Correlations}::JR,CS.
  */
 void testCapletPrice(int n, int lmmType, int volType, int corrType)
-{ 
+{
+	Timer watch; watch.start();
 	LiborDerivative* cplt=Caplet::sample(n,lmmType,volType,corrType);
 	cplt->testPrice();
-
-} // end testCapletPrice
+	watch.report(" ");
+} 
 
 
 // BONDCALL PRICE
@@ -186,18 +188,18 @@ void testCapletPrice(int n, int lmmType, int volType, int corrType)
  *  and a QMC dynamics. The forward transporting and discounting involves 
  *  all Libors \f$L_j, j\geq p\f$. This is a good stress test for the LMM.
  *
+ * @param n dimension of the Libor process (number of compounding periods).
  * @param lmmType type of Libor market model: {@link LiborMarketModel}::DL,PC,FPC.
  * @param volType type of volatility surface: {@link VolSurface}::JR,M,CONST.
  * @param corrType type of log-Libor correlations: {@link Correlations}::JR,CS.
  */
-void testCallOnBondPrice(int lmmType, int volType, int corrType)
+void testCallOnBondPrice(int n, int lmmType, int volType, int corrType)
 { 
-    for(int n=30;n<70;n+=20){
-		
-		BondCall* bc=BondCall::sample(n,lmmType,volType,corrType);
-	    bc->testPrice();
-	}       
-} // end testBondCallPrice
+	Timer watch; watch.start();
+	BondCall* bc=BondCall::sample(n,lmmType,volType,corrType);
+	bc->testPrice();
+	watch.report(" ");     
+} 
 
 
 
@@ -206,20 +208,18 @@ void testCallOnBondPrice(int lmmType, int volType, int corrType)
  *  time \f$T_{i-1}\f$. This is a worst case for the assumptions of the
  *  analytic price formulas.
  *
+ * @param n dimension of the Libor process (number of compounding periods).
  * @param PC use a {@link PredictorCorrectorLMM} Libor market model.
  * @param FPC use a {@link FastPredictorCorrectorLMM} Libor market model.
  * @param LS use a {@link LightSpeedLMM} Libor market model.
  */
-void testCallOnZeroCouponBondPrice(int lmmType, int volType, int corrType)
+void testCallOnZeroCouponBondPrice(int n, int lmmType, int volType, int corrType)
 { 
-    for(int n=30;n<60;n+=20)
-	for(Real delta=0.25;delta<0.6;delta+=0.4){
-		
-		BondCall*  bc=BondCall::sampleCallOnZeroCouponBond(n,lmmType,volType,corrType);
-	    bc->testPrice();
-	}
-       
-} // end testCallOnZeroCouponBondPrice
+	Timer watch; watch.start();		
+	BondCall*  bc=BondCall::sampleCallOnZeroCouponBond(n,lmmType,volType,corrType);
+	bc->testPrice();
+	watch.report(" ");
+} 
 
 
 

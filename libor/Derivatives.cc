@@ -420,7 +420,7 @@ analyticForwardPrice() const
 	     Nplus=FinMath::N(FinMath::d_plus(S_pq,kappa,swpnSigma)),
 	     Nminus=FinMath::N(FinMath::d_minus(S_pq,kappa,swpnSigma)),
 	     H_pq=LMM->H_pq(p,q);                                        // forward B_{p,q}(0)
-  
+
     return H_pq*(S_pq*Nplus-kappa*Nminus);  
 } 
    

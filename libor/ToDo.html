@@ -116,14 +116,20 @@ Run tests and examine the analytic swaption price formulas in the predictor-corr
 Both formulas produce very similar and often quite inaccurate prices.
 
 
-<h3>8-3-03:</h3>
+<h3>8-4-03</h3>
 
-Move the swaption and caplet aggregate volatilities to square roots of quadratic forms instead of norms.
-Write a global function 
-
-quadraticFrom(const UTRRealMatrix& C, const vector& x)
-
-which returns (Cx,x). Here C is the upper half of a symmetric matrix.
+No known bugs at present. Implement lightweight LMM-lattices and Bermudan options.
+<p>
+<b>Akwardness</b> since UTRMatrix&lt;Real&gt; is not the same as UTRRealMatrix. This is due to the fact that there are
+no templated typdefs. Affects: RandomObject. The covariation matrix has type UTRMatrix&lt;S&gt;.
+Thus the functionality of UTRRealMatrix is not available for RandomObjects with Real scalars
+(factor analysis, matrix functions). Possible solutions:
+<p>
+Move the functionality of UTRRealMatrix to the more general type  UTRMatrix&lt;S&gt; or limit 
+RandomObjects to Real scalars.
+<p>
+Investigate if we cannot return T& from nextValue() in the class RandomObject.
+This is faster. What happens if T is a built in scalar type?
 
 
 

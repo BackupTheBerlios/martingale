@@ -22,7 +22,7 @@ spyqqqdia@yahoo.com
 
 #ifndef martingale_array_h    
 #define martingale_array_h
-#define SUBSCRIPT_CHECK                        // comment this out for risky significant speedup
+//#define SUBSCRIPT_CHECK                        // comment this out for risky significant speedup
 
 #include "TypedefsMacros.h"
 #include <cstdlib>                              // for exit()
@@ -66,6 +66,7 @@ static void checkSubscript(int i, int b1, int n1, string str)
 		
 	    cout << "\n\nSubscript out of range: " << str 
 	         << "\ni = " << i << " not in [" << b1 << ", " << b1+n1-1 << "]"
+		     << "\n index base = " << b1 << ", dimension = " << n1
 	         << "\nTerminating.";
 	    exit(0);
 	}
@@ -79,6 +80,7 @@ static void checkSubscript(int i, int j, int b1, int b2, int n1, int n2, string 
 		
 	    cout << "\n\nSubscript out of range: " << str 
 	         << "\ni = " << i << " not in [" << b1 << ", " << b1+n1-1 << "]"
+		     << "\n index base = " << b1 << ", rows = " << n1
 		     << "\nTerminating.";
 		exit(0);
 	}
@@ -88,6 +90,7 @@ static void checkSubscript(int i, int j, int b1, int b2, int n1, int n2, string 
 		
 	    cout << "\n\n Subscript out of range: " << str 
 	         << "\nj = " << j << " not in [" << b2 << ", " << b2+n2-1 << "]"
+		     << "\n index base = " << b2 << ", cols = " << n2
 	         << "\nTerminating.";
 	    exit(0);
 	}
