@@ -32,13 +32,17 @@ spyqqqdia@yahoo.com
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
+
+
+// forward declaration
+class RealVector;           // Matrices.h
+
+
+
 /**<p>Class improving the convergence of expectations of the
  * underlying random variable X by the use of <i>control variates</i>.</p>
- *
  * 
- * 
- * @author  Michael J. Meyer
- * 
+ * @author  Michael J. Meyer 
  */
 class ControlledRandomVariable : private RandomVector {
     
@@ -75,7 +79,7 @@ public:
     /** random deviate - control variate pair from base class RandomVector
 	 *  so a derived class can define this.
 	 */
-    virtual vector<Real> nextValue() = 0;
+    virtual RealVector nextValue() = 0;
 
     
     /** <p>The mean of the control variate.
@@ -85,23 +89,19 @@ public:
     virtual Real getControlVariateMean() = 0;
 	
 	
+	
+// AUXILLIARY CLASS
+	
      /** Auxilliary class: the random variable \f$X-\beta(Y-E(Y))\f$, 
 	  *  see book, 2.8.
       */
      class ControlledVariable : public RandomVariable {
 		
-	     ControlledRandomVariable* XC;
+	       ControlledRandomVariable* XC;
 	
 	 public:
 		 
-	      Real nextValue() 
-	      {
-               Real mean_y=XC->getControlVariateMean(),     // control variate mean E(Y)
-		            beta=XC->getBeta();                     // beta coefficient
-               vector<Real> v=XC->nextValue();
-               Real  x=v[0], y=v[1], xc=x-beta*(y-mean_y);
-   	           return xc;
-           } //end nextValue
+	       Real nextValue();
 	
 	       ControlledVariable(ControlledRandomVariable* xc) : XC(xc) { }
       };
@@ -110,20 +110,11 @@ public:
    /** <p>The random variable \f$X-\beta(Y-E(Y))\f$, where Y is the control 
      * variate of X and \f$\beta\f$ is the beta coefficient.</p>
 	 */
-    RandomVariable* controlled()
-	{ 		 
-		 return new ControlledVariable(this);
-    }
+    RandomVariable* controlled();
 		
 
  
-              
-/*******************************************************************************    
-    
-    MEAN 
-    Fixed sample size, all samples independent
- 
-*******************************************************************************/
+// MEAN
     
     
     /** <p>Expectation of X computed from a sample of size N.
@@ -132,25 +123,9 @@ public:
      *
      * @param N sample size.
      */
-    Real expectation(int N)
-    {
-		return controlled()->expectation(N);
-    }
+    Real expectation(int N);
     
 
-
-
-    
-
-    
-/*******************************************************************************    
-    
-    MEAN, computation time reported as count down
- 
-*******************************************************************************/
-   
- 
-    
     
     /** <p>Same as {@link #conditionalExpectation(int)} but with 
      * computational progress reported as count down.</p>
@@ -158,23 +133,12 @@ public:
      * @param N Sample size.
 	 * @param message string descriptive of computation.
      */
-    Real expectation(int N, string message)
-    {        
-		return controlled()->expectation(N,message);
-    }
+    Real expectation(int N, string message);
     
     
 
-    
-
-		
-
-     
-/*******************************************************************************
-
-     TEST OF CONTROL VARIATE MEAN FORMULA
-     
-*******************************************************************************/
+// TEST OF CONTROL VARIATE MEAN FORMULA
+ 
  
      /** <p>Tests if the method for computing the mean of the
       *  control variate at time zero is correct by comparing the returned
@@ -182,53 +146,17 @@ public:
 	  *
 	  * @param N sample size for the Monte Carlo control variate mean 
       */
-     void controlVariateMeanTest(int N)
-     {
-         cout << "\nTesting control variate mean:\n";
-         
-         // analytic control variate mean
-         cout << "analytic: " << getControlVariateMean() << endl;
-         
-         // Monte Carlo control variate mean
-         cout << "Monte Carlo: " << RandomVector::expectation(N)[1] << endl;
-         
-     } // end controlVariateMeanTest
+     void controlVariateMeanTest(int N);
      
      
-     
-    
+// BETA COEFFICIENT, CORRELATION WITH CONTROL VARIATE
 
-/*******************************************************************************
-
-     BETA COEFFICIENT, CORRELATION WITH CONTROL VARIATE
-     
-*******************************************************************************/
-     
      
     /** <p>Computes the coefficient beta=Cov(X,Y)/Var(X), where Y is the 
      *  control variate of X (<code>this</code>); nBeta=2000 samples are 
      *  generated to estimate this quantity.</p>
      */  
-    Real betaCoefficient()
-    {
-        // Recall that Cov(X,Y)=E(XY)-E(X)E(Y) and Var(X)=E(X^2)-E(X)^2.
-		int N=nBeta;
-		Real sum_X=0, sum_Y=0,
-             sum_XX=0, sum_XY=0;
-        
-        for(int n=0;n<N;n++){
-			
-            vector<Real> v=nextValue();
-            Real x=v[0],y=v[1];
-            
-            sum_X+=x; sum_Y+=y;
-            sum_XX+=x*x; sum_XY+=x*y;
-        }
-        
-        return (N*sum_XY-sum_X*sum_Y)/(N*sum_XX-sum_X*sum_X);
-        
-    } //end betaCoefficient
-    
+    Real betaCoefficient();    
     
      
      
@@ -241,11 +169,7 @@ public:
       *
       * @param N Sample size.
       */
-      Real correlationWithControlVariate(int N)
-      {
-          return correlation(0,1,N);
-         
-      } //end correlationWithControlVariate
+      Real correlationWithControlVariate(int N);
         
  
 }; //end ControlledRandomVariable

@@ -55,7 +55,7 @@ public:
 	virtual ~StandardNormalVector(){}
 	
 	/** next observation. */
-	vector<Real> nextValue();
+	RealVector nextValue();
 
 }; // end StandardNormalVector
 	
@@ -77,7 +77,7 @@ class StandardNormalVariable : public ControlledRandomVariable {
 public:
 	
 	// sample - control variate pair
-	vector<Real> nextValue();
+	RealVector nextValue();
 	
 	Real getControlVariateMean() { return 0; }
 	

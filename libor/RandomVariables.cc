@@ -35,10 +35,10 @@ using namespace Martingale;
 *******************************************************************************/
 
 
-	vector<Real> StandardNormalVector::nextValue() 
+	RealVector StandardNormalVector::nextValue() 
 	{
 	     int d=getDimension();
-		 vector<Real> X(d);
+		 RealVector X(d);
 	     for(int i=0;i<d;i++) X[i]=Random::sTN();
          return X;
     }
@@ -54,9 +54,9 @@ using namespace Martingale;
 *******************************************************************************/
 
 	// sample - control variate pair
-	vector<Real> StandardNormalVariable::nextValue() 
+	RealVector StandardNormalVariable::nextValue() 
 	{
-		vector<Real> v(2);
+		RealVector v(2);
 		v[0]=Random::sTN(); v[1]=v[0];
 		return v;
     }

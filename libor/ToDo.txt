@@ -1,0 +1,23 @@
+
+
+LiborMarketModel and drived classes:
+
+the use of the cache XLvec is the only reason that the member function
+XLvec(t,p) is not constant and that propagates through basically all the
+Libor quantity member functions.
+
+Reflect upon wether it's worth it or wether we should return from the stack.
+
+
+INCLUDE ANALYIS
+
+Get all definitions that need an include out of header files.
+Use forward declarations instead of includes in header files.
+Headers include much less and the forward declarations give us a much better 
+picture of the dependencies.
+
+
+State 7-12-03-0.1:
+
+All files in order listed in the project window up to and including Node.h
+have been rewritten in this way.
