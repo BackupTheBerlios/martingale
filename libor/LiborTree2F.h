@@ -67,7 +67,8 @@ class LiborTree2F {
 	    m,             // lattice allocated until time t=m (T_m)
 	    nodes;         // number of nodes
 	
-	vector<Real> logU0;     // logU0[j]=log(U_j(0))
+	vector<Real> U0;     // U0[j]=U_j(0)
+	vector<Real> H0;     // H0[j]=H_j(0)
 	
 // <------------- TO DO ------------> 
 // work with 2 independent tick sizes	
@@ -129,9 +130,13 @@ public:
 	 */
     Matrix<Real>& getRQ(int t) { return *RQ[t]; }
 	
-    /** The vector logU0[j]=log(U_j(0)), initial values.
+    /** The vector U0[j]=U_j(0), initial values.
 	 */
-    vector<Real>& getLogU0() { return logU0; }
+    vector<Real>& getU0() { return U0; }
+	
+	/** The vector H0[j]=H_j(0)), initial values.
+	 */
+    vector<Real>& getH0() { return H0; }
 	
 	/** The list of nodes at time t.
 	 */
@@ -155,7 +160,8 @@ public:
 	n(fl->getDimension()), 
 	m(s),
 	nodes(0),
-	logU0(n),
+	U0(n),
+	H0(n+1),
 	a(0), 
 	k1(n-1), k2(n-1),
 	K1(n-1), K2(n-1),
@@ -173,8 +179,12 @@ public:
 			
 			// U_j(0)=X_j(0)(1+X_{j+1}(0))...(1+X_{n-1}(0))
 			Real Uj0=x[j]; for(int k=j+1;k<n;k++) Uj0*=1+x[k]; 
-			logU0[j]=log(Uj0);
+			U0[j]=Uj0;
 		}
+		
+		// set H_j(0)
+        H0[n]=1.0;
+	    for(int j=n-1;j>=0;j--) H0[j]=H0[j+1]+U0[j];
 
 		// the covariance integrals, note the decorrelations
 		// V1 <--> V_{n-1}, V2 <--> V_{n-2}-V_{n-1}
@@ -344,6 +354,7 @@ private:
 			RQt(1,0)=-C/det; RQt(1,1)=A/det;
 			// save
 			RQ[t]=RQt_ptr;
+cout << "\n\n\nMatrix inverse RQ[" << t << "]:" << *(RQ[t]);
 			
 		}
 	} // end setRank2CovariationMatrixRoots
@@ -416,6 +427,8 @@ private:
 		Node* NextNode=new Node(this,0,0,0);
 		NextNode->V1=0.0;
 		NextNode->V2=0.0;
+		for(int j=0;j<=n;j++) NextNode->H[j]=H0[j];
+			
 	    // enter into node list at time t=0
 		nodes_0.push_back(NextNode); 
 		nodes++;
@@ -516,8 +529,8 @@ struct Node {
 	Real V1, V2;            // the variables which are evolved
 	int n,                  // n dimension of the underlying Libor process.     
 		t,                  // discrete time at which the node lives
-		i,                  // V2=V2(0)+ja
-		j;                  // V1=V1(0)+ia, 
+		i,                  // V1=V1(0)+ia
+		j;                  // V2=V2(0)+ja, 
 		
 	vector<Real> H;         // the accrual factors H_j(T_t), j=t,...,n at this node
 		                    // natural indexation, index base t
@@ -555,8 +568,7 @@ struct Node {
 	
 // DIAGNOSTIC
 	
-	/** Prints the transition probabilities and corresponding Q_ij(t) values.
-	 *  Diagnostic.
+	/** Diagnostic. Prints the transition probabilities and corresponding Q_ij(t) values.
 	 */
 	void printTransitionProbabilities()
 	{
@@ -569,7 +581,16 @@ struct Node {
 			cout << "\np(" << k << "," << l << ") = " << p;
 		}		
      } // end printTransitionProbabilities
-
+	 
+	
+	/** Diagnostic. Prints the time t, vector H and field pi.
+	 */
+	void printState()
+	{
+         cout << "\n\n Diagnostic: node at time t = " << t
+		      << "\nVector H: " << H
+		      << "\nPrice pi = " << pi;
+	}
 	 
 	 
 // COMPUTATION OF THE STATE	 
@@ -597,22 +618,27 @@ struct Node {
 		 
 		 // use these to compute the remaining V_j
 		 // Rt=*R[t] has row index base t.
-		 for(int j=t;j<n-2;j++) V[t]=Rt(t,0)*Z[0]+Rt(t,1)*Z[1];
+		 for(int j=t;j<n-2;j++) V[t]=Rt(j,0)*Z[0]+Rt(j,1)*Z[1];
 				 
 		 // add the initial value log(U_j(0) and drift mu_j(t)=mu_j(0,T_t) 
 		 // to obtain the log(U_j(T_t))
-		 vector<Real>& logU0=theTree->getLogU0();
+		 vector<Real>& U0=theTree->getU0();
 		 LTRMatrix<Real>& mu=theTree->getDrifts();
-		 for(int j=t;j<n;j++) V[j]+=logU0[j]+mu(j,t);
+		 for(int j=t;j<n;j++) V[j]+=log(U0[j])+mu(j,t);
 				 
 		 // move from log(U_j) to U_j
 		 for(int j=t;j<n;j++) V[j]=exp(V[j]);    // now V=U
 				 
-		 // write the H_j=U_j+H_{j+1}, H_n=1, j=t,...,n
-		 H[n]=1.0; Real f=1.0;
-	     for(int j=n-1;j>=t;j--){ f+=V[j]; H[j]=f; }
+		 // write the  H_n=1, H_j=U_j+H_{j+1}, j=t,...,n-1, 
+		 H[n]=1.0; 
+	     for(int j=n-1;j>=t;j--){ 
 			 
-	}
+			 H[j]=V[j]+H[j+1]; 
+			 //if(H[j]>3.0) { printState(); exit(0); }
+		}
+			 
+	} // setStateVariables
+	
 	
 // LIBORS, SWAPRATES, ANNUITY (PBV)
 	
@@ -652,7 +678,7 @@ struct Node {
 	 *  node. We must have \f$t\leq i\f$ where t is the discrete time at which
 	 *  the node lives.
 	 */
-	Real B_j(int j){ return H[i]/H[t]; }
+	Real B_i(int i){ return H[i]/H[t]; }
 	
 
 }; // end Node
