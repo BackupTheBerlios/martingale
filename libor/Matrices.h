@@ -22,6 +22,7 @@ spyqqqdia@yahoo.com
 
 #ifndef martingale_matrices_h
 #define martingale_matrices_h
+#define SUBSCRIPT_CHECK
 
 #include <string>
 #include <sstream>
@@ -53,6 +54,44 @@ template<class S> class Matrix;
                       Useful global functions
 
 ***************************************************************************************/
+
+
+struct ArraySubscriptCheck {
+	
+static void checkSubscript(int i, int base, int dim, string str)
+{
+	if((i<base)||(i>base+dim-1)){
+		
+	    cout << "\n\nSubscript out of range: " << str 
+	         << "\ni = " << i << " not in [" << base << ", " << base+dim-1 << "]"
+	         << "Terminating.";
+	    exit(0);
+	}
+} // end checkSubscript
+
+
+static void checkSubscript(int i, int j, int a, int b, int rows, int cols, string str)
+{
+	if((i<a)||(i>a+rows-1)){ 
+		
+	    cout << "\n\nSubscript out of range: " << str 
+	         << "\ni = " << i << " not in [" << a << ", " << a+rows-1 << "]"
+		     << "\nTerminating";
+		exit(0);
+	}
+		
+	
+	if((j<b)||(j>b+cols-1)){
+		
+	    cout << "\n\n Subscript out of range: " << str 
+	         << "\nj = " << j << " not in [" << b << ", " << b+cols-1 << "]"
+	         << "\nTerminating.";
+	    exit(0);
+	}
+} // end checkSubscript
+
+}; // end ArraySubscriptCheck
+	     
 
 
 /** The relative error in percent of an approximation to an exact value,
@@ -218,7 +257,14 @@ public:
    S* getData() const { return dptr; }
       
    /** Subscripting, no bounds checking */
-   S& operator[](int i){ return dptr[i-b]; }
+   S& operator[](int i)
+   {
+	   #ifdef SUBSCRIPT_CHECK
+	      ArraySubscriptCheck::checkSubscript(i,b,dim,"Vector");
+	   #endif	   
+	   return dptr[i-b]; 
+    }
+     
    const S& operator[](int i) const { return dptr[i-b]; }
    
    
@@ -559,8 +605,24 @@ S** getData() const { return dptr; }
 
 /** Subscripting, only \f$j\leq i\f$, no bounds checking.
  */
-S& operator()(int i, int j){ return dptr[i-base][j-base]; }
-const S& operator()(int i, int j) const { return dptr[i-base][j-base]; }
+S& operator()(int i, int j)
+{ 
+	#ifdef SUBSCRIPT_CHECK
+	  ArraySubscriptCheck::checkSubscript(i,j,base,base,dim,dim,"LTRMatrix");
+	#endif	  
+	return dptr[i-base][j-base]; 
+}
+
+
+/** Subscripting, only \f$j\leq i\f$, no bounds checking.
+ */
+const S& operator()(int i, int j) const 
+{ 
+	#ifdef SUBSCRIPT_CHECK
+	  ArraySubscriptCheck::checkSubscript(i,j,base,base,dim,dim,"LTRMatrix");
+	#endif	
+	return dptr[i-base][j-base]; 
+}
 
 
 // EQUALITY CHECK
@@ -913,8 +975,24 @@ S** getData() const { return dptr; }
 
 /** Subscripting, only \f$i\leq j\f$, no bounds checking.
  */
-S& operator()(int i, int j){ return dptr[i-base][j-i]; }
-const S& operator()(int i, int j) const { return dptr[i-base][j-i]; }
+S& operator()(int i, int j)
+{ 
+	#ifdef SUBSCRIPT_CHECK
+	  ArraySubscriptCheck::checkSubscript(i,j,base,base,dim,dim,"UTRMatrix");
+	#endif	
+	return dptr[i-base][j-i]; 
+}
+
+
+/** Subscripting, only \f$i\leq j\f$, no bounds checking.
+ */
+const S& operator()(int i, int j) const 
+{ 
+	#ifdef SUBSCRIPT_CHECK
+	  ArraySubscriptCheck::checkSubscript(i,j,base,base,dim,dim,"UTRMatrix");
+	#endif	
+	return dptr[i-base][j-i]; 
+}
 	
 	
 // PRINTOUT
@@ -1442,8 +1520,24 @@ S** getData() const { return dptr; }
 
 /** Subscripting, no bounds checking
  */
-S& operator()(int i, int j){ return dptr[i-a][j-b]; }
-const S& operator()(int i, int j) const { return dptr[i-a][j-b]; }
+S& operator()(int i, int j)
+{ 
+	#ifdef SUBSCRIPT_CHECK
+	  ArraySubscriptCheck::checkSubscript(i,j,a,b,rows,cols,"Matrix");
+	#endif		
+	return dptr[i-a][j-b]; 
+}
+
+
+/** Subscripting, no bounds checking
+ */
+const S& operator()(int i, int j) const 
+{ 
+	#ifdef SUBSCRIPT_CHECK
+	  ArraySubscriptCheck::checkSubscript(i,j,a,b,rows,cols,"Matrix");
+	#endif	
+	return dptr[i-a][j-b]; 
+}
 
 
 	
@@ -1691,7 +1785,6 @@ Matrix& scaleRow(int i, S f)
 {
 	// direct data access for speed
 	S** A=dptr;
-	for(int i=0;i<rows;i++)
 	for(int j=0;j<cols;j++) A[i][j]*=f;
 		
 	return *this;
@@ -1922,7 +2015,7 @@ std::string toString()
 
 /***************************************************************************************
  *
- *            UPPER TRIANGULAR MATRIX ARRAYS
+ *            MATRIX ARRAYS
  *
 ***************************************************************************************/
 
@@ -1933,7 +2026,7 @@ std::string toString()
  */
 class UTRMatrixSequence {
 	
-	int n;
+	int n;                         // number of matrices
 	UTRMatrix<Real>** matrices;    // matrices[t]: pointer to matrix(t)
 	
 public:
@@ -1966,6 +2059,43 @@ public:
 
 
 
+
+/** Array of rectangular matrices. Only the array of pointers to 
+ *  the matrices is allocated. These pointers then have to be set to 
+ *  actual matrices as needed.
+ */
+class MatrixSequence {
+	
+	int n;                      // number of matrices
+	Matrix<Real>** matrices;    // matrices[t]: pointer to matrix(t)
+	
+public:
+	
+	/** Constructor.
+	 *
+	 * @param m number of matrices.
+	 */
+	MatrixSequence(int m) : 
+	n(m), matrices(new Matrix<Real>*[m]) 
+    {  }  
+	
+    /** Destructor. */
+	~MatrixSequence(){ delete[] matrices; }
+		
+	
+    /** The array of pointers to the matrices.
+	 */
+    Matrix<Real>** getMatrices() const { return matrices; }
+	
+	/** Reference to matrix[t].
+	 */
+    Matrix<Real>& getMatrix(int t) const { return *(matrices[t]); }
+	
+    /** Set pointer to matrix[t].
+	 */
+    void setMatrix(int t, Matrix<Real>* matrix_ptr) { matrices[t]=matrix_ptr; }
+	
+}; // endMatrixSequence
 
 
 
