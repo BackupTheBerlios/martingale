@@ -89,7 +89,7 @@ XLvect(int t, int p)
 //  CONSTRUCTOR
 
 PredictorCorrectorLMM::
-PredictorCorrectorLMM(LiborFactorLoading* fl) : LiborMarketModel(fl),
+PredictorCorrectorLMM(LiborFactorLoading* fl) : LiborMarketModel(fl,LiborMarketModel::PC),
 Z(n), X(n), Y(n),
 m(n), V(n), F(n),
 logLiborCovariationMatrices(n-1),
@@ -97,8 +97,6 @@ logLiborCovariationMatrixRoots(n-1),
 SG(new MonteCarloLiborDriver(n)),
 XVec(n)
 {  
-    // set typeID
-	type=PC;
     // initialize path arrays
     for(int j=0;j<n;j++){ X(0,j)=x[j]; Y(0,j)=log(x[j]); }
         
@@ -238,9 +236,9 @@ swaptionAggregateVolatility(int p, int q, int t) const
      const UTRRealMatrix& 
 	 Q=factorLoading->logLiborCovariationMatrix(p,q,0,T[t]).utrRoot();
      RealVector x_pq(q-p,p);
-     for(int j=p;j<q;j++) x_pq[j]=(B0(j)-B0(j+1))/B_pq(p,q);
+	 for(int j=p;j<q;j++) x_pq[j]=(B0(j)-B0(j+1))/B_pq(p,q);
      x_pq*=Q.transpose();
-     return x_pq.norm();
+	 return x_pq.norm()/swapRate(p,q);
 } 
     
      

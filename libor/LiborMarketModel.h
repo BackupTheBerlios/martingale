@@ -68,17 +68,17 @@ class Bond;  // defined below
 	   */
 	  static const int DL=0, LFDL=1, PC=2, FPC=3;
 	 
-	  /** type flag: DL, LFDL, PC, FPC. */
-	  const int type;
-	 
 	  /** Type of factor loading. */
 	  const LiborFactorLoadingType& flType;
 	 
+	  /** type flag: DL, LFDL, PC, FPC. */
+	  const int type;
+	 	 
 	  /** @param type DL, LFDL, PC, FPC
 	   *  @param correlations Correlations::JR,CS.
 	   */
-	  LiborMarketModelType(int lmmType, const LiborFactorLoadingType& lflType) :
-	  type(lmmType), flType(lflType) {    }                                                                         
+	  LiborMarketModelType(const LiborFactorLoadingType& lflType, int lmmType) :
+	  flType(lflType), type(lmmType)  {    }                                                                         
 	  
 	  friend std::ostream& operator << (std::ostream&, const LiborMarketModelType& lmmType);
 };
@@ -119,10 +119,11 @@ std::ostream& operator << (std::ostream& os, const LiborMarketModelType& lmmType
 class LiborMarketModel {
 	
 protected:
+	
+	LiborMarketModelType type;
     
 	// initialized from the factorloading
-    int n,                                  // number of forward Libors
-	    type;                               // model typeID: DL,FRDL,PC,FPC,
+    int n;                                  // number of forward Libors
     const RealArray1D& delta;               // delta[t]=T_{t+1}-T_t,length of compounding intervals
     const RealArray1D& T;                   // tenor structure, Tc[t]=T_t
     const RealArray1D& l;                   // initial Libors, l[j]=L_j(0)
@@ -142,14 +143,14 @@ public:
 	 */
 	static const int DL=0, LFDL=1, PC=2, FPC=3;
 	
-	/** Type of Libor path simulation.
+	/** Type object (integer and string type flags). 
 	 */
-	std::string modelType();
+	LiborMarketModelType getType() const { return type; }
 	
-	/** "DL", "LFDL", "PC", "FPC", converts integer ID to string. */
+	/** Convert integer type flag to string "DL", "LFDL", "PC", "FPC".
+	 */
 	static std::string lmmType(int type);
 	
-
     /** The number n of accrual periods.
      */
     int getDimension() const { return n; }
@@ -215,7 +216,7 @@ public:
      * @param fl volatility and correlation structure, see
      * {@link FactorLoading}.
      */
-    LiborMarketModel(LiborFactorLoading* fl);
+    LiborMarketModel(LiborFactorLoading* fl, int lmmType=DL);
    
    
     /** Sample Libor market model, quarterly accrual.

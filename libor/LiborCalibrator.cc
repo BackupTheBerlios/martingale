@@ -811,7 +811,7 @@ swaptionForwardPrice(int i, Real strike)
 	for(int j=i+1;j<n;j++) x[j]=(B_i0(j)-B_i0(j+1))/B_pq0(i,n);
 	 		 
 	// swaption volatility = sqrt(xCx')
-    Real Sigma=root_xCx(i);
+    Real Sigma=root_xCx(i)/swapRate(i,n);
 	return LmmCalibrator::swaptionForwardPrice(i,strike,Sigma);
 }
 

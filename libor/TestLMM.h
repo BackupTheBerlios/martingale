@@ -106,7 +106,7 @@ void testLmmPaths(int n)
 	for(int corrType=0;corrType<2;corrType++){
 		
 		LiborMarketModel* lmm=LiborMarketModel::sample(n,lmmType,volType,corrType);
-		std::cout << "\n\n20 Libor paths, LMM type: " << lmm->modelType() 
+		std::cout << "\n\n20 Libor paths, LMM type: " << lmm->getType() 
 		          << endl << endl;
 		for(int path=0;path<2;path++){
 			
@@ -120,31 +120,25 @@ void testLmmPaths(int n)
  
 // SWAPTION PRICE
 
-/** <p>Allocates  LMM in dimension n=30,50 and prices the at the money
+/** <p>Allocates  LMM in dimension n and prices the at the money
  *  payer swaption \f$swpn(T_p,[T_p,T_q])\f$ exercisable at time \f$T_p\f$
  *  where \f$p=n/3, q=n\f$. 
- *
- *  <p>For each dimension the test is carried out for accrual intervals of length
- *  \f$\delta_j=0.1,0.5\f$. With increasing delta the predictor corrector 
- *  algorithm becomes less accurate.
  *
  *  <p>The Monte Carlo forward price of the swaption is computed from 20,000
  *  Libor paths and compared to the analytic price both using an MC
  *  and a QMC dynamics. The forward transporting and discounting involves 
  *  all Libors \f$L_j, j\geq p\f$. This is a good stress test for the LMM.
  *
+ * @param n dimension of the Libor process (number of compounding periods).
  * @param lmmType type of Libor market model: {@link LiborMarketModel}::DL,PC,FPC.
  * @param volType type of volatility surface: {@link VolSurface}::JR,M,CONST.
  * @param corrType type of log-Libor correlations: {@link Correlations}::JR,CS.
  */
-void testSwaptionPrice(int lmmType, int volType, int corrType)
+void testSwaptionPrice(int n, int lmmType, int volType, int corrType)
 { 
-    for(int n=30;n<70;n+=20){
-		
-		Swaption* swpn=Swaption::sample(n,lmmType,volType,corrType);
-	    swpn->testPrice();
-	}
-       
+    Swaption* swpn=Swaption::sample(n,lmmType,volType,corrType);
+	swpn->testPrice();
+	
 } // end testSwaptionPrice
 
 
@@ -153,32 +147,27 @@ void testSwaptionPrice(int lmmType, int volType, int corrType)
  
 // CAPLET PRICE
 
-/** <p>Allocates  LMM in dimension n=20,40,60,80 and prices 
+/** <p>Allocates  LMM in dimension n and prices 
  *  the at the money caplet \f$cplt([T_i,T_{i+1}])\f$,
  *  where \f$i=n/3\f$. This is intended to stress the predictor corrector algorithm
  *  as inaccuracies compound when the caplet payoff is transported forward to
  *  the horizon (accrual factors).
- *
- *  <p>For each dimension the test is carried out for accrual intervals of length
- *  \f$\delta=0.1,0.5\f$. With increasing delta the predictor corrector 
- *  algorithm becomes less accurate.
  *
  *  <p>The Monte Carlo forward price of this caplet at time \f$T_n\f$ is computed from 
  *  a sample of 20000 Libor paths and compared to the analytic price both using an MC
  *  and a QMC dynamics. The forward transporting and discounting involves 
  *  all Libors \f$L_j, j\geq i+1\f$.</p>
  *
+ * @param n dimension of the Libor process (number of compounding periods).
  * @param lmmType type of Libor market model: {@link LiborMarketModel}::DL,PC,FPC.
  * @param volType type of volatility surface: {@link VolSurface}::JR,M,CONST.
  * @param corrType type of log-Libor correlations: {@link Correlations}::JR,CS.
  */
-void testCapletPrice(int lmmType, int volType, int corrType)
+void testCapletPrice(int n, int lmmType, int volType, int corrType)
 { 
-     for(int n=30;n<70;n+=20){
-		
-		LiborDerivative* cplt=Caplet::sample(n,lmmType,volType,corrType);
-	    cplt->testPrice();
-	}
+	LiborDerivative* cplt=Caplet::sample(n,lmmType,volType,corrType);
+	cplt->testPrice();
+
 } // end testCapletPrice
 
 

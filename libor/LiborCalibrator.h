@@ -78,8 +78,6 @@ public:
 	
 	Real f(const RealArray1D& x);
 	
-	const RealArray1D& ssearch();
-	
 }; // end SobolLiborCalibrationOptimizer
 				
 
@@ -165,8 +163,18 @@ std::istream& operator >> (std::istream& is, CapletData& cplt);
  *  and all coterminal swaptions Swaption(i,n) (swap on \f$[T_i,T_n]\f$) expiring at time
  *  \f$T_i\f$ respectively. The strikes can be chosen  arbitrarily.
  *
- * <p>The parameters on which the factor loading can depend must satisfy some restrictions
- * detailed here: {@link LiborFactorLoading}.
+ * <p>To simplify the procedure we calibrate by matching caplet prices exactly. This is
+ * restrictive and certainly suboptimal but it does allow us to compute the scaling factors 
+ * c_i from the caplet prices and hence limits the dimension of the optimization problem to
+ * seven (the number of parameters for both volatility surface and correlations, see book,
+ * 6.11.3). To find suitable parameter values we use a primitive form of global search along 
+ * a Sobol sequence in the parameter region. 
+ *
+ * <p>The data which we use for calibration purposes are synthetic prices compute from the
+ * analytic approximations for caplet and swaption pries in the various LMMs. The data files
+ * reside in the directory SyntheticData in the source file directory.
+ *
+ *
  */
 
 class LmmCalibrator {

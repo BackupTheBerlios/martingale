@@ -101,7 +101,19 @@ doxygen again from clean slate. Maybe this reduces the doxygen-errors.
 </ul>
 
 
+<h3>7-26-03:</h3>
 
+BUG in the analytic swaption formula in predictor-corrector LMM detected.
+No agreement with Monte Carlo.
+This can account for the problems in calibrating a driftless LMM to predictor-corrector
+computed prices.
+Rework this using the technique for the driftless LMM.
+
+
+<h3>7-28-03:</h3>
+
+Run tests and examine the analytic swaption price formulas in the predictor-corrector LMM.
+Both formulas produce very similar and often quite inaccurate prices.
 
 
 

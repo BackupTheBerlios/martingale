@@ -68,11 +68,28 @@ std::ostream& operator << (std::ostream& os, const LiborMarketModelType& lmmType
  *
  ******************************************************************************/
 
+
+
+std::string 
+LiborMarketModel::
+lmmType(int type)
+{
+	switch(type){
+			 
+		 case PC   : return "PC";
+         case FPC  : return "FPC";
+		 case DL   : return "DL";
+	     case LFDL : return "LFDL";
+	}
+	return "Unknown_LMM_type";
+}
+
    
 // CONSTRUCTORS
 
 LiborMarketModel::
-LiborMarketModel(LiborFactorLoading* fl) :
+LiborMarketModel(LiborFactorLoading* fl, int lmmType) :
+type(fl->getType(), lmmType),
 n(fl->getDimension()),
 delta(fl->getDeltas()),
 T(fl->getTenorStructure()),
@@ -105,20 +122,6 @@ sample(int n, int lmmType, int volType, int corrType)
 	return lmm;
 }
 
-
-std::string 
-LiborMarketModel::
-lmmType(int type)
-{
-	switch(type){
-			 
-		 case PC   : return "PC";
-         case FPC  : return "FPC";
-		 case DL   : return "DL";
-	     case LFDL : return "LFDL";
-	}
-	return "Unknown_LMM_type";
-}
 	
 
 // LIBOR VOLATILITIES

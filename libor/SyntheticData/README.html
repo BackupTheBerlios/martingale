@@ -1,0 +1,59 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<link rel="stylesheet" href="html-info.css" type="text/css">
+</head>
+<body>
+
+
+
+<h1>SYNTHETIC CAPLET AND SWAPTION PRICES</h1>
+
+This directory contains a number of synthetic forward prices of at the money 
+caplets and swaptions. In all cases the analytic approximations for the prices have been 
+used. The Libor factorloadings are based on all combinations of volatility surfaces
+(CONST, JR, M) and correlation types (JR, CS).
+
+
+<h4>The data format is as follows:</h4>
+
+<ul>
+     <li>Caplets:     one per line:  i  strike  forward price</li>
+     <li>Swaptions:   one per line:  p   q   strike   forward price</li>
+</ul>
+
+Here Caplet(i) is a caplet on the interval [T_i,T_{i+1}]
+and Swaption(p,q) exercises at time T_p into a swap on the interval [T_p,T_q].
+The files contain the prices of all caplets Caplet(i) and coterminal swaptions
+Swaption(i,n) which exercise into a swap terminating at the horizon T_n where
+i=1,...,n-1.
+
+
+<h4>File names have the form</h4>
+
+InstrumentIn-(LmmType)-dim(n)-(VolSurfaceType)-(CorrelationType).txt,<br>
+where
+<table width="97%" hspace="12">
+
+<tr>
+     <td>n</td><td>dimension (number of Libor accrual intervals)</td>
+</tr>
+<tr>
+     <td>Instrument</td><td>"Caplets", "Swaptions"</td>
+</tr>   
+<tr>
+     <td>LmmType </td><td>"DL" (DriftlessLMM), "PC" (PredictorCorrectorLMM)</td>
+</tr>
+<tr>
+     <td>VolSurfaceType</td><td>"CONST", "JR", "M"   (see class VolSurface)</td>
+</tr>  
+<tr>
+     <td>CorrelationType</td><td>"JR", "CS"  (see class Correlations)</td>
+</tr>   
+ </table>
+ 
+
+
+</body>
+</html>

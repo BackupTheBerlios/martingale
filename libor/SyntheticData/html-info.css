@@ -1,0 +1,62 @@
+/** CSS for the HTML-info file system
+ *
+ */
+
+
+
+/* horizontal rules yellow */
+
+hr { 
+        color : yellow; 
+}
+        
+
+
+/* main headers */
+
+h1 {
+
+	text-align : center;
+	color : blue;
+	background-color:  #FF9530;
+	border :  thick double green;
+}
+
+
+
+/* sub headers */
+
+h2 {
+	color : red;
+	text-indent : 20;
+	background-color: #B6C695;
+	border :  medium double black;
+}
+
+
+/* sub sub headers */
+
+h3 {
+	color : blue;
+}
+
+
+/* links green, underlined */
+
+a {
+	color: green;
+	text-decoration: underline;
+}
+
+
+
+/* links green, underlined */
+
+code {
+	   color: #CC0A00;
+	   text-decoration: underline;
+}
+
+
+
+

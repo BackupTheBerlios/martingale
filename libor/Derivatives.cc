@@ -191,7 +191,7 @@ testPrice()
 	          << effectiveDimension()
 	          << endl;
 		
-	  int nPath=10000;
+	  int nPath=20000;
       // prices
       aprice=analyticForwardPrice();
       mcprice=monteCarloForwardPrice(nPath);

@@ -78,8 +78,7 @@ XLvect(int t, int p)
 
  
 LowFactorDriftlessLMM::
-LowFactorDriftlessLMM(LiborFactorLoading* fl, int r0) : 
-LiborMarketModel(fl),    
+LowFactorDriftlessLMM(LiborFactorLoading* fl, int r0) : LiborMarketModel(fl,LiborMarketModel::LFDL),    
 r(r0),    // the number of factors
 Z(n,r,0,0), U(n), Y(n), H(n+1), m(n), V(n),
 logLiborCovariationMatrices(n-1),
@@ -87,8 +86,6 @@ lowRankCovariationMatrixRoots(n-1),
 SG(new MonteCarloVectorDriver(r)),
 XVec(n)
 {        
-    // set typeID
-	type=LFDL;
 	// initialize U,Y path arrays
     for(int j=0;j<n;j++){ 
 			

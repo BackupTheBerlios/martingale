@@ -29,15 +29,15 @@ spyqqqdia@yahoo.com
 // #include "FinMath.h"
 // #include "TestMatrix.h"
 // #include "TestProbability.h"
-// #include "TestLMM.h"
+ #include "TestLMM.h"
 // #include "TestOptimizers.h"
 // #include "LatticeOption.h"
 // #include "TestFormulas.h"
 // #include "Examples.h"
 // #include "DirichletProblem.h"
 // #include "VolatilityAndCorrelation.h"
- #include "LiborCalibrator.h"
- #include "LiborMarketModel.h"
+// #include "LiborCalibrator.h"
+// #include "LiborMarketModel.h"
  
 
 
@@ -112,11 +112,13 @@ int main()
 	
 	
 	// anomalies in high dimensions (n>=70) for all but DriftlessLMM,
-	    // int lmmType=LiborMarketModel::DL;  // DL, LFDL, PC, FPC
-	    // int volType=VolSurface::M;        // JR, M, CONST
-        // int corrType=Correlations::CS;     // JR, CS
-	// testCapletPrice(lmmType,volType,corrType); 
-	// testSwaptionPrice(lmmType,volType,corrType);
+	     int n=30;                          // dimension
+	     int lmmType=LiborMarketModel::PC;  // DL, LFDL, PC, FPC
+	     int volType=VolSurface::M;         // JR, M, CONST
+         int corrType=Correlations::CS;     // JR, CS
+
+	// testCapletPrice(n,lmmType,volType,corrType); 
+	// testSwaptionPrice(n,lmmType,volType,corrType);
 	// testCallOnBondPrice(lmmType,volType,corrType);
 	// testCallOnZeroCouponBondPrice(lmmType,volType,corrType);
 	
@@ -134,19 +136,19 @@ int main()
 	
     // Write the synthetic data in the directory SyntheticData
 	// StandardLmmCalibrator::writeSyntheticDataSample();
-
+/*
 	int nVals=500,                               // number of evaluations of the objective function
 	    n=50,                                    // 20,30,40,50 dimension in which we calibrate
 	    dataLmmType=LiborMarketModel::PC,        // type of LMM the data came from: DL,PC
 		dataVolType=VolSurface::M,              // type of VolSurface used in the generation of data: CONST,JR,M
 		dataCorrType=Correlations::JR,           // type of correlations used in the generation of data: JR,CS
-		lmmType=LiborMarketModel::PC,            // type of LMM which will be calibrated: PC,DL
+		lmmType=LiborMarketModel::DL,            // type of LMM which will be calibrated: PC,DL
 		volType=VolSurface::JR,                   // type of VolSurface which will be calibrated: CONST,JR,M
 		corrType=Correlations::CS;               // type of correlations which will be calibrated: JR,CS
 		
      StandardLmmCalibrator::testCalibration
 	 (nVals,n,dataLmmType,dataVolType,dataCorrType,lmmType,volType,corrType);
-
+*/
 
 	
 	

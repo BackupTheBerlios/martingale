@@ -62,7 +62,7 @@ switchToMC()
 //  CONSTRUCTOR
 
 DriftlessLMM::
-DriftlessLMM(LiborFactorLoading* fl) : LiborMarketModel(fl),
+DriftlessLMM(LiborFactorLoading* fl) : LiborMarketModel(fl, LiborMarketModel::DL),
 Z(n), U(n), Y(n), H(n+1), m(n), 
 V(n),
 logLiborCovariationMatrices(n-1),
@@ -70,8 +70,6 @@ logLiborCovariationMatrixRoots(n-1),
 SG(new MonteCarloLiborDriver(n)),
 XVec(n)
 {        
-    // set typeID
-	type=DL;
 	// initialize U,Y path arrays
      for(int j=0;j<n;j++){ 
 			
