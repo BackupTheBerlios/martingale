@@ -587,11 +587,17 @@ public:
 	
 	/** Type flag for the volatility surface: VolSurface::JR,M,CONST.
 	 */
-	int getVolSurfaceType(){ return vol->getType(); }
+	int getVolSurfaceType() const { return vol->getType(); }
+	
+	/** The {@link VolSurface} of the factor loading.*/
+	VolSurface* getVolSurface() { return vol; }
 	
 	/** Type flag for the volatility surface: VolSurface::JR,M,CONST.
 	 */
-	int getCorrelationType(){ return corr->getType(); }
+	int getCorrelationType() const { return corr->getType(); }
+	
+	/** The {@link Correlations} of the factor loading.*/
+	Correlations* getCorrelations() { return corr; }
 	
 	
     
@@ -613,10 +619,10 @@ public:
 // SET THE PARAMETERS (CALIBRATION)
 	
    /** Set the parameters of the factorloading from the vector X.
-    *  The first coordinates of X populate the scaling factors k,
+    *  The first coordinates of u populate the scaling factors k,
 	*  the rest goes to VolSurface and Correlations.
 	*/
-   void setParameters(const RealArray1D& X);
+   void setParameters(Real* u);
 	
    
 	

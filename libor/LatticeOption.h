@@ -219,10 +219,17 @@ static void test(int s, int p, int q)
 	fl=LiborFactorLoading::sample(q,VolSurface::CONST,Correlations::JR); 
 	// number of time steps in each Libor accrual interval
 	int nSteps=2;
+	
+	// lattices and at the money strike rate
+	
+	// correlation matrix root rescaled
 	ConstVolLmmLattice3F theLattice(fl,s,nSteps);
+	// correlation matrix root rescaled
+	ConstVolLmmLattice3F theLattice_nr(fl,s,nSteps,false);
 	LmmNode* root=theLattice.getRoot();
 	Real strike=root->swapRate(p,q);           // swap rate at time zero
-				
+	
+	// LMM and Monte carlo
 	LiborMarketModel* lmm=new LowFactorDriftlessLMM(fl,3);
 	Derivative* swpnLmm=new Swaption(p,q,s,strike,lmm);
 	Real mcPrice=swpnLmm->monteCarloForwardPrice(20000),
@@ -233,10 +240,15 @@ static void test(int s, int p, int q)
 	     << "\nMonte Carlo, 3 factors: " << mcPrice;
 		
 
+	// correlation matrix root rescaled
 	LatticeSwaption<LmmNode3F> swpn(&theLattice,s,p,q,strike,nSteps);
+	// correlation matrix root not rescaled
+	LatticeSwaption<LmmNode3F> swpn_nr(&theLattice_nr,s,p,q,strike,nSteps);
 	Real treePrice=swpn.forwardPrice();
+	Real treePrice_nr=swpn_nr.forwardPrice();
 		
-	cout << "\nTree: " << treePrice;
+	cout << "\nTree, covariation matrix root rescaled: " << treePrice
+	     << "\nTree, covariation matrix root not rescaled: " << treePrice_nr;
         
 	watch.stop();
 	watch.report("Time");

@@ -57,7 +57,8 @@ Real multiNormalDensity(int dim, Real* z);
 *******************************************************************************************************/ 
 
 /**<p>The cumulative distribution function N(x)=Prob(X<=x) of a standard normal 
- *  variable X derived from the error function erf(x)=Prob(-sqrt(2)x<=X<=sqrt(2)x).
+ *  variable X derived from the error function 
+ * \f[erf(x)=Prob(-\sqrt{2}\,x\leq X\leq\sqrt{2}\,x).\f]
  * </p>
  *
  * @param x Any real number.
@@ -65,35 +66,45 @@ Real multiNormalDensity(int dim, Real* z);
 Real N(Real x);
 
   
- /** <p>The quantity d_+ in Margrabe's formula for the option to 
+ /** <p>The quantity \f$d_+\f$ in Margrabe's formula for the option to 
   * exchange assets S_1, S_2 (receive S_1 for kS_2). In this context:</p>
   *
-  *<center> d_+=log(Q/k)/Sigma+Sigma/2 with Q=S_1(t)/S_2(t)</center>
-  * 
-  * <p>and Sigma is the aggregate volatility of log(Q) from current
-  * time t to the horizon T, that is, the quadratic variation</p>
+  * \f[d_+=log(Q/k)/\Sigma+\Sigma/2\f]
   *
-  * <center>Sigma = &#139 log(Q) &#155_[t,T].</center>
+  * where \f$Q=S_1(t)/S_2(t)\f$ and \f$\Sigma\f$ is the aggregate volatility of 
+  * log(Q) from current time t to the horizon T. If Q has constant annual volatility 
+  * \f$sigma\f$ this becomes
   *
-  * <p>If Q has constant annual volatility sigma this becomes</p>
+  * \f[Sigma=\sigma\sqrt{T-t}.\f] 
   *
-  * <center>Sigma=sigma*sqrt(tau)</center> 
-  *
-  * <p>where tau=T-t is time to expiry. In the case of the European call on 
-  * S_1 with strike k the asset S_2 
+  * In the case of the European call on S_1 with strike k the asset S_2 
   * is the zero coupon bond maturing at call expiration.</p>
   *
   * @param Q The quotient S_1(t)/S_2(t)
   * @param k Ratio of exchange between assets (receive S_1 for kS_2).
-  * @param Sigma Quadratic variation &#139 log(Q) &#155_[t,T].
+  * @param Sigma aggregate volatility of Q on [t,T].
   */
 Real d_plus(Real Q, Real k, Real Sigma);
 
  
- /** <p>The quantity d_- in Margrabe's formula for the option to 
-  *  exchange assets. </p>
-  *  <p>See {@link #d_plus} and replace "+Sigma/2" with "-Sigma/2".</p>
-  **/
+ /** <p>The quantity \f$d_-\f$ in Margrabe's formula for the option to 
+  * exchange assets S_1, S_2 (receive S_1 for kS_2). In this context:</p>
+  *
+  * \f[d_-=log(Q/k)/\Sigma-\Sigma/2\f]
+  *
+  * where \f$Q=S_1(t)/S_2(t)\f$ and \f$\Sigma\f$ is the aggregate volatility of 
+  * log(Q) from current time t to the horizon T. If Q has constant annual volatility 
+  * \f$sigma\f$ this becomes
+  *
+  * \f[Sigma=\sigma\sqrt{T-t}.\f] 
+  *
+  * In the case of the European call on S_1 with strike k the asset S_2 
+  * is the zero coupon bond maturing at call expiration.</p>
+  *
+  * @param Q The quotient S_1(t)/S_2(t)
+  * @param k Ratio of exchange between assets (receive S_1 for kS_2).
+  * @param Sigma aggregate volatility of Q on [t,T].
+  */
 Real d_minus(Real Q, Real k, Real Sigma);
 
 
@@ -105,34 +116,34 @@ Real d_minus(Real Q, Real k, Real Sigma);
 *******************************************************************************/
 
 
- /**<p>Computes the function QN(h_+)-kN(h_-).</p>
+/**<p>Computes the function \f$Q*N(d_+)-k*N(d_-)\f$ with \f$d_\pm\f$ as in
+ * {@link #d_plus}, {@link #d_minus}.</p>
  *
  * <p>Useful in application of the Black-Scholes formula or Margrabe's formula 
  * to price calls or options to exchange assets. For the option to 
  * exchange assets S_1,S_2 we have Q=S_1(t)/S_2(t) and</p>
  *
- * <center>Price(t,S_1,S_2)=QN(h_+)-kN(h_-)</center>
+ * \f[Price(t,S_1,S_2)=Q*N(d_+)-k*N(d_-).\f]
  *
- * <p> See {@link #d_plus} for information on the parameter Sigma.
  * In the special case of a call on S we have S_1=S, S_2 is the zero coupon 
  * bond maturing at call expiry, Q the forward price of S and the forward price 
- * of the call can be written as</p>
+ * of the call can be written as
  *
- * <p><center>Call.ForwardPrice(t,S)=S_2*(QN(h_+)-kN(h_-))</center></p>
+ * \f[Call.ForwardPrice(t,S)=Q*N(d_+)-k*N(d_-)=.\f]
  *
  * @param Q The quotient S_1(t)/S_2(t)
  * @param k Ratio of exchange between assets (receive S_1 for kS_2).
- * @param Sigma Quadratic variation &#139 log(Q) &#155_[t,T].
+ * @param Sigma aggregate volatility of Q on [t,T].
  */    
 Real blackScholesFunction(Real Q, Real k, Real Sigma);
 
    
- /** <p>Derivative of the Black-Scholes function QN(h_+)-kN(h_-) with 
+ /** <p>Derivative of the Black-Scholes function Q*N(d_+)-k*N(d_-) with 
   *  respect to Sigma.</p>
   *
   * @param Q The quotient S_1(t)/S_2(t)
   * @param k Ratio of exchange between assets (receive S_1 for kS_2).
-  * @param Sigma Quadratic variation &#139log(Q) &#155_[t,T].
+  * @param Sigma aggregate volatility of Q on [t,T].
   */    
 Real dBSF(Real Q, Real k, Real Sigma);
 
@@ -173,41 +184,19 @@ Real bsDiscountedPutPrice(Real S, Real K, Real tau, Real sigma, Real B);
 *******************************************************************************/
 
 
-/** <p>Given b &gt 0 solves the equation 
- *  <code>bLackScholesFunction(Q,k,Sigma)=y</code> for 
- *  <code>Sigma</code>&gt 0 using continued bisection.</p>
+/** <p>Given \f$y,Q,k>0\f$ solves the equation 
+ *  \f$blackScholesFunction(Q,k,\Sigma)=y\f$ for 
+ *  \f$\Sigma\geq0\f$ using continued bisection.</p>
  *
- * <p> A solution Sigma=Sigma(Q,k,y) exists if and only if b &lt Q. 
- * To be used to compute implied 
- * volatilities from call forward prices y. Note that the solution Sigma 
- * is not the implied annual volatility sigma, indeed these are related as
- * Sigma=sigma*sqrt(tau), where tau=T-t is time to expiry.</p>
- *
- * Search restricted to [0.00001,1000], smaller or larger solutions cut off
- * to interval endpoints (irrelevant anyway). The blackScholesFunction
- * f(Q,k,Sigma) increases with Sigma. The algorithm preserves the relation<br> 
- * f(Q,k,a) &lt=y&lt=f(Q,k,b).
+ * <p> A solution \f$\Sigma=\Sigma(Q,k,y)\f$ exists if and only if \f$y<Q\f$.
+ * To be used to compute implied volatilities from call forward prices y. 
+ * Note that the solution \f$Sigma\f$ is not the implied annual volatility \f$sigma\f$, 
+ * indeed these are related as \f$Sigma=sigma*\sqrt{\tau}\f$, where 
+ * \f$\tau=T-t\f$ is time to expiry.</p>
  */
-Real bisectionSolveBSF(Real Q, Real k, Real y);
+Real blackImpliedAggregateCallVolatility(Real Q, Real k, Real y);
     
 
-
-/*******************************************************************************
- 
-                CHOLESKY FACTORIZATION
- 
-*******************************************************************************/
-
- /** <P>Let C be symmetric positive definite n by n matrix. The routine computes 
-  *  the lower triangular matrix L satisfying LL'=C. Routine writes to the
-  *  memory referenced by L which must be allocated as a row major lower triangular
-  *  array (L[i][j], j&lt;=i).</p>
-  *
-  *  <p>Does not handle the positive semidefinite case 
-  *  (all diagonal elements of C must be &gt 0). Only the lower triangular half 
-  *  of C is used and only the lower triangular half of L is written.</p>
-  */
-void choleskyRoot(Real** C, Real** L, int n);
 
 
 

@@ -46,12 +46,14 @@ using namespace Martingale;
  
  /** The density of the standard multinormal distribution N(0,I).
   */
- Real FinMath::multiNormalDensity(int dim, Real* z)
+ Real 
+ FinMath::
+ multiNormalDensity(int dim, Real* z)
  {
      Real f=2.506628274631,    // sqrt(2pi)
           q=1.0;
      
-     for(int k=0;k<dim;k++)q*=(f*exp(-z[k]*z[k]/2));
+     for(int k=0;k<dim;k++)q*=(f*std::exp(-z[k]*z[k]/2));
      return q;
  }
 
@@ -96,7 +98,9 @@ using namespace Martingale;
   * @param k Ratio of exchange between assets (receive S_1 for kS_2).
   * @param Sigma Quadratic variation &#139 log(Q) &#155_[t,T].
   */
- Real FinMath::d_plus(Real Q, Real k, Real Sigma)
+ Real 
+ FinMath::
+ d_plus(Real Q, Real k, Real Sigma)
  { 
     return log(Q/k)/Sigma + Sigma/2; 
  }
@@ -105,7 +109,9 @@ using namespace Martingale;
   *  exchange assets. </p>
   *  <p>See {@link #d_plus} and replace "+Sigma/2" with "-Sigma/2".</p>
   **/
- Real FinMath::d_minus(Real Q, Real k, Real Sigma)
+ Real 
+ FinMath::
+ d_minus(Real Q, Real k, Real Sigma)
  { 
     return log(Q/k)/Sigma - Sigma/2; 
  } 
@@ -138,7 +144,9 @@ using namespace Martingale;
  * @param k Ratio of exchange between assets (receive S_1 for kS_2).
  * @param Sigma Quadratic variation &#139 log(Q) &#155_[t,T].
  */    
- Real FinMath::blackScholesFunction(Real Q, Real k, Real Sigma)
+ Real 
+ FinMath::
+ blackScholesFunction(Real Q, Real k, Real Sigma)
  {
    return Q*N(d_plus(Q,k,Sigma))-k*N(d_minus(Q,k,Sigma)); 
  } 
@@ -151,7 +159,9 @@ using namespace Martingale;
   * @param Sigma Quadratic variation &#139log(Q) &#155_[t,T].
   */    
  
- Real FinMath::dBSF(Real Q, Real k, Real Sigma)
+ Real 
+ FinMath::
+ dBSF(Real Q, Real k, Real Sigma)
  {
    Real Sqrt2Pi=2.506628274631;
    return 2*k*exp(-d_minus(Q,k,Sigma)*d_minus(Q,k,Sigma)/2)/Sqrt2Pi; 
@@ -169,7 +179,9 @@ using namespace Martingale;
    * @param sigma annual asset volatility
    * @param B risk free bond B_T at expiry 
    */    
- Real FinMath::bsDiscountedCallPrice(Real S, Real K, Real tau, Real sigma, Real B)
+ Real 
+ FinMath::
+ bsDiscountedCallPrice(Real S, Real K, Real tau, Real sigma, Real B)
  {
    Real Sigma=sigma*sqrt(tau);                
    return blackScholesFunction(S,K,Sigma)/B; 
@@ -186,7 +198,9 @@ using namespace Martingale;
    * @param sigma annual asset volatility
    * @param B risk free bond B_T at expiry
    */    
- Real FinMath::bsDiscountedPutPrice(Real S, Real K, Real tau, Real sigma, Real B)
+ Real 
+ FinMath::
+ bsDiscountedPutPrice(Real S, Real K, Real tau, Real sigma, Real B)
  {
    Real Sigma=sigma*sqrt(tau);
    return (K+blackScholesFunction(S,K,Sigma)-S)/B; 
@@ -201,22 +215,23 @@ using namespace Martingale;
 
 
 
-/** <p>Given b &gt 0 solves the equation 
- *  <code>bLackScholesFunction(Q,k,Sigma)=y</code> for 
- *  <code>Sigma</code>&gt 0 using continued bisection.</p>
+/** <p>Given \f$y,Q,k>0\f$ solves the equation 
+ *  \f$blackScholesFunction(Q,k,\Sigma)=y\f$ for 
+ *  \f$\Sigma\geq0\f$ using continued bisection.</p>
  *
- * <p> A solution Sigma=Sigma(Q,k,y) exists if and only if b &lt Q. 
- * To be used to compute implied 
- * volatilities from call forward prices y. Note that the solution Sigma 
- * is not the implied annual volatility sigma, indeed these are related as
- * Sigma=sigma*sqrt(tau), where tau=T-t is time to expiry.</p>
- *
- * Search restricted to [0.00001,1000], smaller or larger solutions cut off
- * to interval endpoints (irrelevant anyway). The blackScholesFunction
- * f(Q,k,Sigma) increases with Sigma. The algorithm preserves the relation<br> 
- * f(Q,k,a) &lt=y&lt=f(Q,k,b).
+ * <p> A solution \f$\Sigma=\Sigma(Q,k,y)\f$ exists if and only if \f$y<Q\f$.
+ * To be used to compute implied volatilities from call forward prices y. 
+ * Note that the solution \f$Sigma\f$ is not the implied annual volatility \f$sigma\f$, 
+ * indeed these are related as \f$Sigma=sigma*\sqrt{\tau}\f$, where 
+ * \f$\tau=T-t\f$ is time to expiry.</p>
  */
-Real FinMath::bisectionSolveBSF(Real Q, Real k, Real y)
+// Search restricted to [0.00001,1000], smaller or larger solutions cut off
+// to interval endpoints (irrelevant anyway). The blackScholesFunction
+// f(Q,k,Sigma) increases with Sigma. The algorithm preserves the relation<br> 
+// f(Q,k,a) &lt=y&lt=f(Q,k,b).
+Real 
+FinMath::
+blackImpliedAggregateCallVolatility(Real Q, Real k, Real y)
 {
      Real a=0.00001,c,b=1000.0,error;
      int n=0;         
@@ -224,7 +239,7 @@ Real FinMath::bisectionSolveBSF(Real Q, Real k, Real y)
      if(blackScholesFunction(Q,k,a)>y)return a;
      if(y>=Q){
 	  
-	     std::cout << "\nMartingale::FinMath::bisectionSolveBSF(): "
+	     std::cout << "\nFinMath::blackImpliedAggregateCallVolatility(): "
 	               << "no solution.\n Returning 0.\n";
 	     return 0.0;
      }
@@ -241,50 +256,13 @@ Real FinMath::bisectionSolveBSF(Real Q, Real k, Real y)
     
        return a;
   
-} //end bisectionSolveBSF
+} //end blackImpliedAggregateCallVolatility
     
 
-
-/*******************************************************************************
  
-                CHOLESKY FACTORIZATION
- 
-*******************************************************************************/
 
- /** <P>Let C be symmetric positive definite n by n matrix. The routine computes 
-  *  the lower triangular matrix L satisfying LL'=C. Routine writes to the
-  *  memory referenced by L which must be allocated as a row major lower triangular
-  *  array (L[i][j], j&lt;=i).</p>
-  *
-  *  <p>Does not handle the positive semidefinite case 
-  *  (all diagonal elements of C must be &gt 0). Only the lower triangular half 
-  *  of C is used and only the lower triangular half of L is written.</p>
-  */
-void FinMath::choleskyRoot(Real** C, Real** L, int n)
-{
-try{
-    Real S;
-  
-    for(int i=0;i<n;i++)
-    for(int j=0;j<=i;j++)             // lower triangular
-    { 
-       S=0;
-       for(int k=0;k<j;k++) S+=L[i][k]*L[j][k];   
-       //now S=sum_{k=0}^{j-1}L_ik*L_jk=r_i(L)r_j(L)-L_ij*L_jj, 
-       //and so S+L_ij*L_jj=r_i(L)r_j(L)=C[i][j] 
-      
-       if(j<i)   // L[j][j] already computed, compute L[i][j]
-                 L[i][j]=(C[i][j]-S)/L[j][j];
-       else      // j=i and so S+L^2_jj=C[j][j]
-       { 
-           if(C[j][j]-S<=0)
-           throw "Cholesky: matrix not positive definite.\n Computation terminated";
-           L[j][j]=sqrt(C[j][j]-S);
-       }
-    } //end for i
 
-}// end try
-catch(char* message){ std::cout << message; }
 
-} //end choleskyRoot
+
+
 

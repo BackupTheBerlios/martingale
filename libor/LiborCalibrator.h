@@ -42,6 +42,49 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 
+
+/**********************************************************************************
+ *
+ *               LmmOptimizer
+ *
+ *********************************************************************************/
+ 
+
+// forward declaration
+class LmmCalibrator;
+
+
+/** SobolSearch optimizer to calibrate a {@link LiborFactorLoading}.
+ */
+class SobolLiborCalibrationOptimizer : public SobolSearch {
+	
+protected:
+	
+	LmmCalibrator* cal;
+	
+public:
+	
+	/** n+7 is the number of parameters for a factor loading.
+	 *
+	 *  @param n dimension (number of variables).
+	 *  @param cal the LMM calibrator.
+	 */
+	SobolLiborCalibrationOptimizer
+	(int n, LmmCalibrator* _cal, const RealArray1D& x0, int nVals, const RealArray1D& delta) : 
+	SobolSearch(n,x0,nVals,delta,true),
+	cal(_cal)
+	{  }
+	
+	bool isInDomain(Real* x);
+	
+	Real f(Real* x);
+	
+}; // end SobolLiborCalibrationOptimizer
+				
+
+
+
+
 /**********************************************************************************
  *
  *               Swaptions and Caplets
@@ -71,21 +114,11 @@ struct SwaptionData {
  *  since we wan to use this function to write synthetic
  *  calibration data.
  */
-std::ostream& operator << (std::ostream& os, SwaptionData* swpn)
-{
-	os << swpn->p << "  " << swpn->q << "  " << swpn->strike << "  " 
-	   << swpn->forwardPrice;
-    return os;
-} // end operator <<
+std::ostream& operator << (std::ostream& os, const SwaptionData& swpn);
 
 
 /** Read swaption data from stream: p, q, strike, forward price. */
-std::istream& operator >> (std::istream& is, SwaptionData* swpn)
-{
-	is >> swpn->p >> swpn->q >> swpn->strike >> swpn->forwardPrice;
-    return is;
-} // end operator <<
-
+std::istream& operator >> (std::istream& is, SwaptionData& swpn);
 
 
 
@@ -110,21 +143,11 @@ struct CapletData {
 
 /** Write caplet data to stream: i, strike, forward price.
  */
-std::ostream& operator << (std::ostream& os, CapletData* cplt)
-{
-	os << cplt->i << "  " << cplt->strike << "  " << cplt->forwardPrice << "  ";
-    return os;
-} // end operator <<
-
+std::ostream& operator << (std::ostream& os, const CapletData& cplt);
 
 /** Read caplet data from stream: i, strike, forward price.
  */
-std::istream& operator >> (std::istream& is, CapletData* cplt)
-{
-	is >> cplt->i >> cplt->strike >> cplt->forwardPrice;
-    return is;
-} // end operator <<
-
+std::istream& operator >> (std::istream& is, CapletData& cplt);
 
 
 
@@ -183,7 +206,18 @@ public:
 	n(fl->getDimension()),
 	x(fl->getInitialXLibors()),
 	delta(fl->getDeltas())
-    {  }
+    {  
+		
+		std::cout << "\n\n\nIntitial term structure: fl" << endl
+		          << fl->getInitialXLibors()
+		          << "\n\n\nIntitial term structure: calibrator" << endl
+		          << x
+		          << "\n\n\nDeltas: fl" << endl
+		          << fl->getDeltas()
+		          << "\n\n\nDeltas: calibrator" << endl
+		          << delta;
+		
+	}
 	
 // ACCESSORS
 	
@@ -201,7 +235,7 @@ public:
 		Instrument* instrument = new Instrument();
 		while(!is.eof()){  
 			
-			is >> instrument;
+			is >> *instrument;
 			dataList.push_back(instrument);
 			instrument = new Instrument();
 		}
@@ -230,7 +264,7 @@ public:
 		for(theInstrument=dataList.begin(); theInstrument!=dataList.end(); ++theInstrument)			
 		{
 			Instrument* currentInstrument=*theInstrument;
-			os << currentInstrument;
+			os << *currentInstrument;
 			os << "  " << currentInstrument->calibratedForwardPrice
 			   << "  " << currentInstrument->error << endl;
 		}
@@ -272,62 +306,22 @@ public:
 	
 	
 	 /** H_0(0) */
-     Real H0()
-     {
-         Real f=1.0;
-	     for(int k=0;k<n;k++)f*=(1+x[k]);
-	     return f;
-     }
+     Real H0();
 	 
 	 /** H_i(0) */
-     Real H_i0(int i)
-     {
-         Real f=1.0;
-	     if(i==n) return f;
-		
-	     for(int k=i;k<n;k++)f*=(1+x[k]);
-	     return f;
-     }
+     Real H_i0(int i);
      
-
      /** B_i(0) */
-     Real B0(int i)
-     { 
-         Real f=1.0;
-         // accumulate 1 from time t=0 to time t=T_i                    
-         for(int j=0;j<i;j++)f*=(1.0+x[j]); 
-         return 1.0/f;                                 // B_i(0)=1/f  
-     }   
- 
-
+     Real B0(int i);
 
      /** S_{pq}(0) */
-     Real swapRate(int p, int q)
-     { 
-        Real f=1.0+x[q-1], S=delta[q-1];
-        for(int k=q-2;k>=p;k--){ S+=delta[k]*f; f*=(1.0+x[k]); }
- 
-        return (f-1.0)/S;
-     } 
-
-
+     Real swapRate(int p, int q);
      
      /** B_{pq}(0) */
-     Real B_pq(int p, int q)
-     { 
-         Real S=0.0, F=B0(q);
-         for(int k=q-1;k>=p;k--){ S+=delta[k]*F; F*=(1.0+x[k]); }
-         return S;
-     } 
-	 
-
-     
+     Real B_pq(int p, int q);
+	      
      /** H_pq(0) */
-     Real H_pq(int p, int q)
-     { 
-         return B_pq(p,q)*H0();
-     } 
-
+     Real H_pq(int p, int q);
 
 	
 // CAPLET AND SWAPTION PRICES
@@ -344,31 +338,11 @@ public:
 
    /** Caplet on\f$[T_i,T_{i+1}]\f$.
 	*/
-   Real capletForwardPrice(int i, Real strike)
-   {
-	   Real delta_i=delta[i], 
-	        Li0=factorLoading->getInitialLibors()[i],            // L_i(0)
-            cSigma=capletAggregateVolatility(i),                        // aggregate volatility to expiry    
-	        Nplus=FinMath::N(FinMath::d_plus(Li0,strike,cSigma)),
-	        Nminus=FinMath::N(FinMath::d_minus(Li0,strike,cSigma)),
-	        f=H_i0(i+1);                                                 
- 
-       return delta_i*(Li0*Nplus-strike*Nminus)*f; 
-   }
-
+   Real capletForwardPrice(int i, Real strike);
    
    /** Swaption on\f$[T_i,T_{i+1}]\f$, expires at \f$T_p\f$.
 	*/
-   Real swaptionForwardPrice(int p, int q, Real strike) 
-   {
-       Real S_pq=swapRate(p,q),                                         // S_{p,q}(0)
-            swpnSigma=swaptionAggregateVolatility(p,q),                 // aggregate volatility to T_p    
-	        Nplus=FinMath::N(FinMath::d_plus(S_pq,strike,swpnSigma)),
-	        Nminus=FinMath::N(FinMath::d_minus(S_pq,strike,swpnSigma)),
-	        f=H_pq(p,q);                                                // forward B_{p,q}(0)
-  
-       return f*(S_pq*Nplus-strike*Nminus);  
-   } 
+   Real swaptionForwardPrice(int p, int q, Real strike);
    
    
 // WRITING SYNTHETIC DATA
@@ -379,38 +353,7 @@ public:
     *  Note that these data cannot be read in the same pass of the 
     *  program since the outfiles are associated with the ofstreams.
     */  
-   void writeSyntheticData()
-   {
-	   // write caplets
-	   for(int i=2;i<n;i++){
-		   
-		   Real strike = factorLoading->getInitialLibors()[i];  // L_i(0)
-		   Real forwardPrice = capletForwardPrice(i,strike);
-		   
-		   CapletData* caplet = new CapletData();
-		   caplet->i=i;
-		   caplet->strike=strike;
-		   caplet->forwardPrice=forwardPrice;
-		   
-		   capletsOut << caplet << endl;
-	   }
-	   
-	   // write swaptions
-	   for(int p=2;p<n-1;p++)
-	   for(int q=p+2;q<n+1;q++){
-		   
-		   Real strike = swapRate(p,q);                               // S_pq(0)
-		   Real forwardPrice = swaptionForwardPrice(p,q,strike);
-		   
-		   SwaptionData* swaption = new SwaptionData();
-		   swaption->p=p;
-		   swaption->q=q;
-		   swaption->strike=strike;
-		   swaption->forwardPrice=forwardPrice;
-		   
-		   swaptionsOut << swaption << endl;
-	   } 
-   } // end writeSyntheticData
+   void writeSyntheticData();
    
    
 // OBJECTIVE FUNCTION
@@ -433,31 +376,24 @@ public:
     *  Assumes the calibrated forward prices have already been written 
     *  into the caplets and swaptions.
     */
-   Real meanRelativeCalibrationError()
-   {
-	   int k=0;
-	   Real sum=0.0;
-	   
-	   	// iterator is pointer to pointer to SwaptionData
-		std::list<SwaptionData*>::const_iterator theSwaption;
-		for(theSwaption=swaptions.begin(); theSwaption!=swaptions.end(); ++theSwaption)			
-		{
-			SwaptionData* currentSwaption=*theSwaption;
-			sum+=abs(currentSwaption->error);
-			k++;
-		}
+   Real meanRelativeCalibrationError();
+   
+   
+   	
+   /** The objective function as a function of the parameter values x
+	*  applied to the factor loading.
+    */
+   Real objectiveFunction(Real* x);
+	
+     
+   /** Calibrates the factor loading with nVals evaluations of the objective function
+	*  (sum squared error over all caplets and swaptions which have been read) and prints
+	*  the result to the files "CapletsOut.txt", "SwaptionsOut.txt".
+    *
+	*  @return the means squared error.
+	*/
+   Real calibrate(int nVals);	
 
-		// iterator is pointer to pointer to CapletData
-		std::list<CapletData*>::const_iterator theCaplet;
-		for(theCaplet=caplets.begin(); theCaplet!=caplets.end(); ++theCaplet)			
-		{
-			CapletData* currentCaplet=*theCaplet;
-			sum+=abs(currentCaplet->error);
-			k++;
-		}
-		
-		return sum/k;
-	} // end meanRelativeCalibrationError
    
    
 private:
@@ -468,28 +404,7 @@ private:
     *  factor loading. Writes the calibrated forward price and
     *  relativec error into each caplet.
     */
-   Real squaredCapletError()
-   {
-		Real sumSquares=0.0;
-
-		// iterator is pointer to pointer to CapletData
-		std::list<CapletData*>::const_iterator theCaplet;
-		for(theCaplet=caplets.begin(); theCaplet!=caplets.end(); ++theCaplet)			
-		{
-			CapletData* currentCaplet=*theCaplet;
-			
-			int i=currentCaplet->i;
-			Real forwardPrice=currentCaplet->forwardPrice,
-			     strike=currentCaplet->strike,
-			     calibratedForwardPrice=capletForwardPrice(i,strike),
-			     error=forwardPrice-calibratedForwardPrice;
-			
-			sumSquares+=error*error;
-			currentCaplet->calibratedForwardPrice=calibratedForwardPrice;
-			currentCaplet->error=error/(forwardPrice+0.0000000001);
-		}
-		return sumSquares;
-	} // end squaredCapletError
+   Real squaredCapletError();
 	
 	
    /** Sum of (forwardPrice-calibratedForwardPrice)^2 over all
@@ -497,30 +412,8 @@ private:
     *  factor loading. Writes the calibrated forward price and
     *  relativec error into each caplet.
     */
-   Real squaredSwaptionError()
-   {
-		Real sumSquares=0.0;
-
-		// iterator is pointer to pointer to SwaptionData
-		std::list<SwaptionData*>::const_iterator theSwaption;
-		for(theSwaption=swaptions.begin(); theSwaption!=swaptions.end(); ++theSwaption)			
-		{
-			SwaptionData* currentSwaption=*theSwaption;
-			
-			int p=currentSwaption->p,
-			    q=currentSwaption->q;
-			Real forwardPrice=currentSwaption->forwardPrice,
-			     strike=currentSwaption->strike,
-			     calibratedForwardPrice=swaptionForwardPrice(p,q,strike),
-			     error=forwardPrice-calibratedForwardPrice;
-			
-			sumSquares+=error*error;
-			currentSwaption->calibratedForwardPrice=calibratedForwardPrice;
-			currentSwaption->error=error/(forwardPrice+0.0000000001);
-		}
-		return sumSquares;
-	} // end squaredCapletError
-
+   Real squaredSwaptionError();
+	
 	
 }; // end LiborCalibrator
 
@@ -556,44 +449,11 @@ public:
 // CAPLET AND SWAPTION AGGREGATE VOLS
 	
 
-     Real capletAggregateVolatility(int i)
-     { 
-		 Real T_i=factorLoading->getT(i);
-		 UTRRealMatrix& R=factorLoading->logLiborCovariationMatrix(i,n,0,T_i).utrRoot();
-		 RealVector x(n-i,i);
-		 x[i]=1;
-		 Real f=H_i0(i+1);
-		 for(int j=i+1;j<n;j++){ Real Uj0=H_i0(j)-H_i0(j+1); x[j]=-Uj0/f; }
-		 x*=R.transpose();
-		 return x.norm();
-     } // end capletAggregateVolatility
+     Real capletAggregateVolatility(int i);
 	 
 	 
 
-     Real swaptionAggregateVolatility(int p, int q)
-     { 
-         const RealArray1D& T=factorLoading->getTenorStructure();
-		 UTRRealMatrix& Q=factorLoading->logLiborCovariationMatrix(p,n,0,T[p]).utrRoot();
-		 
-		 RealVector x(n-p,p);
-		 Real denom1=H_i0(p)-H_i0(q),
-		      denom2=0;
-		 for(int j=p;j<q;j++) denom2+=delta[j]*H_i0(j+1);
-		
-		 Real Up0=H_i0(p)-H_i0(p+1); x[p]=Up0/denom1;		 
-		 for(int j=p+1;j<q;j++){
-			 
-			 Real Uj0=H_i0(j)-H_i0(j+1);
-		     x[j]=Uj0/denom1-(T[j]-T[p])*Uj0/denom2;
-		 }		 
-		 for(int j=q;j<n;j++){
-			 
-			 Real Uj0=H_i0(j)-H_i0(j+1);
-			 x[j]=-(T[q]-T[p])*Uj0/denom2;
-		 }
-		 x*=Q.transpose();
-		 return x.norm();
-     } // end swaptionAggregateVolatility
+     Real swaptionAggregateVolatility(int p, int q);
 
 
 // SYNTHETIC DATA GENERATION
@@ -607,41 +467,23 @@ public:
 	  * @param corrType type of {@link Correlations} Correlations::JR,CS.
 	  */ 
 	 static void writeSyntheticDataSample
-	 (int n, int volType=VolSurface::JR, int corrType=Correlations::CS)
-     {
-		 // string conversion
-		 Int_t nn(n);   
-		 string  vols=VolSurface::volSurfaceType(volType),        // "CONST", "JR", "M"
-		         corrs=Correlations::correlationType(corrType),   // "JR", "CS"
-		         dim=nn.toString(),
-		         capletOutFile, swaptionOutFile;
-		 
-		 LiborFactorLoading* fl=LiborFactorLoading::sample(n,volType,corrType);
-		 // called "InstrumentIn" since we'll be reading in from that
-		 capletOutFile="SyntheticData/CapletsIn-DL-dim"+dim+"-"+vols+"-"+corrs+".txt";
-	     swaptionOutFile="SyntheticData/SwaptionsIn-DL-dim"+dim+"-"+vols+"-"+corrs+".txt";
-		 
-		 LmmCalibrator* cal=new DriftlessLmmCalibrator
-		 (fl,"CapletsIn","SwaptionsIn",capletOutFile.c_str(),swaptionOutFile.c_str());
-		 
-		 cal->writeSyntheticData();
-		
-	 } // end writeSyntheticDataSample
+	 (int n, int volType=VolSurface::JR, int corrType=Correlations::CS);
 		 
 
 	 /** Writes a sample of synthetic caplet and swaption prices in 
 	  *  dimension n=20,30,40 for all factorloading types.
 	  */ 
-	 static void writeSyntheticDataSample()
-     {
-	     for(int n=20;n<60;n+=10)
-	     for(int volType=0;volType<3;volType++)
-		 for(int corrType=0;corrType<2;corrType++) writeSyntheticDataSample(n,volType,corrType);
-	     std::cout << "\n\nDone.";
-	 }
+	 static void writeSyntheticDataSample();
+	 
+	
+	/** Test in dimension 50. Calibrates DriftlessLMM to synthetic data 
+	 *  produced by PredictorCorrectorLMM.
+	 *
+	 * @param nVals number of evaluations of the objective function.
+	 */
+	static void testCalibration(int nVals);
 	
 
-	
 }; // end DriftlessLmmCalibrator
 
 
@@ -677,25 +519,11 @@ public:
 // CAPLET AND SWAPTION AGGREGATE VOLS
 	
 
-     Real capletAggregateVolatility(int i)
-     { 
-         Real T_i=factorLoading->getT(i);
-		 Real volsqr=factorLoading->integral_sgi_sgj_rhoij(i,i,0,T_i);
-		 return sqrt(volsqr);
-     } 
+     Real capletAggregateVolatility(int i);
 	 
 	 
 
-     Real swaptionAggregateVolatility(int p, int q)
-     { 
-          const RealArray1D& T=factorLoading->getTenorStructure();
-		  UTRRealMatrix& 
-		  Q=factorLoading->logLiborCovariationMatrix(p,q,0,T[p]).utrRoot();
-		  RealVector x_pq(q-p,p);
-		  for(int j=p;j<q;j++) x_pq[j]=(B0(j)-B0(j+1))/B_pq(p,q);
-		  x_pq*=Q.transpose();
-		  return x_pq.norm();
-     } 
+     Real swaptionAggregateVolatility(int p, int q);
 
 	 
 // SYNTHETIC DATA GENERATION
@@ -709,80 +537,19 @@ public:
 	  * @param corrType type of {@link Correlations} Correlations::JR,CS.
 	  */ 
 	 static void writeSyntheticDataSample
-	 (int n, int volType=VolSurface::JR, int corrType=Correlations::CS)
-     {
-		 // string conversion
-		 Int_t nn(n);   
-		 string  vols=VolSurface::volSurfaceType(volType),        // "CONST", "JR", "M"
-		         corrs=Correlations::correlationType(corrType),   // "JR", "CS"
-		         dim=nn.toString(),
-		         capletOutFile, swaptionOutFile;
-		 
-		 LiborFactorLoading* fl=LiborFactorLoading::sample(n,volType,corrType);
-		 // called "InstrumentIn" since we'll be reading in from that
-		 capletOutFile="SyntheticData/CapletsIn-DL-dim"+dim+"-"+vols+"-"+corrs+".txt";
-	     swaptionOutFile="SyntheticData/SwaptionsIn-DL-dim"+dim+"-"+vols+"-"+corrs+".txt";
-		 
-		 LmmCalibrator* cal=new PredictorCorrectorLmmCalibrator
-		 (fl,"CapletsIn","SwaptionsIn",capletOutFile.c_str(),swaptionOutFile.c_str());
-		 
-		 cal->writeSyntheticData();
-		
-	 } // end writeSyntheticDataSample
+	 (int n, int volType=VolSurface::JR, int corrType=Correlations::CS);
 		 
 
 	 /** Writes a sample of synthetic caplet and swaption prices in 
 	  *  dimension n=20,30,40 for all factorloading types.
 	  */ 
-	 static void writeSyntheticDataSample()
-     {
-	     for(int n=20;n<60;n+=10)
-	     for(int volType=0;volType<3;volType++)
-		 for(int corrType=0;corrType<2;corrType++) writeSyntheticDataSample(n,volType,corrType);
-	     std::cout << "\n\nDone.";
-	 }
-			 
-	
+	 static void writeSyntheticDataSample();
 	 
 }; // end PredictorCorrectorLmmCalibrator
 
 
 
-/**********************************************************************************
- *
- *               LmmOptimizer
- *
- *********************************************************************************/
-
-
-
-/** Optimizer to calibrate a {@link CV_FactorLoading}.
- *  We use a BFGS optimizer.
- *
-class CV_Optimizer : public BFGS {
-	
-protected:
-	
-	LmmCalibrator* cal;
-	LiborFactorLoading* factorLoading;    // the factorloading calibrated by cal
-	
-public:
-	
-	/** @param n dimension (number of variables).
-	 *  @param cal the LMM calibrator.
-	 *
-	CV_Optimizer(int n, LmmCalibrator* _cal) : Optimizer(n) 
-	cal(_cal),
-	factorLoading(cal->getFactorLoading())
-	{  }
-	
-	
-};
-*/
-
-
-
-
+			
 
 
 

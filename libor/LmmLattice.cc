@@ -44,7 +44,7 @@ using namespace Martingale;
 
 ConstVolLmmLattice2F::
 ConstVolLmmLattice2F
-(LiborFactorLoading* fl, int t, int steps=1) : 
+(LiborFactorLoading* fl, int t, int steps=1, bool rescale=true) : 
 LmmLattice<LmmNode2F>(fl,t*steps,steps),
 nSteps(steps),
 delta(fl->getDeltas()[0]),
@@ -75,6 +75,7 @@ R(fl->getRho().rankReducedRoot(2))
 			
 	// scale the rows of R back to norm one 
 	// this preserves rho_{jj}=1 and volatilities
+	if(rescale)
 	for(int i=1;i<n;i++){
 			
 		Real f=0.0;      // norm of row_i(R)
@@ -231,7 +232,7 @@ test(int n) const
 	
 ConstVolLmmLattice3F::
 ConstVolLmmLattice3F
-(LiborFactorLoading* fl, int t, int steps=1) : 
+(LiborFactorLoading* fl, int t, int steps=1, bool rescale=true) : 
 LmmLattice<LmmNode3F>(fl,t*steps,steps),
 nSteps(steps),
 delta(fl->getDeltas()[0]),
@@ -263,6 +264,7 @@ R(fl->getRho().rankReducedRoot(3))
 			
 	// scale the rows of R back to norm one 
 	// this preserves rho_{jj}=1 and volatilities
+	if(rescale)
 	for(int i=1;i<n;i++){
 			
 		Real f=0.0;      // norm of row_i(R)

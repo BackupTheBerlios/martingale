@@ -61,8 +61,9 @@ class LmmNode3F;
  *  Libors \f$U_j\f$ approximated as
  *  \f[V_j(s)\simeq\sigma_j\left[R_{j1}Z_1(s)+R_{j2}Z_2(s)+R_{j3}Z_3(s)\right],\f]
  *  where the matrix R is the approximate root of rank 3 of the correlation matrix 
- *  \f$\rho\f$ of the underlying driftless LMM: \f$\rho\simeq RR'\f$. The rows of R
- *  are scaled backe to unit norm to preserve the correlations \f$\rho_{jj}=1\f$.
+ *  \f$\rho\f$ of the underlying driftless LMM: \f$\rho\simeq RR'\f$. 
+ *  <p><a name="rescale"></a>The rows of R
+ *  are scaled back to unit norm to preserve the correlations \f$\rho_{jj}=1\f$.
  *  This diminishes the quality of the approximation \f$\rho\simeq RR'\f$ but
  *  preserves the volatilities \f$\sigma_j\f$ of the \f$V_j\f$. If we don't do this we 
  *  lose volatility. See book, 8.1.2, for details and notation. 
@@ -268,8 +269,9 @@ public:
 	 *  @param fl factor loading of the underlying LMM.
 	 *  @param t number of time steps in the lattice.
 	 *  @param steps number of time steps in each Libor accrual interval.
+	 *  @param rescale wether or not the correlation matrix root is <a href="#rescale">rescaled.</a>
 	 */
-	ConstVolLmmLattice2F(LiborFactorLoading* fl, int t, int steps=1);	
+	ConstVolLmmLattice2F(LiborFactorLoading* fl, int t, int steps=1, bool rescale=true);	
 	
 
 
@@ -350,8 +352,9 @@ public:
 	 *  @param fl factor loading of the underlying LMM.
 	 *  @param t number of time steps in the lattice.
 	 *  @param steps number of time seps in each Libor accrual interval.
+	 *  @param rescale wether or not the correlation matrix root is <a href="#rescale">rescaled.</a>
 	 */
-	ConstVolLmmLattice3F(LiborFactorLoading* fl, int t, int steps=1);	
+	ConstVolLmmLattice3F(LiborFactorLoading* fl, int t, int steps=1, bool rescale=true);	
 	
 
 

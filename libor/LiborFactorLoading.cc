@@ -607,12 +607,12 @@ factorizationTest(int r) const
 // Correlations::alpha,beta,r_oo
 void 
 LiborFactorLoading::
-setParameters(const RealArray1D& X)
+setParameters(Real* u)
 {
-	Real* u=X.getData();
 	for(int j=0;j<n;j++) k[j]=u[j];
 	vol->setParameters(u[n],u[n+1],u[n+2],u[n+3]);
 	corr->setParameters(u[n+4],u[n+5],u[n+6]);
+	corr->setCorrelations();
 }
 	
 

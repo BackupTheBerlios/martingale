@@ -31,10 +31,10 @@ spyqqqdia@yahoo.com
 // #include "TestLMM.h"
 // #include "TestOptimizers.h"
 // #include "LatticeOption.h"
- #include "TestFormulas.h"
+// #include "TestFormulas.h"
 // #include "Examples.h"
 // #include "DirichletProblem.h"
-// #include "LiborCalibrator.h"
+ #include "LiborCalibrator.h"
 
 
 using namespace Martingale;
@@ -85,7 +85,7 @@ int main()
 *******************************************************************************/
 	
 	
-	testVolSurfaceIntegrals(1000000,0.5);
+	// testVolSurfaceIntegrals(1000000,0.5);
 	
 	// testFactorLoading(20);
 	// testLiborFactorLoadingFactorization(60,3);    // rank 3 factorization
@@ -116,7 +116,7 @@ int main()
 
     // test the calibrator for the driftless LMM on a 
 	// constant volatility LiborFactorLoading
-    // DriftlessLmmCalibrator::test(20,LiborFactorLoading::CV);
+    DriftlessLmmCalibrator::testCalibration(1000);
 	// DriftlessLmmCalibrator::writeSyntheticDataSample();
 	
 	// PredictorCorrectorLmmCalibrator::writeSyntheticDataSample();
@@ -130,7 +130,7 @@ int main()
 	
 	
 	 
-	 // LatticeSwaption3F::test(15,17,30);
+	 // LatticeSwaption3F::test(15,19,30);
      // ConstVolLmmLattice2F::test(50);
 	 
 	 
