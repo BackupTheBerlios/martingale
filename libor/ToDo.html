@@ -143,7 +143,11 @@ Then rework the BasketLattice in exactly the same manner.
 Note: 4 factor lattices are not reasonable since they generate 100s of millions of nodes.
 Therefore it is not worth introducing 4 dimensional arrays for node registry.
 
+<h3>8-7-03:</h3>
 
+Memory leak in all lattices, NO DEALLOCATION AT ALL despite the fact that the list destructor is called
+on every node list at each time t.  Read up on list deallocation.
+Check the proper deallocation of nodes.
 
 
 </body>

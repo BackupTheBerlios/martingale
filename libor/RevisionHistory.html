@@ -225,6 +225,19 @@ on any number of factors. Nodes rewrite finished.
 Lattice rewrite is unfinished. See <a href="ToDo.html#8-5-03">ToDo</a>.
 
 
+<h3>8-7-03:</h3>
+
+Lattice rewrite is finished. Lattice::test(int) builds lattice and selfTest() passes but memory leak remains.
+No deallocation of memory even though the list destructor is called on the node list at each
+time t. 
+<p>
+Heavy versus lightweight lattices: interesting tradeoff between memory and computation.
+Unclear which approach is preferable even at low number of nodes since processor - main memory
+communication is easily as expensive as dozens of operations.
+Lightweight 2 factor lattices can be built for up to 200 time steps (1GB, 2,500,000 nodes).
+Lightweight 3 factor lattices allow only about 53 time steps.
+
+
 </body>
 </html>
 
