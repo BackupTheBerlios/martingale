@@ -51,67 +51,6 @@ std::ostream& operator << (std::ostream& os, const LmmLattice<LmmNode>& ltt)
  *********************************************************************************/
 
 
-ConstVolLmmLattice2F::
-ConstVolLmmLattice2F
-(LiborFactorLoading* fl, int t, int steps=1, bool rescale=true) : 
-LmmLattice<LmmNode2F>(fl,t*steps,steps),
-nSteps(steps),
-delta(fl->getDeltas()[0]),
-dt(delta/steps),
-a(sqrt(dt)), 
-sg(n-1,1),
-R(fl->getRho().rankReducedRoot(2))
-{  
-	// check if Libor accrual periods are constant
-	const RealArray1D& deltas=fl->getDeltas();
-	for(int j=0;j<n;j++) if(deltas[j]!=delta) {
-			
-	   std::cout << "\n\nConstVolLmmLattice2F(): Libor accrual periods not constant."
-	             << "\nTerminating.";
-	   exit(1);
-	}
-		
-	// check if volatilities are constant
-	if(fl->getType().volType!=VolSurface::CONST) {
-			
-	   std::cout << "\n\nConstVolLmmLattice2F(): volatilities not constant."
-	             << "\nTerminating.";
-	   exit(1);
-    }
-		
-	// set constant vols
-	for(int j=1;j<n;j++) sg[j]=factorLoading->sigma(j,0.0);
-			
-	// scale the rows of R back to norm one 
-	// this preserves rho_{jj}=1 and volatilities
-	if(rescale)
-	for(int i=1;i<n;i++){
-			
-		Real f=0.0;      // norm of row_i(R)
-		for(int j=0;j<2;j++) f+=R(i,j)*R(i,j);
-		f=sqrt(f);
-		R.scaleRow(i,1.0/f);
-	}
-		
-	buildLattice(m);       // Lattice::m = number of time steps t*nSteps 
-	testFactorization();
-		
-} // end constructor
-	
-				
-
-void 
-ConstVolLmmLattice2F::
-testFactorization() const
-{
-	std::cout << "\n\nRelative errors of the approximate rank 2 factorization"
-	          << "\nrho=RR' (rank(R)=2) of the correlation matrix rho"
-	          << "\n(trace norm): " << endl << endl;
-  
-	factorLoading->getRho().testFactorization(2);
-
-}   // end factorAnalysis
-
 
 
 void 
@@ -183,38 +122,6 @@ buildLattice(int m)
 	} // end for s
 } // end buildLattice
 	
-	
-	
-void 
-ConstVolLmmLattice2F::
-setStateVariables(LmmNode2F* node)
-{
-    int t=node->get_t(),         // node lives in (T_{t-1},T_t]
-	    s=node->getTimeStep();   // time step at which node lives
-	RealVector V(n-t,t);       // the volatility parts V_j of log(U_j)
-			                          // j=t,...,n-1
-    Real Z1=node->get_i()*a, 
-         Z2=node->get_j()*a;     // Z2=ja
-		 
-	for(int j=t;j<n;j++) V[j]=sg[j]*(R(j,0)*Z1+R(j,1)*Z2); 
-		 
-	// let tau(s) denote he continuous time reached with time step s.
-	// add the initial value log(U_j(0) and drift mu_j(s)=mu_j(0,tau(s)) 
-	// to obtain the log(U_j(tau(s)))
-	for(int j=t;j<n;j++) V[j]+=log(U0[j])+mu(s,j);
-				 
-	// move from log(U_j) to U_j
-	for(int j=t;j<n;j++) V[j]=std::exp(V[j]);    // now V=U
-				 
-	// write the  H_n=1, H_j=U_j+H_{j+1}, j=t,...,n-1, 
-	RealArray1D& H=node->getH();
-	H[n]=1.0; 
-    for(int j=n-1;j>=t;j--){ 
-			 
-		 H[j]=V[j]+H[j+1]; 
-		 //if(H[j]>3.0) { printState(); exit(0); }
-	}
-} // setStateVariables
 
 	
 
@@ -239,70 +146,7 @@ test(int n) const
  *
  *********************************************************************************/
 	
-ConstVolLmmLattice3F::
-ConstVolLmmLattice3F
-(LiborFactorLoading* fl, int t, int steps=1, bool rescale=true) : 
-LmmLattice<LmmNode3F>(fl,t*steps,steps),
-nSteps(steps),
-delta(fl->getDeltas()[0]),
-dt(delta/steps),
-a(sqrt(dt)), 
-sg(n-1,1),
-R(fl->getRho().rankReducedRoot(3))
-{  
-	// check if Libor accrual periods are constant
-	const RealArray1D& deltas=fl->getDeltas();
-	for(int j=0;j<n;j++) if(deltas[j]!=delta) {
-			
-	   std::cout << "\n\nConstVolLmmLattice2F(): Libor accrual periods not constant."
-	             << "\nTerminating.";
-	   exit(0);
-    }
-		
-	// check if volatilities are constant
-	if(fl->getType().volType!=VolSurface::CONST) {
-			
-	   std::cout << "\n\nConstVolLmmLattice2F(): volatilities not constant."
-	             << "\nTerminating.";
-	   exit(1);
-    }
-
-		
-	// set constant vols
-	for(int j=1;j<n;j++) sg[j]=factorLoading->sigma(j,0.0);
-			
-	// scale the rows of R back to norm one 
-	// this preserves rho_{jj}=1 and volatilities
-	if(rescale)
-	for(int i=1;i<n;i++){
-			
-		Real f=0.0;      // norm of row_i(R)
-		for(int j=0;j<3;j++) f+=R(i,j)*R(i,j);
-		f=sqrt(f);
-		R.scaleRow(i,1.0/f);
-	}
-		
-	buildLattice(m);       // Lattice::m = number of time steps t*nSteps 
-	testFactorization();
-		
-} // end constructor
-	
 				
-	
-// Covariance matrix rank 2 factorization error
-	
-
-void 
-ConstVolLmmLattice3F::
-testFactorization() const
-{
-	cout << "\n\nRelative errors of the approximate rank 3 factorization"
-	     << "\nrho=RR' (rank(R)=3) of the correlation matrix rho"
-	     << "\n(trace norm): " << endl << endl;
-  
-	factorLoading->getRho().testFactorization(3);
-
-}   // end factorAnalysis
 
 
 
@@ -377,38 +221,6 @@ buildLattice(int m)
 } // end buildLattice
 	
 	
-	
-void 
-ConstVolLmmLattice3F::
-setStateVariables(LmmNode3F* node)
-{
-    int t=node->get_t(),         // node lives in (T_{t-1},T_t]
-	     s=node->getTimeStep();   // time step at which node lives
-	 RealVector V(n-t,t);       // the volatility parts V_j of log(U_j)
-			                          // j=t,...,n-1
-     Real Z1=node->get_i()*a,    
-	      Z2=node->get_j()*a,
-	      Z3=node->get_k()*a;      // Z3=ka
-		 
-	 for(int j=t;j<n;j++) V[j]=sg[j]*(R(j,0)*Z1+R(j,1)*Z2+R(j,2)*Z3); 
-		 
-	 // let tau(s) denote he continuous time reached with time step s.
-	 // add the initial value log(U_j(0) and drift mu_j(s)=mu_j(0,tau(s)) 
-	 // to obtain the log(U_j(tau(s)))
-	 for(int j=t;j<n;j++) V[j]+=log(U0[j])+mu(s,j);
-				 
-	 // move from log(U_j) to U_j
-	 for(int j=t;j<n;j++) V[j]=std::exp(V[j]);    // now V=U
-				 
-	 // write the  H_n=1, H_j=U_j+H_{j+1}, j=t,...,n-1, 
-	 RealArray1D& H=node->getH();
-	 H[n]=1.0; 
-     for(int j=n-1;j>=t;j--){ 
-			 
-		 H[j]=V[j]+H[j+1]; 
-		 //if(H[j]>3.0) { printState(); exit(0); }
-	}
-} // setStateVariables
 
 
 

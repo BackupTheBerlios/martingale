@@ -35,7 +35,20 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  * 
  ******************************************************************************/
 
- 
+// CORRELATION OF RETURNS
+
+const UTRRealMatrix& 
+FactorLoading::
+correlationMatrix() const
+{
+	UTRRealMatrix& corr=*(new UTRRealMatrix(n);
+
+    for(int i=0;i<n;i++)
+    for(int j=i;j<n;j++) corr(i,j)=rho(i,j);
+
+    return corr;
+}
+
 
 // LOG-COVARIATION MATRICES 
 
