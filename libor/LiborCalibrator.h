@@ -24,10 +24,11 @@ spyqqqdia@yahoo.com
 #define martingale_lmm_calibrator_h
 
 #include "FinMath.h"
-#include "LiborMarketModel.h"
+#include "LiborFactorLoading.h"
 #include <iostream>
 #include <fstream>
 #include <list>
+#include <string>
 
 //#include <string>
 #include <math.h>
@@ -133,13 +134,18 @@ std::istream& operator >> (std::istream& is, CapletData* cplt)
 
 class LmmCalibrator {
 	
+	friend void CS_FactorLoading::calibrateSelf<LmmCalibrator>(LmmCalibrator* cal);
+	friend void JR_FactorLoading::calibrateSelf<LmmCalibrator>(LmmCalibrator* cal);
+	friend void ConstVolLiborFactorLoading::calibrateSelf<LmmCalibrator>(LmmCalibrator* cal);
+	
 protected:
 
-	
+	// reading data
 	ifstream capletsIn;
-	ofstream capletsOut;	
-	
 	ifstream swaptionsIn;
+	
+	// writing synthetic data, calibration results
+	ofstream capletsOut;	
 	ofstream swaptionsOut;
 	
 	std::list<CapletData*> caplets;
@@ -157,14 +163,14 @@ public:
 	
 	LmmCalibrator
 	(LiborFactorLoading* fl,
-	 const char* capletsInFile="CapletsIn.txt", 
-	 const char* capletsOutFile="CapletsOut.txt", 
-	 const char* swaptionsInFile="SwaptionsIn.txt", 
+	 const char* capletsInFile="CapletsIn.txt",  
+	 const char* swaptionsInFile="SwaptionsIn.txt",
+	 const char* capletsOutFile="CapletsOut.txt",
 	 const char* swaptionsOutFile="SwaptionsOut.txt"
 	 ) :
 	capletsIn(capletsInFile),
-	capletsOut(capletsOutFile),
 	swaptionsIn(swaptionsInFile),
+	capletsOut(capletsOutFile),
 	swaptionsOut(swaptionsOutFile),
 	caplets(),
 	swaptions(),
@@ -364,14 +370,16 @@ public:
    
    /** Computes the analytic forward prices  of all at the money caplets and swaptions
     *  at least two periods in the future and writes them to the caplet and swaption
-    *  outfiles.
+    *  outfiles in the format in which the calibrator reads them for calibration. 
+    *  Note that these data cannot be read in the same pass of the 
+    *  program since the outfiles are associated with the ofstreams.
     */  
    void writeSyntheticData()
    {
 	   // write caplets
 	   for(int i=2;i<n;i++){
 		   
-		   Real strike = factorLoading->getInitialTermStructure()[i];
+		   Real strike = factorLoading->getInitialTermStructure()[i];  // L_i(0)
 		   Real forwardPrice = capletForwardPrice(i,strike);
 		   
 		   CapletData* caplet = new CapletData();
@@ -386,7 +394,7 @@ public:
 	   for(int p=2;p<n-1;p++)
 	   for(int q=p+2;q<n+1;q++){
 		   
-		   Real strike = swapRate(p,q);
+		   Real strike = swapRate(p,q);                               // S_pq(0)
 		   Real forwardPrice = swaptionForwardPrice(p,q,strike);
 		   
 		   SwaptionData* swaption = new SwaptionData();
@@ -399,7 +407,123 @@ public:
 	   } 
    } // end writeSyntheticData
    
+   
+// OBJECTIVE FUNCTION
+	
+	
+   /** Sum of (forwardPrice-calibratedForwardPrice)^2 over all caplets or swaptions.
+	*  Parameters: the parameters of the current factorloading.
+	*  Also writes the calibrated forward prices and relative errors into each caplet
+    *  and swaption.
+    */
+   Real objectiveFunction(){ return squaredCapletError()+squaredSwaptionError(); }
+   
+   			
+   
+	
+// CALIBRATION 
+// Is done in the factorloadings which know their own parameters.
+	
 
+   /** Calibrates and returns pointer to calibrate factorloading.
+    */
+   LiborFactorLoading* calibrate(){ return factorLoading->calibrateSelf<LmmCalibrator>(this); }
+   
+   
+   /** Mean relative error over all caplets and swaptions.
+    *  Assumes the calibrated forward prices have already been written 
+    *  into the caplets and swaptions.
+    */
+   Real meanRelativeCalibrationError()
+   {
+	   int k=0;
+	   Real sum=0.0;
+	   
+	   	// iterator is pointer to pointer to SwaptionData
+		std::list<SwaptionData*>::const_iterator theSwaption;
+		for(theSwaption=swaptions.begin(); theSwaption!=swaptions.end(); ++theSwaption)			
+		{
+			SwaptionData* currentSwaption=*theSwaption;
+			sum+=abs(currentSwaption->error);
+			k++;
+		}
+
+		// iterator is pointer to pointer to CapletData
+		std::list<CapletData*>::const_iterator theCaplet;
+		for(theCaplet=caplets.begin(); theCaplet!=caplets.end(); ++theCaplet)			
+		{
+			CapletData* currentCaplet=*theCaplet;
+			sum+=abs(currentCaplet->error);
+			k++;
+		}
+		
+		return sum/k;
+	} // end meanRelativeCalibrationError
+   
+   
+private:
+   
+      
+   /** Sum of (forwardPrice-calibratedForwardPrice)^2 over all
+    *  caplets. Calibrated price from the current parameters of the
+    *  factor loading. Writes the calibrated forward price and
+    *  relativec error into each caplet.
+    */
+   Real squaredCapletError()
+   {
+		Real sumSquares=0.0;
+
+		// iterator is pointer to pointer to CapletData
+		std::list<CapletData*>::const_iterator theCaplet;
+		for(theCaplet=caplets.begin(); theCaplet!=caplets.end(); ++theCaplet)			
+		{
+			CapletData* currentCaplet=*theCaplet;
+			
+			int i=currentCaplet->i;
+			Real forwardPrice=currentCaplet->forwardPrice,
+			     strike=currentCaplet->strike,
+			     calibratedForwardPrice=capletForwardPrice(i,strike),
+			     error=forwardPrice-calibratedForwardPrice;
+			
+			sumSquares+=error*error;
+			currentCaplet->calibratedForwardPrice=calibratedForwardPrice;
+			currentCaplet->error=error/(forwardPrice+0.0000000001);
+		}
+		return sumSquares;
+	} // end squaredCapletError
+	
+	
+   /** Sum of (forwardPrice-calibratedForwardPrice)^2 over all
+    *  swaptions. Calibrated price from the current parameters of the
+    *  factor loading. Writes the calibrated forward price and
+    *  relativec error into each caplet.
+    */
+   Real squaredSwaptionError()
+   {
+		Real sumSquares=0.0;
+
+		// iterator is pointer to pointer to SwaptionData
+		std::list<SwaptionData*>::const_iterator theSwaption;
+		for(theSwaption=swaptions.begin(); theSwaption!=swaptions.end(); ++theSwaption)			
+		{
+			SwaptionData* currentSwaption=*theSwaption;
+			
+			int p=currentSwaption->p,
+			    q=currentSwaption->q;
+			Real forwardPrice=currentSwaption->forwardPrice,
+			     strike=currentSwaption->strike,
+			     calibratedForwardPrice=swaptionForwardPrice(p,q,strike),
+			     error=forwardPrice-calibratedForwardPrice;
+			
+			sumSquares+=error*error;
+			currentSwaption->calibratedForwardPrice=calibratedForwardPrice;
+			currentSwaption->error=error/(forwardPrice+0.0000000001);
+		}
+		return sumSquares;
+	} // end squaredCapletError
+
+
+		   
 }; // end LiborCalibrator
 
 
@@ -412,7 +536,8 @@ public:
  *********************************************************************************/
 
 
-
+/** Calibrator for a {@link DriftlessLMM}.
+ */
 class DriftlessLmmCalibrator : public LmmCalibrator {
 	
 	
@@ -422,11 +547,11 @@ public:
 	DriftlessLmmCalibrator
 	(LiborFactorLoading* fl,
 	 const char* capletsInFile="CapletsIn.txt", 
-	 const char* capletsOutFile="CapletsOut.txt", 
 	 const char* swaptionsInFile="SwaptionsIn.txt", 
+	 const char* capletsOutFile="CapletsOut.txt", 	 
 	 const char* swaptionsOutFile="SwaptionsOut.txt"
 	) :	
-    LmmCalibrator(fl,capletsInFile, capletsOutFile,swaptionsInFile,swaptionsOutFile) 
+    LmmCalibrator(fl,capletsInFile,swaptionsInFile,capletsOutFile,swaptionsOutFile) 
     {    }
 	
 	
@@ -472,11 +597,67 @@ public:
 		 return x.norm();
      } // end swaptionAggregateVolatility
 
-	
-	
+
+// SYNTHETIC DATA GENERATION
+	 
+	 /** Writes a sample of synthetic caplet and swaption prices in 
+	  *  dimension n to files with the following nomenclature:
+	  *  <br>CapletsIn-dim(n)-DL-JR.txt<br>
+	  *  is a set of caplet prices in dimension n based on the sample 
+	  *  {@link JR_FactorLoading} and a {@link DriftlessLMM}.
+	  *  The files are written to the directory SyntheticData in the src
+	  *  directory.
+	  *  
+	  * @param n dimension of Libor process (number of accrual intervals).
+	  * @param flType type of factorloading: LiborFactorLoading::CS,JR,CV.
+	  */ 
+	 static void writeSyntheticDataSample(int n, int flType)
+     {
+		 Int_t nn(n);   // for string conversion
+		 string capletOutFile, swaptionOutFile, dim=nn.toString();
+		 LiborFactorLoading* fl;
+		 switch(flType){
+			 
+			 case LiborFactorLoading::JR : 
+				  fl=JR_FactorLoading::sample(n);
+				  capletOutFile="SyntheticData/CapletsIn-dim"+dim+"-DL-JR.txt";
+			      swaptionOutFile="SyntheticData/SwaptionsIn-dim"+dim+"-DL-JR.txt"; 
+			      break;
+			 case LiborFactorLoading::CV :
+				  fl=ConstVolLiborFactorLoading::sample(n);
+				  capletOutFile="SyntheticData/CapletsIn-dim"+dim+"-DL-CV.txt";
+			      swaptionOutFile="SyntheticData/SwaptionsIn-dim"+dim+"-DL-CV.txt"; 
+			      break;
+			 default : // Coffee-Shoenmakers
+			      fl=CS_FactorLoading::sample(n);
+			      capletOutFile="SyntheticData/CapletsIn-dim"+dim+"-DL-CS.txt";
+			      swaptionOutFile="SyntheticData/SwaptionsIn-dim"+dim+"-DL-CS.txt"; 
+		 } // end switch
+		 
+		 LmmCalibrator* cal=new DriftlessLmmCalibrator
+		 (fl,"CapletsIn","SwaptionsIn",capletOutFile.c_str(),swaptionOutFile.c_str());
+		 
+		 cal->writeSyntheticData();
+		
+	 } // end writeSyntheticDataSample
+		 
+
+	 /** Writes a sample of synthetic caplet and swaption prices in 
+	  *  dimension n=20,30,40 for all three factorloading types.
+	  */ 
+	 static void writeSyntheticDataSample()
+     {
+	     for(int n=20;n<60;n+=10)
+	     for(int flType=0;flType<3;flType++)writeSyntheticDataSample(n,flType);
+	     cout << "\n\nDone.";
+	 }
+			 
+			 
+			 
 	/** Allocates a sample factorloading of dimension n and
-	 *  type flType (LiborFactorLoading::CS,JR,CV) and writes
-	 *  the synthetic caplet and swaption prices.
+	 *  type flType (LiborFactorLoading::CS,JR,CV) reads 
+	 *  caplet and swaption prices from the infiles and writes them
+	 *  to the outfiles.
 	 */
 	static void test(int n, int flType)
     {
@@ -491,13 +672,152 @@ public:
 		}
 		
 		LmmCalibrator* cal=new DriftlessLmmCalibrator(fl);
-		//cal->writeSyntheticData();
+		cal->readCaplets();
+		cal->writeCaplets();
 		cal->readSwaptions();
 		cal->writeSwaptions();
 	}
 	
+
 	
-};
+}; // end DriftlessLmmCalibrator
+
+
+
+
+/**********************************************************************************
+ *
+ *              PredictorCorrectorLMM-Calibrator
+ *
+ *********************************************************************************/
+
+
+
+/** Calibrator for a {@link PredictorCorrectorLMM}.
+ */
+class PredictorCorrectorLmmCalibrator : public LmmCalibrator {
+	
+	
+public:
+	
+	
+	PredictorCorrectorLmmCalibrator
+	(LiborFactorLoading* fl,
+	 const char* capletsInFile="CapletsIn.txt", 
+	 const char* swaptionsInFile="SwaptionsIn.txt", 
+	 const char* capletsOutFile="CapletsOut.txt", 	 
+	 const char* swaptionsOutFile="SwaptionsOut.txt"
+	) :	
+    LmmCalibrator(fl,capletsInFile,swaptionsInFile,capletsOutFile,swaptionsOutFile) 
+    {    }
+	
+	
+// CAPLET AND SWAPTION AGGREGATE VOLS
+	
+
+     Real capletAggregateVolatility(int i)
+     { 
+         Real* T=factorLoading->getTenorStructure();
+		 Real volsqr=factorLoading->integral_sgi_sgj_rhoij(i,i,0,T[i]);
+		 return sqrt(volsqr);
+     } 
+	 
+	 
+
+     Real swaptionAggregateVolatility(int p, int q)
+     { 
+          Real* T=factorLoading->getTenorStructure();
+		  UTRMatrix<Real>& 
+		  Q=factorLoading->logLiborCovariationMatrix(p,q,0,T[p]).utrRoot();
+		  vector<Real> x_pq(q-p,p);
+		  for(int j=p;j<q;j++) x_pq[j]=(B0(j)-B0(j+1))/B_pq(p,q);
+		  x_pq*=Q.transpose();
+		  return x_pq.norm();
+     } 
+
+// SYNTHETIC DATA GENERATION
+	 
+	 /** Writes a sample of synthetic caplet and swaption prices in 
+	  *  dimension n to files with the following nomenclature:
+	  *  <br>CapletsIn-dim(n)-DL-JR.txt<br>
+	  *  is a set of caplet prices in dimension n based on the sample 
+	  *  {@link JR_FactorLoading} and a {@link DriftlessLMM}.
+	  *  The files are written to the directory SyntheticData in the src
+	  *  directory.
+	  *  
+	  * @param n dimension of Libor process (number of accrual intervals).
+	  * @param flType type of factorloading: LiborFactorLoading::CS,JR,CV.
+	  */ 
+	 static void writeSyntheticDataSample(int n, int flType)
+     {
+		 Int_t nn(n);   // for string conversion
+		 string capletOutFile, swaptionOutFile, dim=nn.toString();
+		 LiborFactorLoading* fl;
+		 switch(flType){
+			 
+			 case LiborFactorLoading::JR : 
+				  fl=JR_FactorLoading::sample(n);
+				  capletOutFile="SyntheticData/CapletsIn-dim"+dim+"-PC-JR.txt";
+			      swaptionOutFile="SyntheticData/SwaptionsIn-dim"+dim+"-PC-JR.txt"; 
+			      break;
+			 case LiborFactorLoading::CV :
+				  fl=ConstVolLiborFactorLoading::sample(n);
+				  capletOutFile="SyntheticData/CapletsIn-dim"+dim+"-PC-CV.txt";
+			      swaptionOutFile="SyntheticData/SwaptionsIn-dim"+dim+"-PC-CV.txt"; 
+			      break;
+			 default : // Coffee-Shoenmakers
+			      fl=CS_FactorLoading::sample(n);
+			      capletOutFile="SyntheticData/CapletsIn-dim"+dim+"-PC-CS.txt";
+			      swaptionOutFile="SyntheticData/SwaptionsIn-dim"+dim+"-PC-CS.txt"; 
+		 } // end switch
+		 
+		 LmmCalibrator* cal=new PredictorCorrectorLmmCalibrator
+		 (fl,"CapletsIn","SwaptionsIn",capletOutFile.c_str(),swaptionOutFile.c_str());
+		 
+		 cal->writeSyntheticData();
+		
+	 } // end writeSyntheticDataSample
+		 
+
+	 /** Writes a sample of synthetic caplet and swaption prices in 
+	  *  dimension n=20,30,40 for all three factorloading types.
+	  */ 
+	 static void writeSyntheticDataSample()
+     {
+	     for(int n=20;n<60;n+=10)
+	     for(int flType=0;flType<3;flType++)writeSyntheticDataSample(n,flType);
+	     cout << "\n\nDone.";
+	 }
+			 
+			 
+			 
+	/** Allocates a sample factorloading of dimension n and
+	 *  type flType (LiborFactorLoading::CS,JR,CV) reads 
+	 *  caplet and swaption prices from the infiles and writes them
+	 *  to the outfiles.
+	 */
+	static void test(int n, int flType)
+    {
+		LiborFactorLoading* fl;
+		switch(flType)
+	    {
+			case LiborFactorLoading::JR : fl = JR_FactorLoading::sample(n); 
+				                          break;
+			case LiborFactorLoading::CV : fl = ConstVolLiborFactorLoading::sample(n); 
+				                          break;
+			default                     : fl = CS_FactorLoading::sample(n);
+		}
+		
+		LmmCalibrator* cal=new PredictorCorrectorLmmCalibrator(fl);
+		cal->readCaplets();
+		cal->writeCaplets();
+		cal->readSwaptions();
+		cal->writeSwaptions();
+	}
+	
+
+	
+}; // end PredictorCorrectorLmmCalibrator
 
 
 

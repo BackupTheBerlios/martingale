@@ -26,6 +26,7 @@ spyqqqdia@yahoo.com
 #define martingale_optimizer_h
 
 #include "Array.h"
+#include "QuasiMonteCarlo.h"
 #include <math.h>
 #include <cmath>
 
@@ -351,7 +352,7 @@ public:
 	
 		    	
     /** Sets function value, gradient and initial direction by making calls to {@link Optimizer#f}. 
-     *  We do this at thec start of the search since we can't call a virtual member frunction in the 
+     *  We do this at the start of the search since we can't call a virtual member frunction in the 
 	 *  constructor.
      */
     void setInitialConditions();
@@ -498,6 +499,91 @@ public:
 	 Real f(Real* x){ return (*of)(n,x); }
 
 }; 
+
+
+
+
+/*******************************************************************************
+ *
+ *              SOBOL SEARCH 
+ *
+ ******************************************************************************/
+
+/** Constrained global search using a Sobol sequence. Slow and dumb but thorough.
+ *  Searches a rectangular window centered at the current best point with a Sobol
+ *  sequence then restarts itself at the next best point with a slightly contracted 
+ *  window and fewer search points.
+ *
+ * @author  Michael J. Meyer
+ */
+class SobolSearch: public Optimizer {
+	
+	int nPoints;                       // total number of search points
+	Real q;                            // window contraction factor
+	RealArray1D xOpt;                  // current best point
+	RealArray1D x;                     // current point
+	RealArray1D d;                     // window: all u with x_j-d_j < u_j < x_j+d_j
+	
+	bool verbose;
+	
+	LowDiscrepancySequence* lds;
+	
+	
+public:
+	
+	/** @param n dimension.
+	 *  @param x0 initial point.
+	 *  @param nPoints total number of function evaluations.
+	 *  @param delta initial window all u with \f$x0_j-\delta_j<u_j<x0_j+\delta_j\f$.
+	 *  @param _verbose announce each new min during search.
+	 */
+	SobolSearch(int n, RealArray1D& x0, int nVals, RealArray1D delta, bool _verbose=false) : 
+	Optimizer(n),
+	nPoints(nVals), q(4.0/5), xOpt(x0), x(x0), d(delta), verbose(_verbose),
+	lds(new Sobol(n))
+    {  	}
+	
+	/** Wether or not the vector u is in the search domain.
+	 *  This is the default implementation (true, unconstrained search).
+	 */
+	virtual bool isInDomain(RealArray1D& u){ return true; }
+	
+	RealArray1D& search();
+	
+}; // end SobolSearch
+	
+	
+	
+	
+/** SobolSearch with particular objective function given by
+ *  a function pointer.
+ */
+class ConcreteSobolSearch : public SobolSearch {
+	
+	 Real (*of)(int n, Real* x);   // pointer to the objective function
+	
+public:
+	
+	 /** @param _of pointer to objective function. 
+	  */
+	 ConcreteSobolSearch
+	 (Real (*_of)(int n, Real* x), int n, RealArray1D& x, 
+	  int nVals, RealArray1D delta, bool verbose=false) :
+     SobolSearch(n,x,nVals,delta,verbose),
+	 of(_of)
+     {    }
+	 
+	 Real f(Real* x){ return (*of)(n,x); }
+
+};     
+		
+	
+	
+	
+
+
+
+
 
 
 

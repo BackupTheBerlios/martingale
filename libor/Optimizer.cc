@@ -160,7 +160,7 @@ using namespace Martingale;
         if(verbose){
             
             // the state before the last step
-            cout << "\n\nFunction minimum: " << y[min]
+            cout << "\n\nDownHillSimplex::search(): function minimum: " << y[min]
 			     << "\nMinimizing vector:";
             for(int j=0;j<n;j++) cout << endl << vertices(min,j);
         }
@@ -283,7 +283,7 @@ using namespace Martingale;
 		if(verbose){
             
             // the state before the last step
-            cout << "\n\nFunction minimum: " << fx
+            cout << "\n\nBFGS::search(): function minimum: " << fx
 			     << "\nMinimizing vector:";
             for(int j=0;j<n;j++) cout << endl << x[j];
         }
@@ -507,6 +507,67 @@ using namespace Martingale;
        }
 	   
     } // end lineSearch
+	
+	
+   
+/*******************************************************************************
+ *
+ *                   SOBOL SEARCH
+ *
+ ******************************************************************************/
+	
+	RealArray1D& SobolSearch::
+	search()
+    {		
+		   if(verbose)
+            cout << "\n\nSobolSearch::search(): dimension = " << n
+		         << ", nPoints = " << nPoints;
+		
+		Real fx, fOpt=f(x);
+		RealArray1D& xOpt=*(new RealArray1D(x));
+		
+		while(nPoints>0){
+			
+			for(int k=0;k<nPoints/2;k++){
+				
+			    // next quasi random point in the search window 
+			    // intersected with the search domain.
+		        Real* u=lds->nextPoint();
+		        for(int i=0;i<n;i++) x[i]=xOpt[i]+d[i]*(1-2*u[i]);
+			
+		        while(!isInDomain(x)){
+			
+			         u=lds->nextPoint();
+		             for(int i=0;i<n;i++) x[i]=xOpt[i]+d[i]*(1-2*u[i]);
+		        }
+			
+				fx=f(x);
+			    if(fx<fOpt){
+					
+					fOpt=fx; xOpt=x;
+					if(verbose) cout << "\nmin = " << fx;
+				}
+			} // end for k
+			nPoints/=2;
+			for(int i=0;i<n;i++) d[i]*=q;
+			lds->restart();
+				
+		} // end while
+		
+		// report results
+		if(verbose){
+            
+            // the state before the last step
+            cout << "\n\nFunction minimum: " << fx
+			     << "\nMinimizing vector:";
+            for(int j=0;j<n;j++) cout << endl << x[j];
+        }
+		
+		return xOpt;
+		
+	} // end search
+		
+		    
 	
 
 	
