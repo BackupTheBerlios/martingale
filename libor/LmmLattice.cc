@@ -94,7 +94,7 @@ latticeData(0)
     }
 	
 	// check if volatilities are constant
-	if(fl->getType().volType!=VolSurface::CONST) {
+	if(fl->getType()->volType!=VolSurface::CONST) {
 			
 	   cout << "\n\nLmmLattice-constructor: volatility surface not constant."
 	             << "\nTerminating.";

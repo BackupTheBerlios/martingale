@@ -207,14 +207,15 @@ Real controlledMonteCarloForwardPrice(OptionType* theOption, int nPaths)
 	     payoff, 
 	     controlVariate;
 	
-	for(int i=0;i<9*nPaths/10;++i){
+	int N=9*nPaths/10;
+	for(int i=0;i<N;++i){
 		
 		thePathGenerator->newPath();
 		payoff=theOption->forwardPayoffAlongCurrentPath();
 		controlVariate=theOption->controlVariateAlongCurrentPath();
 		sum_payoff+=payoff-beta*(controlVariate-controlVariateMean);
 	}
-	return sum_payoff/nPaths;	
+	return sum_payoff/N;	
 } 
 
 

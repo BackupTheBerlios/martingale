@@ -63,7 +63,7 @@ printSelf(ostream& os) const
 	return
 	os << "\n\nLibor market model:"
 	   << "\nSimulation: " << simulation 
-	   << flType;
+	   << *flType;
 }
 
 

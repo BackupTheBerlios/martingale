@@ -69,7 +69,7 @@ class Bond;  // defined below
 	  static const int DL=0, LFDL=1, PC=2, FPC=3;
 	 
 	  /** Type of factor loading. */
-	  const LiborFactorLoadingType& flType;
+	  const LiborFactorLoadingType* flType;
 	 
 	  /** type flag: DL, LFDL, PC, FPC. */
 	  const int type;
@@ -77,7 +77,7 @@ class Bond;  // defined below
 	  /** @param type DL, LFDL, PC, FPC
 	   *  @param correlations Correlations::JR,CS.
 	   */
-	  LiborMarketModelType(const LiborFactorLoadingType& lflType, int lmmType) :
+	  LiborMarketModelType(const LiborFactorLoadingType* lflType, int lmmType) :
 	  flType(lflType), type(lmmType)  {    }                                                                         
 	  
 	  std::ostream& printSelf(std::ostream&) const;
@@ -144,7 +144,7 @@ public:
 	
 	/** Type object (integer and string type flags). 
 	 */
-	LiborMarketModelType getType() const { return type; }
+	const LiborMarketModelType* getType() const { return &type; }
 	
 	/** Convert integer type flag to string "DL", "LFDL", "PC", "FPC".
 	 */

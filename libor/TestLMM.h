@@ -112,7 +112,7 @@ void testLmmPaths(int n)
 	for(int corrType=0;corrType<2;corrType++){
 		
 		LiborMarketModel* lmm=LiborMarketModel::sample(n,lmmType,volType,corrType);
-		cout << "\n\n20 Libor paths, LMM type: " << lmm->getType() 
+		cout << "\n\n20 Libor paths, LMM type: " << *(lmm->getType()) 
 		     << endl << endl;
 		for(int path=0;path<2;path++){
 			
@@ -143,7 +143,8 @@ void testLmmPaths(int n)
 void testSwaptionPrice(int n, int lmmType, int volType, int corrType)
 { 
 	Timer watch; watch.start();
-    Swaption* swpn=Swaption::sample(n,lmmType,volType,corrType);
+	int p=n/3, q=n;
+    Swaption* swpn=Swaption::sample(p,q,lmmType,volType,corrType);
 	swpn->testPrice();
 	watch.stop(); watch.report(" ");	
 } 
@@ -267,14 +268,15 @@ void testLmmLattice()
 
 // SWAPTIONS
 
-/** Swaption prices in the driftless Libor Market Model
+/** Swaption prices in the sample driftless Libor Market Model
  *  (constant volatility and JR correlations, book, 6.11.2).
  *  Analytic, default lattice, Monte Carlo and QMC prices with
- *  and without control variates.
+ *  and without control variates. Asks for user input in a
+ *  perpetual loop.
  *
  * @param verbose details on lattice and factor loading.
  */
-void testSwaption(bool verbose=false)
+void testSwaption()
 {
 	int do_again=1;
 	// main loop

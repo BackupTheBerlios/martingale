@@ -35,9 +35,11 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  *  Implicit assumption: the new path is stored and accessible as <i>the current
  *  path</i> of the PathGenerator.
  */
-struct PathGenerator {
+class PathGenerator {
 	
-	virtual void newPath();
+public:
+	
+	virtual void newPath() = 0;
 		
 }; // end PathGenerator
 

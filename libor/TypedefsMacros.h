@@ -34,6 +34,8 @@ spyqqqdia@yahoo.com
                                      // which a lattice can be built.
 #define BASKET_MAX_DIM 300           // maximum number of assets in a basket for
                                      // which a lattice can be built.
+#define LATTICE_MAX_STEPS 250        // maximum number of time steps in a two factor 
+                                     // lattice (assumes 1GB of main memory)
 
 // the basic scalar type
 typedef double Real;

@@ -149,7 +149,7 @@ public:
 	
 	/** Type object, contains integer and string IDs of the VolSurface
 	 *  and Correlations. */
-	const LiborFactorLoadingType& getType() const { return flType; }
+	const LiborFactorLoadingType* getType() const { return &flType; }
     
     /** Number <code>n</code> of forward Libors including \f$L_0(t)\f$.
      */

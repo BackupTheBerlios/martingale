@@ -134,7 +134,14 @@ LiborDerivative
 Option(lmm->getTenorStructure()[s],lt,mc,cv),
 LMM(lmm),
 LPG(new LiborPathGenerator(lmm,s,i)), n(lmm->getDimension()), t(s)
-{  }
+{  
+	// lattice pricing assumes constant vols and driftless LMM
+	int volType = lmm->getType()->flType->volType;
+	int lmmType = lmm->getType()->type;
+	if((volType!=VolSurface::CONST)||
+	   (lmmType!=LiborMarketModel::DL))
+	hasLattice_=false;
+}
 
 
 int 
@@ -153,11 +160,13 @@ getDefaultLattice()
 {
 	LiborFactorLoading* fl = LMM->getFactorLoading();
 	Real delta=LMM->getDeltas()[0];
-	// size of time step: 0.05 or at most 250 time steps in all.
-	Real dt = max(0.05, t*delta/250.0);
-	int nSteps = (int) delta/dt;
-	
-	return new LmmLattice2F(fl,t,nSteps,false);
+	// size of time step: 
+	int steps=50;                               // minimum
+	while((steps<LATTICE_MAX_STEPS)&&(t*delta/steps>0.04)) steps++;
+	Real dt = t*delta/steps;
+	int nSteps = (int)(delta/dt);
+	bool verbose = false;
+	return new LmmLattice2F(fl,t,nSteps,verbose);
 }
 
 
@@ -198,9 +207,15 @@ testPrice()
 	  // lattice 
 	  if(hasLattice_){
 		  
-	      lPrice=latticeForwardPrice();
-	      cout << "Default lattice (driftless LMM only): " << lPrice << " , relative error: "
+	      LmmLattice* theLattice = getDefaultLattice();
+	      lPrice = Option::latticeForwardPrice(theLattice);
+	      cout << "Default lattice: " << lPrice << " , relative error: "
 		       << relativeError(aPrice,lPrice,epsilon) << "%" << endl;
+		  theLattice->rescaleVols();
+		  lPrice = Option::latticeForwardPrice(theLattice);
+	      cout << "Default lattice (volatilities rescaled): " << lPrice << " , relative error: "
+		       << relativeError(aPrice,lPrice,epsilon) << "%" << endl;
+		  delete theLattice;
       }
 		
 	  // Monte Carlo
@@ -523,7 +538,7 @@ BondCall::
 printSelf(ostream& os) const
 {  
    return
-   os << "Call on bond B with strike K =: " << K << *B;
+   os << "Call on bond B with strike K =: " << K << endl << *B;
 }
 
 

@@ -113,16 +113,18 @@ int main()
 	
 	
 	// anomalies in high dimensions (n>=70) for all but DriftlessLMM,
-
+/*
 	     int n=50;                          // dimension
-	     int lmmType=LiborMarketModel::PC;  // DL, LFDL, PC, FPC
-	     int volType=VolSurface::JR;         // JR, M, CONST
+	     int lmmType=LiborMarketModel::DL;  // DL, LFDL, PC, FPC
+	     int volType=VolSurface::CONST;     // JR, M, CONST
          int corrType=Correlations::CS;     // JR, CS
-
+*/
 	// testCapletPrice(n,lmmType,volType,corrType); 
 	// testSwaptionPrice(n,lmmType,volType,corrType);
-	testCallOnBondPrice(n,lmmType,volType,corrType);
+	// testCallOnBondPrice(n,lmmType,volType,corrType);
 	// testCallOnZeroCouponBondPrice(n,lmmType,volType,corrType);
+	
+	testSwaption();
 	
 
 	

@@ -220,6 +220,18 @@ Implement BermudanSwpations and European and American BasketOptions.
 Get rid of the strange linker error and test the option pricing code.
 Split all Test*.h files into header and source files.
 
+
+<h3>8-16-03:</h3>
+
+<ul>
+<li>Lattice volatility rescaling: introduce a parameter which allows us to 
+control to which percent the volatility is rescaled. Swaption price experiments
+indicate that full rescale overshoots the target.</li>
+<li>Implement Monte Carlo American option pricing: exercise triggers,
+each option gets a method to provide a default exercise trigger.
+This is used to compute the forwardPayoffAlongCurrentPath().</li>
+</ul>
+
  
 
 

@@ -591,7 +591,7 @@ calibrate(int nVals)
 	RealArray1D u(7);					
 	// now set a,b,c,d; alpha,beta,r_oo depending on the type of correlations
 	// and volatilities
-	switch(factorLoading->getType().volType){
+	switch(factorLoading->getType()->volType){
 			
 		case VolSurface::JR :
 		u[0]=0.1; u[1]=0.7; u[2]=2.0; u[3]=0.3; break;
@@ -602,7 +602,7 @@ calibrate(int nVals)
 		default : u[0]=1.0; u[1]=1.0; u[2]=1.0; u[3]=1.0;
 	}
 		
-	switch(factorLoading->getType().corrType){
+	switch(factorLoading->getType()->corrType){
 		
 		case Correlations::JR :	
 		u[4]=1.0; u[5]=0.2; u[6]=1.0; break;
@@ -884,14 +884,14 @@ isInDomain(const RealArray1D& x) const
 	bool is_In=true;
 	
 	// volsurface a,b,c,d
-	switch(cal->getFactorLoading()->getType().volType){
+	switch(cal->getFactorLoading()->getType()->volType){
 			
 		case VolSurface::M  :   is_In=is_In&&((a>0)&&(d>0.05));  break; // book, 6.11.1 
 		case VolSurface::JR :   is_In=is_In&&(d*c+b>0.0); 
 	}
 	
 	// correlations alpha, beta, rho
-	switch(cal->getFactorLoading()->getType().corrType){
+	switch(cal->getFactorLoading()->getType()->corrType){
 			
 		case Correlations::CS : sum=alpha/6+beta/3+log(r_oo);
 		is_In=is_In&&((alpha>5*beta)&&(beta>0.0)&&(r_oo>0.05)&&(r_oo<0.99)&&(sum<0.0)); break;

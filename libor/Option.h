@@ -32,9 +32,9 @@ spyqqqdia@yahoo.com
 #define martingale_option_h
 
 #include "TypedefsMacros.h"
-#include "PathGenerator.h"           // base class
-#include "Pricing.h"                 // needed in template function
-#include <cstdlib>                   // exit(int)
+#include "PathGenerator.h"             // base class
+#include "Pricing.h"                   // needed in template function
+#include <cstdlib>                     // exit(int)
 
 
 
@@ -174,7 +174,7 @@ virtual std::ostream& printSelf(std::ostream& os) const;
  *  LiborMarketModel and forwards request for a newPath() to the LMM while
  *  controlling which Libors are computed until which time.
  */
-struct LiborPathGenerator : public PathGenerator {
+class LiborPathGenerator : public PathGenerator {
 	
 	LiborMarketModel* LMM;
 	/** Libors are computed until time T_t.*/   int t;                     
