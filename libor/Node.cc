@@ -20,7 +20,11 @@ spyqqqdia@yahoo.com
 
 */
 
-#include "LmmLattice.h"
+#include "Node.h"
+#include "Array.h"
+#include "LiborFactorLoading.h"
+#include <iostream>
+#include <cstdlib>                        // exit()
 using namespace Martingale;
 
 
@@ -30,21 +34,27 @@ using namespace Martingale;
  *            GENERAL NODES 
  *
  *********************************************************************************/
+ 
+Node:: 
+~Node()
+{
+	std::list<Edge>::const_iterator theEdge;         // pointer to Edge
+	for(theEdge=edges.begin(); theEdge!=edges.end(); ++theEdge)  delete &(*theEdge); 
+}
 
 
-// GENERAL NODES
-
-	void Node::
-	printTransitionProbabilities()
-	{
-		cout << "\n\n\nTransition probabilities\n: ";
-		std::list<Edge>::const_iterator theEdge;
-		for(theEdge=edges.begin(); theEdge!=edges.end(); ++theEdge) 
-		{	
-			Real p=theEdge->probability;
-			cout << p << ", ";
-		}		
-     } // end printTransitionProbabilities
+void 
+Node::
+printTransitionProbabilities() const
+{
+	cout << "\n\n\nTransition probabilities\n: ";
+	std::list<Edge>::const_iterator theEdge;
+	for(theEdge=edges.begin(); theEdge!=edges.end(); ++theEdge) 
+	{	
+		Real p=theEdge->probability;
+		cout << p << ", ";
+	}		
+} // end printTransitionProbabilities
 	 
 
 
@@ -55,36 +65,75 @@ using namespace Martingale;
  *********************************************************************************/
 	 
 	 
-		
-	LmmNode::
-	LmmNode(LiborFactorLoading* fl, int s, int steps) : Node(s),
-	factorLoading(fl), 
-	n(factorLoading->getDimension()),
-	nSteps(steps),
-	H(n-get_t()+1,get_t()) 
-	{  }
+LmmNode::
+LmmNode(LiborFactorLoading* fl, int s, int steps) : Node(s),
+factorLoading(fl), 
+n(factorLoading->getDimension()),
+nSteps(steps),
+H(n-get_t()+1,get_t()) 
+{  }
+
+
+Real 
+LmmNode::
+X(int j) const
+{
+	int t=get_t();             // node in (T_{t-1},T_t]
+	if((t==n)&&(j==n-1)) return (H[j]-1.0);
+	if((t<n)&&(j>=t)&&(j<n)) return (H[j]-H[j+1])/H[j+1];
+	// else
+	cout << "\n\nLmmNode:X(j): j = " << j << " not in ["<<t<<","<<n-1<<"]"
+	     << "\nTime step s = " << s
+	     << "Terminating.";
+	exit(0);		
+}
 	 
 
-	Real LmmNode::
-	Hpq(int p, int q)
-    {
-		int t=get_t();            // node in (T_{t-1},T_t]
-		if((p<t)||(q<=p)){
+Real 
+LmmNode::
+Hpq(int p, int q) const
+{
+	int t=get_t();            // node in (T_{t-1},T_t]
+	if((p<t)||(q<=p)){
 		
-			cout <<	"\n\nLmmNode::Hpq(p,q): t = " << t << ", p = " << p << ", q = " << q
-			     << "\n Incompatible indices, terminating.";
-			exit(0);
-		}
-		
-		Real* delta=factorLoading->getDeltas();
-		Real sum=0.0;
-		for(int j=p;j<q;j++) sum+=delta[j]*H[j+1];
-			
-		return sum;
+		cout <<	"\n\nLmmNode::Hpq(p,q): t = " << t << ", p = " << p << ", q = " << q
+		     << "\n Incompatible indices, terminating.";
+		exit(0);
 	}
+		
+	Real* delta=factorLoading->getDeltas();
+	Real sum=0.0;
+	for(int j=p;j<q;j++) sum+=delta[j]*H[j+1];
+			
+	return sum;
+}
 	
 	
+void 
+LmmNode::
+printState() const
+{
+     cout << "\n\n Diagnostic: node at time step s = " << s
+	      << "\nVector H: " << H
+	      << "\nPrice pi = " << pi;
+}
 
+
+/**********************************************************************************
+ *
+ *            ASSET BASKET NODES 
+ *
+ *********************************************************************************/
+
+	
+void 
+BasketNode::
+printState() const
+{
+     cout << "\n\n Diagnostic: node at time step s = " << s
+	      << "\nVector S: " << S
+	      << "\nPrice pi = " << pi;
+}
 	
 
 	

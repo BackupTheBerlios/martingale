@@ -23,12 +23,17 @@ spyqqqdia@yahoo.com
 #ifndef martingale_latticeoption_h    
 #define martingale_latticeoption_h
 
-#include "LmmLattice.h"
-#include  "LowFactorDriftlessLMM.h"
-#include "Derivatives.h"
-#include <math.h>
 
 MTGL_BEGIN_NAMESPACE(Martingale)
+
+
+
+// forward declaration
+template<typename Node> 
+class Lattice;
+
+class LmmNode2F;
+class LmmNode3F;             // for typedef LatticeSwaption<LmmNode3F> below
 
 
 
@@ -45,15 +50,18 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  *  at the horizon T of the underlying asset price process instead of discounted prices
  *  since this works for all options including Libor derivatives.
  *
- *  <p>The option specifies a payoff h at discrete time t=s (continuous time \f$T_s\f$)
+ *  <p>The option specifies a payoff h at discrete time t=s (after s time steps)
  *  accrued forward to the horizon T. With this the forward option price
  *  \f$\pi_t\f$ satisfies \f$\pi_s=h\f$ and \f$\pi_t=E_t(h)\f$ for \f$t<s\f$ and this 
- *  price can be computed recursively as
+ *  price can be computed by backward recursion
  *
  * \f[pi_t=E_t(\pi_{t+1}),\quad\quad \pi_s=h.\f]
  *
- * In this manner the price is computed backward from time t=s to time t=0 through all
- * nodes in the lattice. At each node the conditional expectation \f$E_t(\pi_{t+1})\f$
+ * starting from the time t=s of the option payoff to time t=0 through all
+ * nodes in the lattice. Here discrete time t is an integer and denotes the time reached 
+ * after time step number t as usual.
+ * 
+ * <p>At each node the conditional expectation \f$E_t(\pi_{t+1})\f$
  * is computed by averaging the values of \f$\pi_{t+1}\f$ over all nodes which can be
  * reached from this node weighted according to the transition probabilities.
  * The class provides methods to roll back the price to the root node and report this value
@@ -76,7 +84,7 @@ public:
 	
 	
 	/** @param lattice the underlying {@link Lattice}.
-	 *  @param t time at which the values of <code>this</code> are known.
+	 *  @param t number of time steps to option exercise.
 	 */
 	LatticeEuropeanOption(Lattice<Node>* lattice, int t) : theLattice(lattice), s(t) {  }
 		
@@ -90,58 +98,17 @@ public:
 		
 	/** The forward price at time t=0.
 	 */
-	Real forwardPrice() 
-	{
-		computeConditionalExpectations();
-		Node* root=theLattice->getRoot();
-		return root->getPi();
-	}
+	Real forwardPrice();
 		
 
 		
 private:		
 		
-	/** This method writes the forward price \f$\pi_t=E_t(h)\f$ into all
-	 *  nodes in the lattice at times \f$t<s\f$, where s is the time at which the values
-	 *  of <code>this</code> are known. The value is written into the field <code>pi</code>
-	 *  of each node.
+	/** Rolls back the forward price \f$\pi_t=E_t(h)\f$ starting from time t=s to time t=0
+	 *  through all nodes in the lattice. Here s is the discrete time of option expiration.
+	 *  The value \f$\pi_t=E_t(h)\f$ is written into the field <code>pi</code> of each node.
 	 */
-	void computeConditionalExpectations()
-	{
-		// run through the list of nodes at time t=s and set the known value pi_s=h
-		std::list<Node*>& nodes_s=theLattice->getNodeList(s);	    
-	    std::list<Node*>::const_iterator theNode;
-		for(theNode=nodes_s.begin(); theNode!=nodes_s.end(); ++theNode)
-		{
-			// the list is a list of pointers to Node, so *theNode is pointer to Node
-			Node* node=*theNode;      
-			node->setPi(forwardPayoff(node));
-		}
-	
-		// backward computation through earlier nodes
-		for(int t=s-1; t>=0;t--){
-		
-			std::list<Node*>& nodes=theLattice->getNodeList(t);	    
-	    	for(theNode=nodes.begin(); theNode!=nodes.end(); ++theNode)
-		    {
-			     Node* node=*theNode;
-				 std::list<Edge>& edges=node->getEdges();
-				
-				 Real E_th=0.0;
-				 std::list<Edge>::const_iterator theEdge;
-				 for(theEdge=edges.begin(); theEdge!=edges.end(); ++theEdge)
-		         {	
-			         Real p=theEdge->probability;
-					 // E_{t+1}(h) at the node the edge points to.    
-					 Real E_t1h=theEdge->node->getPi(); 
-					 E_th+=p*E_t1h;
-		         }	
-				 node->setPi(E_th);			 
-		    } // end for nodes
-			
-		} // end for t
-	} // end computeConditionalExpectations
-	
+	void computeConditionalExpectations();	
 	
 }; // end LmmLatticeEuropeanOption 
 
@@ -157,7 +124,8 @@ private:
 
 /** <p>The forward payer swaption which can be exercised at time 
  *  \f$T_s\f$ into a payer swap on the interval \f$[T_p,T_q]\f$
- * evaluated in a {@link Libortree2F} lattice.
+ * evaluated in a lattice for the driftless Libor market model
+ * {@link DriftlessLMM}.
  *
  * @param Node must extend LmmNode.
  */
@@ -186,15 +154,11 @@ public:
 	kappa(strike)
     {  }
 	
-	// the NodeType extends LmmNode
-	Real forwardPayoff(Node* node) 
-    {
-		Real swapRate=node->swapRate(p,q);
-		if(swapRate<=kappa) return 0.0;
-		// else, forward price of the annuity B_{p,q}
-	    Real Hpq=node->Hpq(p,q); 
-		return (swapRate-kappa)*Hpq;
-	}
+	/** Payoff of the swaption at a node living at the time of swaption exercise
+	 *  accrued forward to the horizon \f$T_n\f$ of the underlying Libor process.
+	 */ 
+	//the NodeType extends LmmNode
+	Real forwardPayoff(Node* node);
 
 	
 // TEST
@@ -203,33 +167,11 @@ public:
 	 *  price of the at the money payer swaption exercisable at time \f$T_s\f$ into a swap 
 	 *  along \f$[T_p,T_q]\f$.
 	 */
-	static void test(int s, int p, int q)
-    {
-		Timer watch; watch.start();
-		ConstVolLiborFactorLoading* fl=ConstVolLiborFactorLoading::sample(q); 
-		// number of time steps in each Libor accrual interval
-		int nSteps=2;
-		ConstVolLmmLattice3F theLattice(fl,s,nSteps);
-		LmmNode* root=theLattice.getRoot();
-		
-		Real strike=root->swapRate(p,q);
-		LatticeSwaption<LmmNode3F> swpn(&theLattice,s,p,q,strike,nSteps);
-		Real treePrice=swpn.forwardPrice();
-		
-		cout << "\n\n\nSwaption forward price: " 
-		     << "\nTree: " << treePrice;
-		
-		LiborMarketModel* lmm=new LowFactorDriftlessLMM(fl,3);
-		Derivative* swpnLmm=new Swaption(p,q,s,strike,lmm);
-		Real mcPrice=swpnLmm->monteCarloForwardPrice(50000);
-		
-		cout << "\nMonte Carlo: " << mcPrice;
-        
-		watch.stop();
-		watch.report("Time");
-	}
+	static void test(int s, int p, int q);
 	
 }; // end LatticeSwaption
+
+
 
 
 /** Swaptions in two and three factor lattices for the {@link DriftlessLMM}.

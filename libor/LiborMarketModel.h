@@ -30,11 +30,12 @@ spyqqqdia@yahoo.com
 #ifndef martingale_libormarketmodel_h    
 #define martingale_libormarketmodel_h
 
-
-#include "QuasiMonteCarlo.h"
-#include "LiborFactorLoading.h"
-
 MTGL_BEGIN_NAMESPACE(Martingale)
+
+
+// forward declarations
+class RealArray1D;
+class LiborFactorLoading;
 
 
 class Bond;  // defined below
@@ -77,13 +78,6 @@ protected:
 	
 
 public:
-	
-   
-    /** Coffee-Shoenmakers factor loading. */
-	static const int CS=0;
-	
-	/** Jaeckel-Rebonato factor loading. */
-	static const int JR=1;
 
     /** The number n of accrual periods.
      */
@@ -151,20 +145,7 @@ public:
      * {@link FactorLoading}.
      */
     LiborMarketModel(LiborFactorLoading* fl);
-   
-   
-    	
-	/** Generates a sample Libor factor loading of dimension n 
-	 *  (number of Libor accrual intervals) of type CS or JR.
-	 *
-	 * @param n dimension of Libor process (number of accrual intervals).
-	 * @param delta length of each accrual interval (all the same length), default: 1/4.
-	 * @param factorLoadingType must be CS or JR, default CS.
-	 */
-	static LiborFactorLoading* 
-    sampleFactorLoading(int n, Real delta=0.25, int factorLoadingType=CS);
-    
-
+ 
     
 
 // ABSTRACT METHODS
@@ -177,7 +158,7 @@ public:
 
 	/** The vector \f$(X_p(T_t),...,X_{n-1}(T_t))\f$ from current path. 
       */
-     virtual const vector<Real>& XLvect(int t, int p) = 0;
+     virtual const RealVector& XLvect(int t, int p) = 0;
 	
 
 	 /** Computes a full Libor path from time zero to the horizon.
@@ -219,7 +200,7 @@ public:
       *
       * @param i Libor index.
       */
-     Real vol(int i) const { return factorLoading->annualVol(i); }
+     Real vol(int i) const;
 	 
      
 
@@ -378,18 +359,11 @@ public:
 	 
    /** <p>The forecast of caplet volatility \f$\Sigma(0,T_i)\f$ to expiration.
 	*  Quantity is needed for Black caplet formula. See book, 6.9.2.</p>
-	*
-	* <p>Default implementation: error message and abort.</p>
+    *  Default implementation: error message and abort.</p>
     *
     * @param i caplet on \f$[T_i,T_{i+1}]\f$.
     */ 
-     virtual Real capletAggregateVolatility(int i) const
-     { 
-          cerr << "LiborMarketModel#capletAggregateVolatility(): " 
-		       << "not implemented in this generality, aborting.";
-		  exit(1);
-		  return 0.0;
-     } 
+     virtual Real capletAggregateVolatility(int i) const;
 	 
 	 
    /** <p>The forecast \f$\Sigma_{p,q}(0,T_t)\f$ of swap rate volatility to 
@@ -401,13 +375,7 @@ public:
     * @param p,q swap along on \f$[T_p,T_q]\f$.
     * @param t swaption exercise at time \f$T_t\leq T_p\f$.
     */ 
-     virtual Real swaptionAggregateVolatility(int p, int q, int t) const
-     { 
-          cerr << "LiborMarketModel#swaptionAggregateVolatility(): " 
-		       << "not implemented in this generality, aborting.";
-		  exit(1);
-		  return 0.0;
-     } 
+     virtual Real swaptionAggregateVolatility(int p, int q, int t) const;
 
      
 	 /** <p>The volatility forecast \f$\Sigma(0,T_t)\f$ needed
@@ -419,13 +387,7 @@ public:
 	  * @param B the bond.
 	  * @param t aggregate volatility until time \f$T_t\f$.
 	  */
-	 virtual Real bondAggregateVolatility(Bond* B, int t) const
-     { 
-          cerr << "LiborMarketModel#bondAggregateVolatility(): " 
-		       << "not implemented in this generality, aborting.";
-		  exit(1);
-		  return 0.0;
-     } 
+	 virtual Real bondAggregateVolatility(Bond* B, int t) const;
 
 	 
 // STRING MESSAGE	 

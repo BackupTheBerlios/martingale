@@ -24,23 +24,26 @@ spyqqqdia@yahoo.com
 #ifndef martingale_node_h    
 #define martingale_node_h
 
-#include "LiborFactorLoading.h"
-#include "Utils.h"
 #include <math.h>
 #include <list>
-
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
+// forward declarations
+class LiborFactorLoading;             // LiborFactorLoading.h
+class RealArray1D;                    // Array.h
+
+
 /*! \file Node.h
- *  Nodes in a stochastic lattice in general and in lattices 
- *  for the Libor market model in particular.
+ *  Nodes in a stochastic lattice in general and in lattices for the 
+ *  driftless Libor market model {@link DriftlessLMM} and baskets of assets 
+ *  with constant volatility in particular. See book, chapter 8.
  *
  * <p><a name="lmm-node">Nodes for a general LMM lattice:</a>
  *  A node in a lattice for the Libor market model lives at a time in some
  *  accrual interval \f$(T_{t-1},T_t]\f$. At this time the surviving Libors are
- *  \f$X_t,X_{t+1},\dots,X_{n-1}\f$, where n is the number of accrual intevals.
+ *  \f$X_t,X_{t+1},\dots,X_{n-1}\f$, where n is the number of accrual intervals.
  *  The node however stores the vector of accrual factors
  *  \f[H=(H_t,...,H_n)\f]
  *  as the most suitable way to store the state of the underlying Libor process since
@@ -97,6 +100,7 @@ struct Edge {
 
 /** Node in a general stochastic lattice. Allocates empty list of edges.
  *  The edges have to be filled in in the derived node classes.
+ *  More details at Node.h.
  */
 class Node {
 	
@@ -119,12 +123,12 @@ public:
 // ACCESSORS
 	
 	/** Discrete time t at which the node lives. */
-	int getTimeStep(){ return s; }
-	Real getPi(){ return pi; }
+	int getTimeStep() const { return s; }
+	Real getPi() const { return pi; }
 	void setPi(Real x){ pi=x; }
 	
 	/** List of edges */
-	std::list<Edge>& getEdges(){ return edges; }
+	std::list<Edge>& getEdges() const { return edges; }
 	
 	
 // CONSTRUCTOR
@@ -132,13 +136,8 @@ public:
 	/** @param s_ number of time steps to reach the node from time zero.
 	 */
 	Node(int s_) : s(s_), edges() {  }
-				 
-		
-    ~Node()
-	{
-		std::list<Edge>::const_iterator theEdge;         // pointer to Edge
-		for(theEdge=edges.begin(); theEdge!=edges.end(); ++theEdge)  delete &(*theEdge); 
-	}
+				 		
+    ~Node();
 		
 
 	
@@ -146,7 +145,7 @@ public:
 	
 	/** Diagnostic. Prints the transition probabilities and corresponding Q_ij(t) values.
 	 */
-	void printTransitionProbabilities();
+	void printTransitionProbabilities() const;
 	 
 	
 
@@ -161,10 +160,11 @@ public:
  *********************************************************************************/
 
 
-/** Single <a href="lmm-node">node</a> in an {@link LmmLattice} containing the vector 
- *  \f[H=(H_t(T_t),...,H_n(T_t))\f] 
- *  and methods to compute Libors, swaprates, bonds, etc from these. The mechanics of evolving the
- *  \f$H_j\f$ is left to derived classes.
+/** Single <a href="lmm-node">node</a> in an {@link LmmLattice} containing the vector H
+ *  of accrual factors \f$H_j\f$ which  survive to the time at which the node lives.
+ *  These are used as the most efficient means to store the state of the underlying 
+ *  Libor process. Contains methods to compute Libors, swap rates, bonds, etc from these. 
+ *  The mechanics of evolving the \f$H_j\f$ is left to derived classes.
  *  For more details see the file reference for the file Node.h (click on
  *  "File List").
  *  
@@ -185,7 +185,7 @@ protected:
 	/** The accrual factors H_j(T_t), j=t,...,n at this node,
 	 *  natural indexation, index base t.
 	 */
-	vector<Real> H; 
+	RealArray1D H; 
 
 	
 public:
@@ -200,7 +200,7 @@ public:
 		return s/nSteps+1;
 	}		
 	
-	vector<Real>& getH(){ return H; }
+	RealArray1D& getH(){ return H; }
 	
 	
 // CONSTRUCTOR
@@ -219,12 +219,7 @@ public:
 	
 	/** Diagnostic. Prints the time t, vector H and field pi.
 	 */
-	void printState()
-	{
-         cout << "\n\n Diagnostic: node at time step s = " << s
-		      << "\nVector H: " << H
-		      << "\nPrice pi = " << pi;
-	}
+	void printState() const;
 	 
 	
 	
@@ -232,45 +227,35 @@ public:
 	
 	/** Libor \f$X_j=\delta_jL_j\f$ at this node.
 	 */
-	Real X(int j)
-    {
-		int t=get_t();             // node in (T_{t-1},T_t]
-		if((t==n)&&(j==n-1)) return (H[j]-1.0);
-		if((t<n)&&(j>=t)&&(j<n)) return (H[j]-H[j+1])/H[j+1];
-		// else
-		cout << "\n\nLmmNode:X(j): j = " << j << " not in ["<<t<<","<<n-1<<"]"
-		     << "\nTime step s = " << s
-		     << "Terminating.";
-		exit(0);		
-	}
+	Real X(int j) const;
 
 	
 	/** Forward price of the annuity (PBV)
 	 *  \f$H_{p,q}=B_{p,q}/B_n=\sum\nolimits_{j=p}^{q-1}\delta_jH_{j+1}\f$
 	 *  at this node.
 	 */
-	Real Hpq(int p, int q);
+	Real Hpq(int p, int q) const;
 	
 	
 	/** Forward swaprate \f$S_{p,q}\f$ at this node, swap interval
 	 *  \f$[T_p,T_q]\f$, where \f$t\leq p<q\f$. Here t is the discrete time
 	 *  at which the node lives.
 	 */	  
-	Real swapRate(int p, int q){ return (H[p]-H[q])/Hpq(p,q); }
+	Real swapRate(int p, int q) const { return (H[p]-H[q])/Hpq(p,q); }
 		
 
 // ZERO COUPON BONDS
 		
     /** The zero coupon bond \f$B_i\f$ expiring at time \f$T_i\f$ at this node. 
 	 */
-	Real B_i(int i)
+	Real B_i(int i) const
 	{ 
 		int t=get_t();
 		return H[i]/H[t]; 
 	}
 	
 
-}; // end Node
+}; // end LmmNode
 	
 
 
@@ -298,8 +283,8 @@ public:
 		
 // ACCESSORS
 	
-	int get_i(){ return i; }
-	int get_j(){ return j; }
+	int get_i() const { return i; }
+	int get_j() const { return j; }
 	
 	
 // CONSTRUCTOR
@@ -346,9 +331,9 @@ public:
 		
 // ACCESSORS
 	
-	int get_i(){ return i; }
-	int get_j(){ return j; }
-	int get_k(){ return k; }
+	int get_i() const { return i; }
+	int get_j() const { return j; }
+	int get_k() const { return k; }
 	
 // CONSTRUCTOR
 	
@@ -369,7 +354,148 @@ public:
 	
 
 	
+
+/**********************************************************************************
+ *
+ *            NODE IN GENERAL BASKET
+ *
+ *********************************************************************************/
+
+
+/** Single <a href="lmm-node">node</a> in a basket of assets with constant volatilities.
+ *  Contains the vector S of asset prices.
+ *  For more details see the file reference for the file BasketLattice.h.
+ *  
+ */
+class BasketNode : public Node {
 	
+protected:
+	
+	/** Number of assets */
+	int n;
+	
+	/** Vector of asset prices, index base zero.
+	 */
+	RealArray1D S; 
+
+	
+public:
+	
+// ACCESSORS
+	
+	/** Vector of asset prices. */
+	RealArray1D& getS() { return S; }
+	
+	
+// CONSTRUCTOR
+	
+	/** @param n number of assets.
+	 *  @param s number of time steps to reach the node from time zero.
+	 */
+	BasketNode(int _n, int _s): Node(s), n(_n), S(_n) { }
+				 
+	
+
+	
+// DIAGNOSTIC
+
+	
+	/** Diagnostic. Prints the time t, vector H and field pi.
+	 */
+	void printState() const;
+	 	
+
+}; // end BasketNode
+	
+
+
+
+/**********************************************************************************
+ *
+ *            NODE IN 2 FACTOR BASKET 
+ *
+ *********************************************************************************/
+
+
+
+/** Node in a 2 factor lattice for a basket of constant volatility assets.
+ *  For more details see the file reference for the file BasketLattice.h.
+ */
+class BasketNode2F : public BasketNode {
+	
+	int i,                  // Z1=ia
+		j;                  // Z2=ja,
+    // a=sqrt(dt) the tick size of a standard Brownian motion over an interval of length dt.
+	
+public:
+		
+// ACCESSORS
+	
+	int get_i(){ return i; }
+	int get_j(){ return j; }
+	
+	
+// CONSTRUCTOR
+	
+	/** @param n number of assets.
+	 *  @param s number of time steps to reach this node from time zero.  
+	 *  @param k state Z_1=ka
+	 *  @param l state Z_2=la
+	 */
+	BasketNode2F(int n, int s, int k, int l) : BasketNode(n,s),
+    i(k), j(l)
+	{	}
+	
+
+}; // end LmmNode2F
+	
+
+
+
+/**********************************************************************************
+ *
+ *            NODE IN 3 FACTOR BASKET LATTICE
+ *
+ *********************************************************************************/
+
+
+
+/** Node in a 3 factor lattice for a basket of constant volatility assets.
+ *  For more details see the file reference for the file BasketLattice.h.
+ */
+class BasketNode3F : public BasketNode {
+	
+
+	int i,                  // state Z1=ia
+		j,                  // state Z2=ja
+	    k;                  // state Z3=ka,  
+    // a=sqrt(dt) the tick size of a standard Brownian motion over an interval of length dt.
+
+	
+public:
+		
+// ACCESSORS
+	
+	int get_i(){ return i; }
+	int get_j(){ return j; }
+	int get_k(){ return k; }
+	
+// CONSTRUCTOR
+	
+	/** @param n number of assets.
+	 *  @param s number of time steps to reach this node from time zero.
+	 *  @param p state Z1=pa.
+	 *  @param q state Z2=qa.
+	 *  @param r state Z3=ra.
+	 */
+	BasketNode3F(int n, int s, int p, int q, int r) : BasketNode(n,s),
+    i(p), j(q), k(r)
+	{	}
+				 
+	
+}; // end BasketNode3F
+	
+
 
 
 

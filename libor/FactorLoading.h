@@ -26,22 +26,17 @@ spyqqqdia@yahoo.com
 #ifndef martingale_factorloading_h    
 #define martingale_factorloading_h
 
-
-#include <string>
-#include <sstream>
-#include "Matrices.h"
+#include <iostream>
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
 
-/*
- * FactorLoading.h
- * 
- * Implementation is in the header.
- * Classes: FactorLoading, CS_FactorLoading
- *
- * Created on March 9, 2003, 6:00 AM
- */
+
+// forward declarations
+class UTRRealMatrix;        // Matrices.h
+
+
+
 
 
 /*******************************************************************************
@@ -118,7 +113,7 @@ public:
 	
 // CORRELATIONS, VOLATILITIES, LOG-COVARIATION INTEGRALS
 
-   /** Instantaneous correlation \f$\rho_{ij}\f$ of \f$dY_i\f$ increments.
+   /** Instantaneous correlations \f$\rho_{ij}\f$ of \f$dY_i\f$ increments.
     */
    virtual Real rho(int i, int j) const = 0;
    
@@ -139,10 +134,8 @@ public:
    integral_sgi_sgj_rhoij(int i, int j, Real t, Real T) const = 0;
    
    
-   /** String containing a message indicating what type of factor loading
-    *  it is, all the parameter values.
-    */
-   virtual string toString() const = 0;
+	/** Message and fields.*/
+	virtual std::ostream& printSelf(std::ostream& os) const = 0;
    
 
 // LOG-COVARIATION MATRICES AND DRIFT LINEARIZATION MATRICES
@@ -152,35 +145,16 @@ public:
    *  \f[CV_{ij}=\int_t^T\sigma_i(s)\sigma_j(s)\rho_{ij}(s)ds,\f]
    * where \f$p\leq i\leq j<q\f$. Index base p, natural indices.
    */ 
-   UTRMatrix<Real>&
-   covariationMatrix(int p,int q, Real t, Real T) const
-   {
-       int size=q-p;       // matrix size
-	   UTRMatrix<Real>& cvm=*(new UTRMatrix<Real>(size,p));
-
-       for(int i=p;i<q;i++)
-       for(int j=i;j<q;j++)
-       cvm(i,j)=integral_sgi_sgj_rhoij(i,j,t,T);
-
-       return cvm;
-   }// end logCovariationMatrix
+   const UTRRealMatrix&
+   covariationMatrix(int p,int q, Real t, Real T) const;
    
    
   /** The full matrix CV of covariations \f$\langle Y_i,Y_j\rangle_t^T\f$
    *  \f[CV_{ij}=\int_t^T\sigma_i(s)\sigma_j(s)\rho_{ij}(s)ds,\f]
    * where \f$0\leq i\leq j<n\f$. Index base 0.
    */ 
-   UTRMatrix<Real>&
-   covariationMatrix(Real t, Real T) const
-   {
-	   UTRMatrix<Real>& cvm=*(new UTRMatrix<Real>(n));
-
-       for(int i=0;i<n;i++)
-       for(int j=i;j<n;j++)
-       cvm(i,j)=integral_sgi_sgj_rhoij(i,j,t,T);
-
-       return cvm;
-   }// end logCovariationMatrix
+   const UTRRealMatrix&
+   covariationMatrix(Real t, Real T) const;
    
 
     
@@ -189,17 +163,16 @@ public:
     *  This matrix satisfies \f$RR'=C\f$. The index base is p, that is, natural indices 
     *  when using the subscripting operator.
     */
-   UTRMatrix<Real>& nu(Real t, int p)
-   {
-	   UTRMatrix<Real> c(n-p,p);
-	   for(int j=p;j<n;j++) 
-	   for(int k=j;k<n;k++) c(j,k)=sigma(j,t)*sigma(k,t)*rho(j,k);
-		   
-	   return c.utrRoot();
-   }
+   const UTRRealMatrix& nu(Real t, int p) const;
 
    
 }; // end FactorLoading
+
+
+// GLOBAL INSERTION
+
+std::ostream& operator << 
+(std::ostream& os, const FactorLoading& fl){ return fl.printSelf(os); }
 
 
 
@@ -215,24 +188,23 @@ public:
  */
 class ConstantFactorLoading : public FactorLoading {
 	
-   UTRMatrix<Real>& corr;     // the correlations rho_ij
+   UTRRealMatrix& corr;    // the correlations rho_ij
    Real* sg;                 // the volatilities sigma_i
 	
 public:
 	
 	/** @param dim dimension
 	 *  @param vols constant volatilities \f$\sigma_i\f$.
-	 *  @param rho  constant correlations \f$\rho_{ij}\f$.
+	 *  @param rho  constant instantaneous correlations \f$\rho_{ij}\f$.of \f$dY_i\f$..
 	 */
-	ConstantFactorLoading(int dim, Real* vols, UTRMatrix<Real>& rho) :
+	ConstantFactorLoading(int dim, Real* vols, UTRRealMatrix& rho) :
 	FactorLoading(dim), corr(rho), sg(vols) {  }
 
 // CORRELATIONS, VOLATILITIES, LOG-COVARIATION INTEGRALS
 
    /** Instantaneous correlation \f$\rho_{ij}\f$ of \f$dY_i\f$ increments.
     */
-   Real rho(int i, int j) const
-   { if(i<=j) return corr(i,j); return corr(j,i); } 
+   Real rho(int i, int j) const;
 	 
    
    /** Volatility \f$\sigma_i(t)\f$ of \f$Y_i(t)\f$.
@@ -240,7 +212,10 @@ public:
     *@param i components of \f$Y\f$.
     *@param t <i>continuous</i> time.
     */
-   virtual Real sigma(int i, Real t) const { return sg[i]; }
+   Real sigma(int i, Real t) const;
+   
+
+// COVARIATION INTEGRALS CONTROLLING THE TIME STEPS
    
    /** The integral
     *  \f[\int_t^T\sigma_i(s)\sigma_j(s)\rho_{ij}ds=\langle Y_i,Y_j\rangle_t^T.\f]
@@ -248,23 +223,30 @@ public:
     *@param i,j components of \f$Y\f$.
     *@param t,T continuous times.
     */
-   virtual Real 
-   integral_sgi_sgj_rhoij(int i, int j, Real t, Real T) const
-   { return sg[i]*sg[j]*(T-t); }
+   Real 
+   integral_sgi_sgj_rhoij(int i, int j, Real t, Real T) const;
+   
+
+   
+// PSEUDO SQUARE ROOTS OF THE CORRELATION MATRIX
+   
+   /** Upper triangular root of the matrix of instantaneous correlations,
+    *  Cholesky factorization.
+    */
+   UTRRealMatrix correlationMatrixRoot();
+   
+   
+   /** Rank r approximate pseudo square root of the matrix of instantaneous correlations.
+    *  See book, Appendix A.1. This is used to run a low factor approximation to a dynamics
+    *  based on this factor loading.
+    */
+   UTRRealMatrix correlationMatrixRankReducedRoot(int r);
    
    
    /** String containing a message indicating what type of factor loading
     *  it is, all the parameter values.
     */
-   virtual string toString() const
-   {
-		vector<Real> vols(n,sg);
-	    ostringstream os;
-		os << endl << endl
-		   << "Factor loading with constant volatilities:" << endl << vols << endl
-	       << "and constant correlations:" << endl << corr;
-        return os.str();
-    }
+   std::ostream& printSelf(std::ostream& os) const;
 	
 }; // end ConstantFactorLoading
 

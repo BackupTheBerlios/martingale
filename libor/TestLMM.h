@@ -80,7 +80,7 @@ static void testLiborFactorLoadingFactorization(int n, int r)
 	fl = CS_FactorLoading::sample(n);
 	for(int t=0;t<n-2;t++){
 		
-		UTRMatrix<Real>& CV=fl->logLiborCovariationMatrix(t);
+		UTRRealMatrix& CV=fl->logLiborCovariationMatrix(t);
 		CV.testFactorization(r);
     }
 	
@@ -88,7 +88,7 @@ static void testLiborFactorLoadingFactorization(int n, int r)
 	fl = JR_FactorLoading::sample(n);
 	for(int t=0;t<n-2;t++){
 		
-		UTRMatrix<Real>& CV=fl->logLiborCovariationMatrix(t);
+		UTRRealMatrix& CV=fl->logLiborCovariationMatrix(t);
 		CV.testFactorization(r);
     }
 } // end factorizationTest

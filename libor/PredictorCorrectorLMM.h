@@ -69,17 +69,17 @@ class PredictorCorrectorLMM : public LiborMarketModel {
 	// Row t is used to drive the time step T_t->T_{t+1}
 	// This is allocated as an n-dimensional matrix to preserve natural indexation
 	// Row index starts at zero, first column not needed, see newWienerIncrements.
-	UTRMatrix<Real> Z;
+	UTRRealMatrix Z;
     
     // The following are allocated as lower triangular arrays:
     
     // Array containing the X-Libors X(t,j)=X_j(T_t)=delta_jL_j(T_t), t<=j.
     // The rows are the vectors X(T_t)=(X_t(T_t),...,X_{n-1}(T_t)).
-    UTRMatrix<Real> X;
+    UTRRealMatrix X;
     
     // Array containing the log-Libors Y(t,j)=Y_j(T_t)=log(X_j(T_t)), t<=j.
     // The rows are the vectors Y(T_t)=(Y_t(T_t),...,Y_{n-1}(T_t)).
-    UTRMatrix<Real> Y;
+    UTRRealMatrix Y;
 
     // drift step vector
     RealArray1D m;
@@ -99,7 +99,7 @@ class PredictorCorrectorLMM : public LiborMarketModel {
 	
     StochasticGenerator* SG;    // generates the Wiener increments driving the paths     
 	
-	vector<Real> XVec;          // cache for fast returning of X-Libor vectors.
+	RealVector XVec;          // cache for fast returning of X-Libor vectors.
 
 
 
@@ -149,7 +149,7 @@ public:
       * @param p index of first Libor.
       * @param t discrete time.
       */
-     const vector<Real>& XLvect(int t, int p);
+     const RealVector& XLvect(int t, int p);
 		 
 
 	

@@ -21,7 +21,67 @@ spyqqqdia@yahoo.com
 */
 
 #include "LmmLattice.h"
+#include "Node.h"
+#include "Array.h"
+#include "Matrices.h"
+#include <math.h>
 using namespace Martingale;
+
+
+
+
+/**********************************************************************************
+ *
+ *                          GENERAL LMM LATTICE
+ *
+ *********************************************************************************/
+
+
+
+LmmLattice::
+LmmLattice(LiborFactorLoading* fl, int s, int steps=1) : Lattice<LmmNode>(s),
+n(fl->getDimension()), nSteps(steps),
+U0(n),
+H0(n+1),
+factorLoading(fl),
+mu(n,nSteps)
+{  
+	// set log(U_j(0)), j=0,1,...,n-1
+    Real* x=factorLoading->getInitialXLibors();     // x[j]=X_j(0)
+    for(int j=0;j<n;j++){ 
+			
+	    // U_j(0)=X_j(0)(1+X_{j+1}(0))...(1+X_{n-1}(0))
+		Real Uj0=x[j]; for(int k=j+1;k<n;k++) Uj0*=1+x[k]; 
+		U0[j]=Uj0;
+	}
+		
+	// set H_j(0)
+    H0[n]=1.0;
+	for(int j=n-1;j>=0;j--) H0[j]=H0[j+1]+U0[j];
+
+	// write the deterministic drifts mu_j(t)=mu_j(0,T_t)
+	for(int t=0;t<n-1;t++)
+	for(int u=0;u<nSteps;u++)
+	for(int j=t+1;j<n;j++){
+			
+		int s=t*nSteps+u;     // number of time step
+		mu(s,j)=-0.5*factorLoading->integral_sgi_sgj_rhoij(j,j,0.0,tau(s));
+	}
+} // end constructor
+	
+	
+	
+Real 
+LmmLattice::
+tau(int s)
+{
+    Real* T=factorLoading->getTenorStructure();
+	int t=s/nSteps;
+	Real delta_t=T[t+1]-T[t];
+		
+	return T[t]+(delta_t*(s%nSteps))/nSteps;
+}
+
 
 
 				
@@ -31,49 +91,58 @@ using namespace Martingale;
  *            CONSTANT VOLATILITY TWO FACTOR LMM LATTICE
  *
  *********************************************************************************/
-	
-    ConstVolLmmLattice2F::ConstVolLmmLattice2F
-	(ConstVolLiborFactorLoading* fl, int t, int steps=1) : LmmLattice<LmmNode2F>(fl,t*steps,steps),
-	nSteps(steps),
-	delta(fl->getDeltas()[0]),
-	dt(delta/steps),
-	a(sqrt(dt)), 
-	sg(n-1,1),
-	R(fl->getRho().rankReducedRoot(2))
-    {  
-		// check if Libor accrual periods are constant
-		Real* deltas=fl->getDeltas();
-		for(int j=0;j<n;j++) if(deltas[j]!=delta) {
+
+
+ConstVolLmmLattice2F::
+ConstVolLmmLattice2F
+(LiborFactorLoading* fl, int t, int steps=1) : 
+LmmLattice<LmmNode2F>(fl,t*steps,steps),
+nSteps(steps),
+delta(fl->getDeltas()[0]),
+dt(delta/steps),
+a(sqrt(dt)), 
+sg(n-1,1),
+R(fl->getRho().rankReducedRoot(2))
+{  
+	// check if Libor accrual periods are constant
+	Real* deltas=fl->getDeltas();
+	for(int j=0;j<n;j++) if(deltas[j]!=delta) {
 			
-		   cout << "\n\nConstVolLmmLattice2F(): Libor accrual periods not constant."
-		        << "\nTerminating.";
-		   exit(0);
-	    }
+	   cout << "\n\nConstVolLmmLattice2F(): Libor accrual periods not constant."
+	        << "\nTerminating.";
+	   exit(1);
+	}
 		
-		// set constant vols
-		for(int j=1;j<n;j++) sg[j]=factorLoading->sigma(j,0.0);
+	// check if volatilities are constant
+	if(fl->getVolSurfaceType()!=VolSurface::CONST) {
 			
-		// scale the rows of R back to norm one 
-		// this preserves rho_{jj}=1 and volatilities
-		for(int i=1;i<n;i++){
+	   cout << "\n\nConstVolLmmLattice2F(): volatilties not constant."
+	        << "\nTerminating.";
+	   exit(1);
+    }
+		
+	// set constant vols
+	for(int j=1;j<n;j++) sg[j]=factorLoading->sigma(j,0.0);
 			
-			Real f=0.0;      // norm of row_i(R)
-			for(int j=0;j<2;j++) f+=R(i,j)*R(i,j);
-			f=sqrt(f);
-			R.scaleRow(i,1.0/f);
-		}
+	// scale the rows of R back to norm one 
+	// this preserves rho_{jj}=1 and volatilities
+	for(int i=1;i<n;i++){
+			
+		Real f=0.0;      // norm of row_i(R)
+		for(int j=0;j<2;j++) f+=R(i,j)*R(i,j);
+		f=sqrt(f);
+		R.scaleRow(i,1.0/f);
+	}
 		
-		buildLattice(m);       // Lattice::m = number of time steps t*nSteps 
-		testFactorization();
+	buildLattice(m);       // Lattice::m = number of time steps t*nSteps 
+	testFactorization();
 		
-	} // end constructor
+} // end constructor
 	
 				
-	
-// Covariance matrix rank 2 factorization error
-	
 
-void ConstVolLmmLattice2F::
+void 
+ConstVolLmmLattice2F::
 testFactorization()
 {
 	cout << "\n\nRelative errors of the approximate rank 2 factorization"
@@ -86,7 +155,8 @@ testFactorization()
 
 
 
-void ConstVolLmmLattice2F::
+void 
+ConstVolLmmLattice2F::
 buildLattice(int m)
 {
 	cout << "\n\n\nBuilding lattice until time step s = " << m << endl << endl;
@@ -145,64 +215,60 @@ buildLattice(int m)
 					edgeList.push_back(*edge);
 					
 			   } // end for k,l
-			} // end for theNode
+	    } // end for theNode
 
 				
-			cout << "\nTotal nodes = " << nodes;
+		cout << "\nTotal nodes = " << nodes;
 		
-		} // end for t
-		
-	} // end buildLattice
+	} // end for s
+} // end buildLattice
 	
 	
 	
-		
-	 void ConstVolLmmLattice2F::
-	 setStateVariables(LmmNode2F* node)
-	 {
-         int t=node->get_t(),         // node lives in (T_{t-1},T_t]
-		     s=node->getTimeStep();   // time step at which node lives
-		 vector<Real> V(n-t,t);       // the volatility parts V_j of log(U_j)
+void 
+ConstVolLmmLattice2F::
+setStateVariables(LmmNode2F* node)
+{
+    int t=node->get_t(),         // node lives in (T_{t-1},T_t]
+	    s=node->getTimeStep();   // time step at which node lives
+	RealVector V(n-t,t);       // the volatility parts V_j of log(U_j)
 			                          // j=t,...,n-1
-         Real Z1=node->get_i()*a, 
-		      Z2=node->get_j()*a;     // Z2=ja
+    Real Z1=node->get_i()*a, 
+         Z2=node->get_j()*a;     // Z2=ja
 		 
-		 for(int j=t;j<n;j++) V[j]=sg[j]*(R(j,0)*Z1+R(j,1)*Z2); 
+	for(int j=t;j<n;j++) V[j]=sg[j]*(R(j,0)*Z1+R(j,1)*Z2); 
 		 
-		 // let tau(s) denote he continuous time reached with time step s.
-		 // add the initial value log(U_j(0) and drift mu_j(s)=mu_j(0,tau(s)) 
-		 // to obtain the log(U_j(tau(s)))
-		 for(int j=t;j<n;j++) V[j]+=log(U0[j])+mu(s,j);
+	// let tau(s) denote he continuous time reached with time step s.
+	// add the initial value log(U_j(0) and drift mu_j(s)=mu_j(0,tau(s)) 
+	// to obtain the log(U_j(tau(s)))
+	for(int j=t;j<n;j++) V[j]+=log(U0[j])+mu(s,j);
 				 
-		 // move from log(U_j) to U_j
-		 for(int j=t;j<n;j++) V[j]=exp(V[j]);    // now V=U
+	// move from log(U_j) to U_j
+	for(int j=t;j<n;j++) V[j]=exp(V[j]);    // now V=U
 				 
-		 // write the  H_n=1, H_j=U_j+H_{j+1}, j=t,...,n-1, 
-		 vector<Real>& H=node->getH();
-		 H[n]=1.0; 
-	     for(int j=n-1;j>=t;j--){ 
+	// write the  H_n=1, H_j=U_j+H_{j+1}, j=t,...,n-1, 
+	RealVector& H=node->getH();
+	H[n]=1.0; 
+    for(int j=n-1;j>=t;j--){ 
 			 
-			 H[j]=V[j]+H[j+1]; 
-			 //if(H[j]>3.0) { printState(); exit(0); }
-		}
-			 
-	} // setStateVariables
+		 H[j]=V[j]+H[j+1]; 
+		 //if(H[j]>3.0) { printState(); exit(0); }
+	}
+} // setStateVariables
 
 	
-	
-	
-// TEST
-	
-	void ConstVolLmmLattice2F::
-    test(int n)
-    {
-		Timer watch; watch.start();
-		ConstVolLiborFactorLoading* fl=ConstVolLiborFactorLoading::sample(n);
-		ConstVolLmmLattice2F lattice(fl,n-3);
-		lattice.selfTest();
-		watch.stop();
-		watch.report("Libor tree construction and self test");
-	}
+
+void 
+ConstVolLmmLattice2F::
+test(int n)
+{
+	Timer watch; watch.start();
+	fl=LiborFactorLoading::sample(n,VolSurface::CONST,Correlations::CS);
+	ConstVolLmmLattice2F lattice(fl,n-3);
+	lattice.selfTest();
+	watch.stop();
+	watch.report("Libor tree construction and self test");
+}
 
 
 
@@ -212,41 +278,52 @@ buildLattice(int m)
  *
  *********************************************************************************/
 	
-    ConstVolLmmLattice3F::ConstVolLmmLattice3F
-	(ConstVolLiborFactorLoading* fl, int t, int steps=1) : LmmLattice<LmmNode3F>(fl,t*steps,steps),
-	nSteps(steps),
-	delta(fl->getDeltas()[0]),
-	dt(delta/steps),
-	a(sqrt(dt)), 
-	sg(n-1,1),
-	R(fl->getRho().rankReducedRoot(3))
-    {  
-		// check if Libor accrual periods are constant
-		Real* deltas=fl->getDeltas();
-		for(int j=0;j<n;j++) if(deltas[j]!=delta) {
+ConstVolLmmLattice3F::
+ConstVolLmmLattice3F
+(LiborFactorLoading* fl, int t, int steps=1) : 
+LmmLattice<LmmNode3F>(fl,t*steps,steps),
+nSteps(steps),
+delta(fl->getDeltas()[0]),
+dt(delta/steps),
+a(sqrt(dt)), 
+sg(n-1,1),
+R(fl->getRho().rankReducedRoot(3))
+{  
+	// check if Libor accrual periods are constant
+	Real* deltas=fl->getDeltas();
+	for(int j=0;j<n;j++) if(deltas[j]!=delta) {
 			
-		   cout << "\n\nConstVolLmmLattice2F(): Libor accrual periods not constant."
-		        << "\nTerminating.";
-		   exit(0);
-	    }
+	   cout << "\n\nConstVolLmmLattice2F(): Libor accrual periods not constant."
+	        << "\nTerminating.";
+	   exit(0);
+    }
 		
-		// set constant vols
-		for(int j=1;j<n;j++) sg[j]=factorLoading->sigma(j,0.0);
+	// check if volatilities are constant
+	if(fl->getVolSurfaceType()!=VolSurface::CONST) {
 			
-		// scale the rows of R back to norm one 
-		// this preserves rho_{jj}=1 and volatilities
-		for(int i=1;i<n;i++){
+	   cout << "\n\nConstVolLmmLattice2F(): volatilties not constant."
+	        << "\nTerminating.";
+	   exit(1);
+    }
+
+		
+	// set constant vols
+	for(int j=1;j<n;j++) sg[j]=factorLoading->sigma(j,0.0);
 			
-			Real f=0.0;      // norm of row_i(R)
-			for(int j=0;j<3;j++) f+=R(i,j)*R(i,j);
-			f=sqrt(f);
-			R.scaleRow(i,1.0/f);
-		}
+	// scale the rows of R back to norm one 
+	// this preserves rho_{jj}=1 and volatilities
+	for(int i=1;i<n;i++){
+			
+		Real f=0.0;      // norm of row_i(R)
+		for(int j=0;j<3;j++) f+=R(i,j)*R(i,j);
+		f=sqrt(f);
+		R.scaleRow(i,1.0/f);
+	}
 		
-		buildLattice(m);       // Lattice::m = number of time steps t*nSteps 
-		testFactorization();
+	buildLattice(m);       // Lattice::m = number of time steps t*nSteps 
+	testFactorization();
 		
-	} // end constructor
+} // end constructor
 	
 				
 	
@@ -328,64 +405,59 @@ buildLattice(int m)
 					edgeList.push_back(*edge);
 					
 			   } // end for p,q,r
-			} // end for theNode
+		} // end for theNode
 
-				
-			cout << "\nTotal nodes = " << nodes;
-		
-		} // end for t
-		
-	} // end buildLattice
+		cout << "\nTotal nodes = " << nodes;
+	} // end for t
+} // end buildLattice
 	
 	
 	
-		
-	 void ConstVolLmmLattice3F::
-	 setStateVariables(LmmNode3F* node)
-	 {
-         int t=node->get_t(),         // node lives in (T_{t-1},T_t]
-		     s=node->getTimeStep();   // time step at which node lives
-		 vector<Real> V(n-t,t);       // the volatility parts V_j of log(U_j)
+void 
+ConstVolLmmLattice3F::
+setStateVariables(LmmNode3F* node)
+{
+    int t=node->get_t(),         // node lives in (T_{t-1},T_t]
+	     s=node->getTimeStep();   // time step at which node lives
+	 RealVector V(n-t,t);       // the volatility parts V_j of log(U_j)
 			                          // j=t,...,n-1
-         Real Z1=node->get_i()*a,    
-		      Z2=node->get_j()*a,
-		      Z3=node->get_k()*a;      // Z3=ka
+     Real Z1=node->get_i()*a,    
+	      Z2=node->get_j()*a,
+	      Z3=node->get_k()*a;      // Z3=ka
 		 
-		 for(int j=t;j<n;j++) V[j]=sg[j]*(R(j,0)*Z1+R(j,1)*Z2+R(j,2)*Z3); 
+	 for(int j=t;j<n;j++) V[j]=sg[j]*(R(j,0)*Z1+R(j,1)*Z2+R(j,2)*Z3); 
 		 
-		 // let tau(s) denote he continuous time reached with time step s.
-		 // add the initial value log(U_j(0) and drift mu_j(s)=mu_j(0,tau(s)) 
-		 // to obtain the log(U_j(tau(s)))
-		 for(int j=t;j<n;j++) V[j]+=log(U0[j])+mu(s,j);
+	 // let tau(s) denote he continuous time reached with time step s.
+	 // add the initial value log(U_j(0) and drift mu_j(s)=mu_j(0,tau(s)) 
+	 // to obtain the log(U_j(tau(s)))
+	 for(int j=t;j<n;j++) V[j]+=log(U0[j])+mu(s,j);
 				 
-		 // move from log(U_j) to U_j
-		 for(int j=t;j<n;j++) V[j]=exp(V[j]);    // now V=U
+	 // move from log(U_j) to U_j
+	 for(int j=t;j<n;j++) V[j]=exp(V[j]);    // now V=U
 				 
-		 // write the  H_n=1, H_j=U_j+H_{j+1}, j=t,...,n-1, 
-		 vector<Real>& H=node->getH();
-		 H[n]=1.0; 
-	     for(int j=n-1;j>=t;j--){ 
+	 // write the  H_n=1, H_j=U_j+H_{j+1}, j=t,...,n-1, 
+	 RealVector& H=node->getH();
+	 H[n]=1.0; 
+     for(int j=n-1;j>=t;j--){ 
 			 
-			 H[j]=V[j]+H[j+1]; 
-			 //if(H[j]>3.0) { printState(); exit(0); }
-		}
-			 
-	} // setStateVariables
-
-	
-	
-	
-// TEST
-	
-	void ConstVolLmmLattice3F::
-    test(int n)
-    {
-		Timer watch; watch.start();
-		ConstVolLiborFactorLoading* fl=ConstVolLiborFactorLoading::sample(n);
-		ConstVolLmmLattice3F lattice(fl,n-3);
-		lattice.selfTest();
-		watch.stop();
-		watch.report("Libor tree construction and self test");
+		 H[j]=V[j]+H[j+1]; 
+		 //if(H[j]>3.0) { printState(); exit(0); }
 	}
+} // setStateVariables
+
+
+
+void 
+ConstVolLmmLattice3F::
+test(int n)
+{
+	Timer watch; watch.start();
+	LiborFactorLoading* 
+	fl=LiborFactorLoading::sample(n,VolSurface::CONST,Correlations::CS);
+	ConstVolLmmLattice3F lattice(fl,n-3);
+	lattice.selfTest();
+	watch.stop();
+	watch.report("Libor tree construction and self test");
+}
 
 

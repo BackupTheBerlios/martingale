@@ -24,12 +24,20 @@ spyqqqdia@yahoo.com
 #ifndef martingale_lowfactordriftlesslmm_h    
 #define martingale_lowfactordriftlesslmm_h
 
-#include "Random.h"
-#include "QuasiMonteCarlo.h"
 #include "LiborMarketModel.h"
-#include "StochasticGenerator.h"
 
 MTGL_BEGIN_NAMESPACE(Martingale)
+
+
+
+// forward declarations
+class RealVector;
+class UTRRealMatrix;             // Matrices.h
+class UTRMatrixSequence;
+class StochasticGenerator;       // StochasticGenerator.h
+class SobolLiborDriver;
+class MonteCarloLiborDriver;
+class LiborFactorLoading;        // LiborFactorLoading.h
 
 
 
@@ -54,24 +62,24 @@ class LowFactorDriftlessLMM : public LiborMarketModel {
 	
 	// n-1 by r matrix of standard normal increments.
 	// Row t is used to drive the time step T_t->T_{t+1}
-	Matrix<Real> Z;
+	RealMatrix Z;
     
     // Array containing the X-Libors X(t,j)=X_j(T_t)=delta_jL_j(T_t), t<=j.
     // The rows are the vectors X(T_t)=(X_t(T_t),...,X_{n-1}(T_t)).
-    UTRMatrix<Real> U;
+    UTRRealMatrix U;
     
     // Array containing the log-Libors Y(t,j)=Y_j(T_t)=log(X_j(T_t)), t<=j.
     // The rows are the vectors Y(T_t)=(Y_t(T_t),...,Y_{n-1}(T_t)).
-    UTRMatrix<Real> Y;
+    UTRRealMatrix Y;
 	
 	// accrual factors H(t,j)=H_j(T_t)=B_j(T_t)/B_n(T_t), t<=j.
 	// we take this up to j=n where H(t,n)=1 to avoid messy code.
-	UTRMatrix<Real> H;         
+	UTRRealMatrix H;         
  
 	
 	// Array containing the deterministic drift steps
     // m(t,j)=-0.5*integral_{T_t}^{T_{t+1}}sigma^2_j(s)ds of the log(U_j).
-    UTRMatrix<Real> m;
+    UTRRealMatrix m;
     
     // volatility step vector
     RealArray1D V;
@@ -86,7 +94,7 @@ class LowFactorDriftlessLMM : public LiborMarketModel {
 	
     StochasticGenerator* SG;    // generates the Wiener increments driving the paths     
 	
-	vector<Real> XVec;          // cache for fast returning of X-Libor vectors.
+	RealVector XVec;          // cache for fast returning of X-Libor vectors.
   
 
 public:
@@ -147,7 +155,7 @@ public:
       * @param p index of first Libor.
       * @param t discrete time.
       */
-      const vector<Real>& XLvect(int t, int p);
+      const RealVector& XLvect(int t, int p);
 		 
 
 	
@@ -227,11 +235,7 @@ public:
      
      /** Computes a full Libor path from time zero to the horizon.
       */
-     void newPath()
-     {
-         SG->newWienerIncrements(0,n-1,Z);
-         for(int t=0;t<n-1;t++)timeStep(t);
-     }
+     void newPath();
      
     
      /** Path of Libors
@@ -242,11 +246,7 @@ public:
       * @param t discrete time up to which Libors are computed.
       * @param p Libors evolved are \f$L_j, j=p,p+1,...,n-1\f$.
       */
-     void newPath(int t, int p)
-     {
-         SG->newWienerIncrements(0,t,Z);
-         for(int s=0;s<t;s++)timeStep(s,p);
-     }
+     void newPath(int t, int p);
 	 
 	 
 
@@ -258,11 +258,7 @@ public:
       *
       * @param i Libor index.
       */
-     Real vol(int i) const
-     {
-  		 Real Sigma=capletAggregateVolatility(i);
-		 return Sigma/sqrt(T[i]);
-     }
+     Real vol(int i) const;
 	 
      
 

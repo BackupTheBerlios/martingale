@@ -24,22 +24,17 @@ spyqqqdia@yahoo.com
 #define martingale_dirichletproblem_h
 
 
-#include "StochasticProcesses.h"
-
-
 
 MTGL_BEGIN_NAMESPACE(Martingale) 
 
 
-
-
-/*
- * DirichletProblem.h
- *
- * Created on April 21, 2003, 6:00 AM
- */
+// forward drclarations
  
 class DirichletProblemExample;
+class EuclideanRegion;
+class Ball;
+class VectorBrownianMotion;
+class StoppingTime;
  
  
 /** <p>This class solves the Dirichlet problem for a EuclideanRegion G (in any dimension): 
@@ -68,7 +63,7 @@ protected:
 public: 
 	
 	/** The boundary function h. */
-	virtual Real boundaryFunction(vector<Real>& u) = 0;
+	virtual Real boundaryFunction(RealVector& u) = 0;
 	
 // CONSTRUCTOR
 	
@@ -83,12 +78,7 @@ public:
 	 *  @param T time steps alloted to hit the boundary.
 	 *  @param dt size of time steps.
 	 */
-	DirichletProblem(EuclideanRegion* D, int T, Real dt=0.01) : 
-	dim(D->getDimension()),
-	G(D), 
-	X(new VectorBrownianMotion(dim,T,dt)),
-	tau(new FirstExitTime<vector<Real>,Real>(X,G))
-    {   }
+	DirichletProblem(EuclideanRegion* D, int T, Real dt=0.01);
 	
 	
 	/** The solution \f$f(x), x\in G\f$, 
@@ -97,28 +87,8 @@ public:
 	 * @param nPath number of paths launched for the boundary.
 	 * @param reportHits report what percentage of paths hit the boundary.
 	 */
-	Real solution(vector<Real>& x, int nPath=50000, bool reportHits=false)
-    {		
-		X->setStart(x);
-		int c=0;                                 // hits on the boundary
-		Real sum=0;
-		for(int j=0;j<nPath;j++){
-			
-			int t=X->newPathSegment(tau);        // first time outside G
-			int s=t-1;
-			vector<Real>& u=X->currentPath(s);
-			vector<Real>& v=X->currentPath(t);
-			if(!(G->isMember(v))) c++;            // hit on the boundary            
-			// point where the boundary is hit
-            vector<Real>& z=G->boundaryIntersection(u,v); 
-			sum+=boundaryFunction(z);
-		}
-		
-		if(reportHits) 
-		cout << "\nDirichletProblem::solution: " << 100.0*c/nPath 
-		     << "% of paths hit the boundary.";
-		return sum/nPath;
-	} // end solution
+	Real solution(RealVector& x, int nPath=50000, bool reportHits=false);
+	
 	
 }; // end DirichletProblem
 
@@ -132,17 +102,17 @@ public:
  *  everywhere so the solution is the same function on the interior of the ball.
  */
 class DirichletProblemExample : public DirichletProblem {
+	
 public:
+	
 	/** The number of time steps necessary to reliably hit the boundary
 	 *  depnds on the size dt of the time steps and the dimension.
 	 *  For the default dt=0.01, T=500 suffices in dimension d=2,
 	 *  while T=10 suffices in dimension d=30.
 	 */
-	DirichletProblemExample(int dim, int T, Real dt=0.01) : 
-	DirichletProblem(new Ball(dim),T,dt) {  }
+	DirichletProblemExample(int dim, int T, Real dt=0.01);
 	
-	Real boundaryFunction(vector<Real>& u)
-	{ Real f=u[0]; for(int i=1;i<dim;i++) f+=u[i]; return f; }
+	Real boundaryFunction(RealVector& u);
 		
 	
 	/** <p>Computes f(x) for the boundary function 
@@ -156,26 +126,8 @@ public:
 	 * @param d dimension.
 	 * @param T time steps alloted to hit boundary.
 	 */
-	static void runExample(int d, int T)
-	{
-		cout << "\n\nSolution f(x) of the Dirichlet problem on the unit ball"
-		     << "\nfor the boundary function h(x_1,x_2,...,x_d)=x_1+x_2+...+x_d"
-		     << "\nat the point x_1=x_2=...=x_d=0.75."
-		     << "\nDimension  d = " << d;
-		
-		DirichletProblemExample Example(d,T);
-		vector<Real> x(d);
-		for(int i=0;i<d;i++) x[i]=1.0/(2*sqrt(d));
-			
-		cerr << "\n\nAnalytic: f(x) = " << Example.boundaryFunction(x);
-		cerr << "\nMonte Carlo computation...";
-		Real fx=Example.solution(x,30000,true);
-		cerr << "\nMonte Carlo: f(x) = " << fx 
-		     << "\nQuasi Monte Carlo computation...";
-		Example.X->switchToQMC();
-		fx=Example.solution(x,30000,true);
-		cerr << "\nQuasi Monte Carlo: f(x) = " << fx;
-	} // end ballExample
+	static void runExample(int d, int T);
+	
 	
 }; // end DirichletProblemExample
 		

@@ -26,13 +26,16 @@ spyqqqdia@yahoo.com
 #ifndef martingale_liborfactorloading_h    
 #define martingale_liborfactorloading_h
 
-
-#include <string>
-#include <sstream>
-#include "Matrices.h"
-#include <cmath>
+#include <ostream>
 
 MTGL_BEGIN_NAMESPACE(Martingale)
+
+
+// forward declarations
+class RealArray1D;
+class RealVector;
+class UTRRealMatrix;             // Matrices.h
+class UTRMatrixSequence;
 
 
 
@@ -188,20 +191,10 @@ public:
    
    
    	/** Message and fields.*/
-	std::ostream& printSelf(std::ostream& os) const 
-    {
-   		return
-		os << "\n\nVolSurface, type Jaeckel-Rebonato, " 
-		   << "a=" << a << ", b=" << b << ", c=" << c << ", d=" << d 
-		   << endl;
-    }
+	std::ostream& printSelf(std::ostream& os) const;
 	
 	/** Sample surface.*/
-	static VolSurface* sample()
-	{ 
-		Real _a=-0.05, _b=0.5, _c=1.5, _d=0.15; 
-		return new JR_VolSurface(_a,_b,_c,_d); 
-	}
+	static VolSurface* sample();
 
    
 	
@@ -241,27 +234,14 @@ public:
    
     
    /** Message and fields.*/
-	std::ostream& printSelf(std::ostream& os) const
-    {
-   		return os << "\n\nVolSurface, type book, 6.11.1, " 
-		          << "a=" << a << ", d=" << d << endl;
-    }
+	std::ostream& printSelf(std::ostream& os);
 	
 	/** Sample surface.*/
-	static VolSurface* sample()
-	{ 
-		Real _a=1.5, _d=2.0; 
-		return new M_VolSurface(_a,0.0,0.0,_d); 
-	}
+	static VolSurface* sample();
 
-   
- 
+  
 private:
-   
-	
 
-// AUXILLIARY FUNCTIONS
- 
 // Exponential Integrals
     
     // int exp(s/D)ds 
@@ -296,33 +276,23 @@ public:
 	CONST_VolSurface(Real _a, Real _b, Real _c, Real _d) :
 	VolSurface(_a,_b,_c,_d,CONST)
     {    }
-
-  
 		
 // VOLATILITIES, CORRELATIONS, COVARIATION INTEGRALS
-	
-	
+		
    /** Volatility surface \f$\sigma(t,T)=1.\f$.
     */
    Real sigma(Real t, Real T) const { return 1; }
-
    
    /** See {@link VolatilitySurface#integral_sgsg}.
     */
    Real integral_sgsg(Real t, Real T_1, Real T_2) const { return t; }
-   
-   
-    /** Message and fields.*/
-	std::ostream& printSelf(std::ostream& os) const
-    {
-   		return os << "\n\nVolSurface, type: constant." << endl;
-    }
+      
+   /** Message and fields.*/
+   std::ostream& printSelf(std::ostream& os) const;
 	
-	/** Sample (there is only one such surface).
-	 */
-	static VolSurface* sample(){ return new CONST_VolSurface(0.0,0.0,0.0,0.0); }
-
-
+   /** Sample (there is only one such surface).
+	*/
+   static VolSurface* sample(){ return new CONST_VolSurface(0.0,0.0,0.0,0.0); }
 	
 }; // end CONST_VolSurface
 
@@ -361,7 +331,7 @@ protected:
 	
 	Real alpha, beta, r_oo;
 	
-	UTRMatrix<Real> correlationMatrix;
+	UTRRealMatrix correlationMatrix;
 	
 public:
 	
@@ -379,10 +349,7 @@ public:
 	 *  Do this from the concrete subclasses.
 	 *  @param correlationType JR or CS.
 	 */
-	Correlations(int _n, Real _alpha, Real _beta, Real _r_oo, int correlationType) : 
-	n(_n), corrType(correlationType),
-	alpha(_alpha), beta(_beta), r_oo(_r_oo), correlationMatrix(n-1,1) 
-	{   }
+	Correlations(int _n, Real _alpha, Real _beta, Real _r_oo, int correlationType);
 	
 	
 	/** A sample correlation in dimension n of type = JR, CS.
@@ -396,12 +363,12 @@ public:
 		
 	/** Correlations \f$\rho_{ij}\f$ for \f$1\leq i,j<n\f$. 
 	 */
-	Real& operator()(int i, int j) { return correlationMatrix(i,j); }
+	Real& operator()(int i, int j);
 	
 	
 	/** The upper half of the correlation matrix
 	 */
-	const UTRMatrix<Real>& getCorrelationMatrix() const
+	const UTRRealMatrix& getCorrelationMatrix() const
 	{ return correlationMatrix; }
 	
 				
@@ -448,30 +415,16 @@ public:
 	/** @param T tenor structure of Libor process.
 	 *  @param beta see class description.
 	 */
-	JR_Correlations(const RealArray1D& _T, Real beta) : 
-	Correlations(_T.getDimension(),0.0,beta,0.0,JR), T(_T) 	
-	{ 
-		setCorrelations(); 
-	}
+	JR_Correlations(const RealArray1D& _T, Real beta);
 
 	   
 	/** Updates correlation matrix using the current parameters.
 	 */
-    void setCorrelations()
-	{
-       for(int i=1;i<n;i++)
-       for(int j=i;j<n;j++) 
-		   correlationMatrix(i,j)=exp(beta*(T[i]-T[j])); 
-	}
+    void setCorrelations();
 	
     
     /** Message and fields.*/
-	std::ostream& printSelf(std::ostream& os) const
-    {
-		return
-		os << "\n\nCorrelations: Jaeckel-Rebonato, " 
-		   << "beta=" << beta << endl;
-	}
+	std::ostream& printSelf(std::ostream& os) const;
 	
 	/** Sample correlations.
 	 *  @param n dimension.
@@ -508,23 +461,13 @@ public:
 	
     
     /** Message and fields.*/
-	std::ostream& printSelf(std::ostream& os) const
-    {
-		return
-		os << "\n\nCorrelations: Coffee-Shoenmakers, " 
-		   << "alpha=" << alpha << "beta=" << beta << "r_oo=" << r_oo 
-		   << endl;
-	}
+	std::ostream& printSelf(std::ostream& os) const;
 	
 	
 	/** Sample correlations.
 	 *  @param n dimension.
 	 */
-	static Correlations* sample(int _n)
-	{ 
-		Real _alpha=1.8, _beta=0.1, _r_oo=0.4;
-		return new CS_Correlations(_n,_alpha,_beta,_r_oo);
-	}
+	static Correlations* sample(int _n);
 	
 	
 private:
@@ -637,7 +580,17 @@ public:
 	
 	/** The instantaneous log-Libor correlations.
 	 */
-	const UTRMatrix<Real>& getRho() const { return corr->getCorrelationMatrix(); }
+	const UTRRealMatrix& getRho() const { return corr->getCorrelationMatrix(); }
+	
+	/** Type flag for the volatility surface: VolSurface::JR,M,CONST.
+	 */
+	int getVolSurfaceType(){ return vol->getType(); }
+	
+	/** Type flag for the volatility surface: VolSurface::JR,M,CONST.
+	 */
+	int getCorrelationType(){ return corr->getType(); }
+	
+	
 	    
     
 // CONSTRUCTOR
@@ -675,7 +628,7 @@ public:
     *@param i Libor index.
     *@param t continuous time.
     */
-   Real sigma(int i, Real t) const { return k[i]*(vol->sigma(t,T[i])); }
+   Real sigma(int i, Real t) const;
 	   
    
    /** The integral
@@ -702,7 +655,7 @@ public:
    * @param p,q Libors \f$L_j, j=p,...,q-1\f$.
    * @param s,t continuous times \f$0\leq s<t\f$. 
    */ 
-   const UTRMatrix<Real>&
+   const UTRRealMatrix&
    logLiborCovariationMatrix(int p,int q, Real s, Real t) const;
   
   
@@ -713,7 +666,7 @@ public:
    *
    * @param t discrete time.
    */ 
-   const UTRMatrix<Real>& 
+   const UTRRealMatrix& 
    logLiborCovariationMatrix(int t) const;
 
    
@@ -725,7 +678,7 @@ public:
    *
    * @param t discrete time.
    */ 
-   const UTRMatrix<Real>& 
+   const UTRRealMatrix& 
    logLiborCovariationMatrixRoot(int t) const;
 
 
@@ -739,7 +692,7 @@ public:
    * @param t discrete time.
    * @param r rank (number of factors).
    */ 
-   const Matrix<Real>& 
+   const RealMatrix& 
    reducedRankLogLiborCovariationMatrixRoot(int t, int r) const;
    
 

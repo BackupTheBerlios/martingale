@@ -21,6 +21,11 @@ spyqqqdia@yahoo.com
 */
 
 #include "BasketLattice.h"
+#include "Lattice.h"
+#include "Utils.h"
+#include "Array.h"
+#include <math.h>
+
 using namespace Martingale;
 
 
@@ -33,7 +38,7 @@ using namespace Martingale;
  *********************************************************************************/
 	
     BasketLattice2F::BasketLattice2F
-	(int _n, int _T, Real _dt, vector<Real>& _S0, vector<Real>& _sg, UTRMatrix<Real>& _rho) :
+	(int _n, int _T, Real _dt, RealVector& _S0, RealVector& _sg, UTRRealMatrix& _rho) :
 	BasketLattice<BasketNode2F>(_n,_T,_dt,_S0,_sg,_rho),
 	R(_rho.rankReducedRoot(2))
     {  	
@@ -56,15 +61,15 @@ using namespace Martingale;
     BasketLattice2F* BasketLattice2F::sample(int n, int T)
     {
 		// initial asset prices
-		vector<Real> S0(n);
+		RealVector S0(n);
 		for(int j=0;j<n;j++) S0[j]=100.0;
 			
 		// volatilities
-		vector<Real> sg(n);
+		RealVector sg(n);
 		for(int j=0;j<n;j++) sg[j]=0.3;
 			
 		// correlation of returns
-		UTRMatrix<Real> rho(n);
+		UTRRealMatrix rho(n);
 	    for(int j=0;j<n;j++)
 		for(int k=j;k<n;k++) rho(j,k)=exp(0.2*(j-k));
 			
@@ -171,7 +176,7 @@ buildLattice()
 		      Z2=node->get_j()*a;     // Z2=ja
 		 
 		 // compute asset prices
-		 vector<Real>& S=node->getS();
+		 RealVector& S=node->getS();
 		 
 		 // volatility parts V_j of Y_j=log(S_j)
 		 for(int j=0;j<n;j++) S[j]=sg[j]*(R(j,0)*Z1+R(j,1)*Z2); 
@@ -209,7 +214,7 @@ buildLattice()
 	
 	
     BasketLattice3F::BasketLattice3F
-	(int _n, int _T, Real _dt, vector<Real>& _S0, vector<Real>& _sg, UTRMatrix<Real>& _rho):
+	(int _n, int _T, Real _dt, RealVector& _S0, RealVector& _sg, UTRRealMatrix& _rho):
 	BasketLattice<BasketNode3F>(_n,_T,_dt,_S0,_sg,_rho),
 	R(_rho.rankReducedRoot(3))
     {  	
@@ -232,15 +237,15 @@ buildLattice()
     BasketLattice3F* BasketLattice3F::sample(int n, int T)
     {
 		// initial asset prices
-		vector<Real> S0(n);
+		RealVector S0(n);
 		for(int j=0;j<n;j++) S0[j]=100.0;
 			
 		// volatilities
-		vector<Real> sg(n);
+		RealVector sg(n);
 		for(int j=0;j<n;j++) sg[j]=0.3;
 			
 		// correlation of returns
-		UTRMatrix<Real> rho(n);
+		UTRRealMatrix rho(n);
 	    for(int j=0;j<n;j++)
 		for(int k=j;k<n;k++) rho(j,k)=exp(0.2*(j-k));
 			
@@ -351,7 +356,7 @@ buildLattice()
 		      Z3=node->get_k()*a;
 		 
 		 // compute asset prices
-		 vector<Real>& S=node->getS();
+		 RealVector& S=node->getS();
 		 
 		 // volatility parts V_j of Y_j=log(S_j)
 		 for(int j=0;j<n;j++) S[j]=sg[j]*(R(j,0)*Z1+R(j,1)*Z2+R(j,2)*Z3); 

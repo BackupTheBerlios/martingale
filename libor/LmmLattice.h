@@ -23,15 +23,22 @@ spyqqqdia@yahoo.com
 #ifndef martingale_lmmlattice_h    
 #define martingale_lmmlattice_h
 
-
 #include "Lattice.h"
-#include "LiborFactorLoading.h"
-#include "Utils.h"
-#include "Array.h"
-#include <math.h>
-
 
 MTGL_BEGIN_NAMESPACE(Martingale)
+
+
+// forward declarations
+class RealVector;               // Matrices.h
+class LiborArray2D;
+class LTRRealMatrix;
+class RealMatrix;
+class LiborFactorLoading;       // LiborFactorLoading.h
+template<typename Node>         // Lattice.h
+class Lattice;
+class LmmNode;                  // Node.h
+class LmmNode2F;                
+class LmmNode3F;
 
 
 /*! \file LmmLattice.h
@@ -112,8 +119,8 @@ protected:
 	int n,            // dimension (number of accrual intervals)
 	    nSteps;       // number of time steps in each accrual interval
 	
-	vector<Real> U0;     // U0[j]=U_j(0)
-	vector<Real> H0;     // H0[j]=H_j(0)
+	RealVector U0;     // U0[j]=U_j(0)
+	RealVector H0;     // H0[j]=H_j(0)
 
 	// factor loading of the underlying driftless LMM
 	LiborFactorLoading* factorLoading; 
@@ -139,15 +146,15 @@ public:
 	 *  \f[\mu(j,t)=\mu_j(0,T_t)=-{1\over2}\int_0^{T_t}\sigma_j^2(s)ds,\q t\leq j,\f]
 	 *  of the logarithms \f$Y_j=log(U_j)\f$.
 	 */
-    LTRMatrix<Real>& getDrifts() { return mu; }
+    const LTRRealMatrix& getDrifts() const { return mu; }
 	
     /** The vector U0[j]=U_j(0), initial values.
 	 */
-    vector<Real>& getU0() { return U0; }
+    const RealVector& getU0() const { return U0; }
 	
 	/** The vector H0[j]=H_j(0)), initial values.
 	 */
-    vector<Real>& getH0() { return H0; }
+    const RealVector& getH0() const { return H0; }
 	
 	
 // CONSTRUCTOR
@@ -157,49 +164,13 @@ public:
 	 *  @param s lattice is built for s time steps from time zero.
 	 *  @param steps number of equal sized time steps in each Libor accrual interval.
 	 */
-	LmmLattice(LiborFactorLoading* fl, int s, int steps=1) : Lattice<LmmNode>(s),
-	n(fl->getDimension()), nSteps(steps),
-	U0(n),
-	H0(n+1),
-	factorLoading(fl),
-	mu(n,nSteps)
-    {  
-		// set log(U_j(0)), j=0,1,...,n-1
-        Real* x=factorLoading->getInitialXLibors();     // x[j]=X_j(0)
-        for(int j=0;j<n;j++){ 
-			
-			// U_j(0)=X_j(0)(1+X_{j+1}(0))...(1+X_{n-1}(0))
-			Real Uj0=x[j]; for(int k=j+1;k<n;k++) Uj0*=1+x[k]; 
-			U0[j]=Uj0;
-		}
-		
-		// set H_j(0)
-        H0[n]=1.0;
-	    for(int j=n-1;j>=0;j--) H0[j]=H0[j+1]+U0[j];
+	LmmLattice(LiborFactorLoading* fl, int s, int steps=1);	
 
-		// write the deterministic drifts mu_j(t)=mu_j(0,T_t)
-		for(int t=0;t<n-1;t++)
-		for(int u=0;u<nSteps;u++)
-		for(int j=t+1;j<n;j++){
-			
-			int s=t*nSteps+u;     // number of time step
-			mu(s,j)=-0.5*factorLoading->integral_sgi_sgj_rhoij(j,j,0.0,tau(s));
-		}
-		
-	} // end constructor
-	
 	
 private:
 	
 	// continuous time reached after time step s=0,1,...
-	Real tau(int s)
-    {
-	    Real* Tc=factorLoading->getTenorStructure();
-		int t=s/nSteps;
-		Real delta_t=Tc[t+1]-Tc[t];
-		
-		return Tc[t]+(delta_t*(s%nSteps))/nSteps;
-	}
+	Real tau(int s);
 		
 		
 }; // end LmmLattice
@@ -234,12 +205,12 @@ class ConstVolLmmLattice2F : public LmmLattice<LmmNode2F> {
 	      dt,           // size of time steps
 	      a;            // tick size of standard Brownian motion
 	
-	vector<Real> sg;    // constant Y_j - volatilities
+	RealVector sg;    // constant Y_j - volatilities
 	
 	
 	// approximate rank two root of the correlation matrix rho
 	// row index base 1, column indices 0,1, natural indexation.
-	Matrix<Real>& R;
+	RealMatrix& R;
 	
 public:
 
@@ -250,12 +221,12 @@ public:
 	
 // CONSTRUCTOR
 	
-	/** 
+	/** The {@link VolSurface} of the factor loading must be of type CONST.
 	 *  @param fl factor loading of the underlying LMM.
 	 *  @param t number of time steps in the lattice.
 	 *  @param steps number of time steps in each Libor accrual interval.
 	 */
-	ConstVolLmmLattice2F(ConstVolLiborFactorLoading* fl, int t, int steps=1);	
+	ConstVolLmmLattice2F(LiborFactorLoading* fl, int t, int steps=1);	
 	
 
 
@@ -264,7 +235,7 @@ public:
     /** Computes the relative errors in the trae norm of the approximate rank two 
      *  factorization rho=RR' of the correlation matrix rho. See book, Appendix A.1.
      */
-    void testFactorization();
+    void testFactorization() const;
 
 	
 	
@@ -273,7 +244,7 @@ public:
 
 /** Sets up a ConstVolLmmLattice2F in dimension n and runs the {@link #selfTest}.
  */
-static void test(int n);
+static void test(int n) const;
 		
 		
 
@@ -316,12 +287,12 @@ class ConstVolLmmLattice3F : public LmmLattice<LmmNode3F> {
 	      dt,           // size of time steps
 	      a;            // tick size of standard Brownian motion
 	
-	vector<Real> sg;    // constant Y_j - volatilities
+	RealVector sg;    // constant Y_j - volatilities
 	
 	
 	// approximate rank two root of the correlation matrix rho
 	// row index base 1, column indices 0,1,2; natural indexation.
-	Matrix<Real>& R;
+	RealMatrix& R;
 	
 public:
 
@@ -332,11 +303,12 @@ public:
 	
 // CONSTRUCTOR
 	
-	/** @param fl factor loading of the underlying LMM.
+	/** The {@link VolSurface} of the factor loading must be of type CONST.
+	 *  @param fl factor loading of the underlying LMM.
 	 *  @param t number of time steps in the lattice.
 	 *  @param steps number of time seps in each Libor accrual interval.
 	 */
-	ConstVolLmmLattice3F(ConstVolLiborFactorLoading* fl, int t, int steps=1);	
+	ConstVolLmmLattice3F(LiborFactorLoading* fl, int t, int steps=1);	
 	
 
 
@@ -346,7 +318,7 @@ public:
      *  factorization rho=RR' of the correlation matrix rho. See book, 8.1.2 and 
 	 *  Appendix B.3.
      */
-    void testFactorization();
+    void testFactorization() const;
 
 	
 	
@@ -355,7 +327,7 @@ public:
 
 /** Sets up a ConstVolLmmLattice3F in dimension n and runs the {@link #selfTest}.
  */
-static void test(int n);
+static void test(int n) const;
 		
 		
 

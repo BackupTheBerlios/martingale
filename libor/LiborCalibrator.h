@@ -556,8 +556,8 @@ public:
      Real capletAggregateVolatility(int i)
      { 
 		 Real T_i=factorLoading->getT(i);
-		 UTRMatrix<Real>& R=factorLoading->logLiborCovariationMatrix(i,n,0,T_i).utrRoot();
-		 vector<Real> x(n-i,i);
+		 UTRRealMatrix& R=factorLoading->logLiborCovariationMatrix(i,n,0,T_i).utrRoot();
+		 RealVector x(n-i,i);
 		 x[i]=1;
 		 Real f=H_i0(i+1);
 		 for(int j=i+1;j<n;j++){ Real Uj0=H_i0(j)-H_i0(j+1); x[j]=-Uj0/f; }
@@ -570,9 +570,9 @@ public:
      Real swaptionAggregateVolatility(int p, int q)
      { 
          const RealArray1D& T=factorLoading->getTenorStructure();
-		 UTRMatrix<Real>& Q=factorLoading->logLiborCovariationMatrix(p,n,0,T[p]).utrRoot();
+		 UTRRealMatrix& Q=factorLoading->logLiborCovariationMatrix(p,n,0,T[p]).utrRoot();
 		 
-		 vector<Real> x(n-p,p);
+		 RealVector x(n-p,p);
 		 Real denom1=H_i0(p)-H_i0(q),
 		      denom2=0;
 		 for(int j=p;j<q;j++) denom2+=delta[j]*H_i0(j+1);
@@ -686,9 +686,9 @@ public:
      Real swaptionAggregateVolatility(int p, int q)
      { 
           const RealArray1D& T=factorLoading->getTenorStructure();
-		  UTRMatrix<Real>& 
+		  UTRRealMatrix& 
 		  Q=factorLoading->logLiborCovariationMatrix(p,q,0,T[p]).utrRoot();
-		  vector<Real> x_pq(q-p,p);
+		  RealVector x_pq(q-p,p);
 		  for(int j=p;j<q;j++) x_pq[j]=(B0(j)-B0(j+1))/B_pq(p,q);
 		  x_pq*=Q.transpose();
 		  return x_pq.norm();

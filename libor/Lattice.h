@@ -25,6 +25,7 @@ spyqqqdia@yahoo.com
 
 #include "Node.h"
 #include <list>
+#include <cstdlib>                              // exit()
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 

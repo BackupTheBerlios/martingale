@@ -21,14 +21,9 @@ spyqqqdia@yahoo.com
 */
 
 
-/*
- * 
- *
- * Created on April 10, 2003, 9:00 PM
- */
-
-
+#include "StochasticGenerator.h"
 #include "FastPredictorCorrectorLMM.h"
+#include "Matrices.h"
 using namespace Martingale;
 
 
@@ -40,7 +35,7 @@ using namespace Martingale;
  ******************************************************************************/ 
 
 // (X_p(T_t),...,X_{n-1}(T_t))\f$, 
- const vector<Real>& FastPredictorCorrectorLMM::XLvect(int t, int p) 
+const RealVector& FastPredictorCorrectorLMM::XLvect(int t, int p) 
 { 
 	XVec.setDimension(n-p);
 	XVec.setIndexBase(p);
@@ -52,45 +47,45 @@ using namespace Martingale;
 	
 //  CONSTRUCTOR
 
-    FastPredictorCorrectorLMM::
-    FastPredictorCorrectorLMM(LiborFactorLoading* fl) : LiborMarketModel(fl),
-    Z(n), X(n), Y(n), m0(n),
-	m(n), V(n), G(n),
-	logLiborCovariationMatrices(n-1),
-	logLiborCovariationMatrixRoots(n-1),
-	SG(new MonteCarloLiborDriver(n)),
-	XVec(n)
-	{        
-        // initialize path arrays
-        for(int j=0;j<n;j++){ X(0,j)=x[j]; Y(0,j)=log(x[j]); }
+FastPredictorCorrectorLMM::
+FastPredictorCorrectorLMM(LiborFactorLoading* fl) : LiborMarketModel(fl),
+Z(n), X(n), Y(n), m0(n),
+m(n), V(n), G(n),
+logLiborCovariationMatrices(n-1),
+logLiborCovariationMatrixRoots(n-1),
+SG(new MonteCarloLiborDriver(n)),
+XVec(n)
+{        
+    // initialize path arrays
+    for(int j=0;j<n;j++){ X(0,j)=x[j]; Y(0,j)=log(x[j]); }
         
-		// set pointers to matrices for time step simulation and initialize
-		// the deterministic drift steps
-		for(int t=0;t<n-1;t++){
+	// set pointers to matrices for time step simulation and initialize
+	// the deterministic drift steps
+	for(int t=0;t<n-1;t++){
 			
-			const UTRMatrix<Real>& cvm_t=factorLoading->logLiborCovariationMatrix(t);
-			const UTRMatrix<Real>& cvmr_t=factorLoading->logLiborCovariationMatrixRoot(t);
-			logLiborCovariationMatrices.setMatrix(t,cvm_t);
-            logLiborCovariationMatrixRoots.setMatrix(t,cvmr_t);
-			// deterministic drift steps
-			for(int j=t+1;j<n;j++){
+		const UTRRealMatrix& cvm_t=factorLoading->logLiborCovariationMatrix(t);
+		const UTRRealMatrix& cvmr_t=factorLoading->logLiborCovariationMatrixRoot(t);
+		logLiborCovariationMatrices.setMatrix(t,cvm_t);
+        logLiborCovariationMatrixRoots.setMatrix(t,cvmr_t);
+		// deterministic drift steps
+		for(int j=t+1;j<n;j++){
 				
-				m0(t,j)=-0.5*cvm_t(j,j);
-				for(int k=j+1;k<n;k++) m0(t,j)-=(x[k]/(1+x[k]))*cvm_t(j,k);
-			}
-		} // end for t
-	} // end constructor
+			m0(t,j)=-0.5*cvm_t(j,j);
+			for(int k=j+1;k<n;k++) m0(t,j)-=(x[k]/(1+x[k]))*cvm_t(j,k);
+		}
+	} // end for t
+} // end constructor
 
 	
 
-	LiborMarketModel* 
-	FastPredictorCorrectorLMM::
-    sample(int n, int volType, int corrType)
-    {
-		LiborFactorLoading* 
-		fl=LiborFactorLoading::sample(n,volType,corrType);
-		return new FastPredictorCorrectorLMM(fl);
-	}
+LiborMarketModel* 
+FastPredictorCorrectorLMM::
+sample(int n, int volType, int corrType)
+{
+	LiborFactorLoading* 
+	fl=LiborFactorLoading::sample(n,volType,corrType);
+	return new FastPredictorCorrectorLMM(fl);
+}
  
 
     
@@ -98,104 +93,106 @@ using namespace Martingale;
 // WIENER INCREMENTS	
 	
 
-	void FastPredictorCorrectorLMM::
-	printWienerIncrements(int t, int s) const
-    {
-         // recall that Z is an upper triangular array
-		 for(int u=t;u<s;u++){
-			 
-             for(int k=u+1;k<n;k++){ cout << Z(u,k) << " "; 
-				                     if(k==n-1) cout << endl; }
-		}
-	} // end printWienerIncrements
+void 
+FastPredictorCorrectorLMM::
+printWienerIncrements(int t, int s) const
+{
+     // recall that Z is an upper triangular array
+	 for(int u=t;u<s;u++)
+	 for(int k=u+1;k<n;k++){ 
+			
+			cout << Z(u,k) << " "; 
+            if(k==n-1) cout << endl; 
+	}
+} // end printWienerIncrements
 	
+
 
 // TIME STEP
 
-     // time step T_t -> T_{t+1} for Libors X_j, j>=p.
-     void FastPredictorCorrectorLMM::timeStep(int t, int p) 
-     {   
-		 /* The matrices needed for the time step T_t->T_{t+1}.
-          */
-         const UTRMatrix<Real>& C=logLiborCovariationMatrices.getMatrix(t); 
-         const UTRMatrix<Real>& R=logLiborCovariationMatrixRoots.getMatrix(t); 
+// time step T_t -> T_{t+1} for Libors X_j, j>=p.
+void 
+FastPredictorCorrectorLMM::
+timeStep(int t, int p) 
+{   
+     /* The matrices needed for the time step T_t->T_{t+1}.
+      */
+     const UTRRealMatrix& C=logLiborCovariationMatrices.getMatrix(t); 
+     const UTRRealMatrix& R=logLiborCovariationMatrixRoots.getMatrix(t); 
                     
-         int q=max(t+1,p);   
-         // only Libors L_j, j>=q make the step. To check the index shifts 
-         // to zero based array indices below consider the case p=t+1 
-         // (all Libors), then q=t+1.
+     int q=max(t+1,p);   
+     // only Libors L_j, j>=q make the step. To check the index shifts 
+     // to zero based array indices below consider the case p=t+1 
+     // (all Libors), then q=t+1.
          
          
-         // volatility step vector V
-         for(int j=q;j<n;j++)
-         {
-             V[j]=0;
-             for(int k=j;k<n;k++) V[j]+=R(j,k)*Z(t,k);  
-         }
-    
-		 // the drift step
+     // volatility step vector V
+     for(int j=q;j<n;j++){
 		 
-         // compute predicted Libors using the cached deterministic drift
-		 // steps m0(t,j)
-         for(int j=q;j<n;j++){ Y(t+1,j)=Y(t,j)+m0(t,j)+V[j];
-                               X(t+1,j)=exp(Y(t+1,j)); }
+          V[j]=0;
+          for(int k=j;k<n;k++) V[j]+=R(j,k)*Z(t,k);  
+     }
     
-         // actual drift step using the predicted Libors
-         for(int k=q+1;k<n;k++) G[k]=0.5*(2-1/(1+X(t,k))-1/(1+X(t+1,k)));
-         for(int j=q;j<n;j++){ 
+     // the drift step
+		 
+     // compute predicted Libors using the cached deterministic drift
+     // steps m0(t,j)
+     for(int j=q;j<n;j++){ Y(t+1,j)=Y(t,j)+m0(t,j)+V[j];
+                           X(t+1,j)=exp(Y(t+1,j)); }
+    
+     // actual drift step using the predicted Libors
+     for(int k=q+1;k<n;k++) G[k]=0.5*(2-1/(1+X(t,k))-1/(1+X(t+1,k)));
+     for(int j=q;j<n;j++){ 
             
-            m[j]=-0.5*C(j,j);
-            for(int k=j+1;k<n;k++) m[j]-=G[k]*C(j,k);                
-         } 
+         m[j]=-0.5*C(j,j);
+         for(int k=j+1;k<n;k++) m[j]-=G[k]*C(j,k);                
+     } 
 
-         // recompute the Libors with new drift step
-         for(int j=q;j<n;j++){ Y(t+1,j)=Y(t,j)+m[j]+V[j];
-                               X(t+1,j)=exp(Y(t+1,j)); }  
+     // recompute the Libors with new drift step
+     for(int j=q;j<n;j++){ Y(t+1,j)=Y(t,j)+m[j]+V[j];
+                           X(t+1,j)=exp(Y(t+1,j)); }  
       
-   }  // end timeStep
+}  // end timeStep
      
 
 
 	 
 // SWAPTION AND CAPLET AGGREGATE VOLATILITIES (SIGMA)
 	 
-
-     Real FastPredictorCorrectorLMM::
-     capletAggregateVolatility(int i) const
-     { 
-         Real volsqr=factorLoading->integral_sgi_sgj_rhoij(i,i,0,T[i]);
-		 return sqrt(volsqr);
-     } 
+Real 
+FastPredictorCorrectorLMM::
+capletAggregateVolatility(int i) const
+{ 
+     Real volsqr=factorLoading->integral_sgi_sgj_rhoij(i,i,0,T[i]);
+     return sqrt(volsqr);
+} 
 	 
 
-     Real FastPredictorCorrectorLMM::
-	 swaptionAggregateVolatility(int p, int q, int t) const
-     { 
-          const UTRMatrix<Real>& 
-		  Q=factorLoading->logLiborCovariationMatrix(p,q,0,T[t]).utrRoot();
-		  vector<Real> x_pq(q-p,p);
-		  for(int j=p;j<q;j++) x_pq[j]=(B0(j)-B0(j+1))/B_pq(p,q);
-		  x_pq*=Q.transpose();
-		  return x_pq.norm();
-     } 
+Real 
+FastPredictorCorrectorLMM::
+swaptionAggregateVolatility(int p, int q, int t) const
+{ 
+     const UTRRealMatrix& 
+     Q=factorLoading->logLiborCovariationMatrix(p,q,0,T[t]).utrRoot();
+     RealVector x_pq(q-p,p);
+	 for(int j=p;j<q;j++) x_pq[j]=(B0(j)-B0(j+1))/B_pq(p,q);
+     x_pq*=Q.transpose();
+	 return x_pq.norm();
+} 
     
      
-     
-     
-// STRING MESSAGE
-    
+std::ostream& 
+FastPredictorCorrectorLMM::
+printSelf(std::ostream& os) const
+{
+	RealVector vols(n);
+	for(int i=0;i<n;i++) vols[i]=vol(i); 
 
-   
-	std::ostream& FastPredictorCorrectorLMM::printSelf(std::ostream& os) const
-    {
-		vector<Real> vols(n);
-		for(int i=0;i<n;i++) vols[i]=vol(i); 
-
-        return
-		os << "\nLibor Market Model, fast predictor-corrector type."
-		   << "Random dynamics: " << SG << endl
-		   << factorLoading
-		   << "\n\nLibor volatilities:\n" << vols;
-     }
+    return
+	os << "\nLibor Market Model, fast predictor-corrector type."
+	   << "Random dynamics: " << SG << endl
+	   << factorLoading
+	   << "\n\nLibor volatilities:\n" << vols;
+}
 	 
 

@@ -23,14 +23,17 @@ spyqqqdia@yahoo.com
 #ifndef martingale_basketlattice_h    
 #define martingale_basketlattice_h
 
-
-#include "Lattice.h"
-#include "Utils.h"
-#include "Array.h"
-#include <math.h>
-
-
 MTGL_BEGIN_NAMESPACE(Martingale)
+
+
+
+
+// forward declarations
+class Realvector;
+class UTRRealMatrix;
+class BasketNode2F;
+class BasketNode3F;
+
 
 
 
@@ -141,10 +144,10 @@ protected:
 	     a;      // a=sqrt(dt) tick size of standard Brownian motion
 	
 	// all indices start at zero
-	vector<Real> S0;         // initial asset prices
-	vector<Real> sg;         // volatilities sg[j]=sigma_j
-	vector<Real> driftunit;  // drift sigma_j^2*dt/2 of Y_j over a single time step
-	UTRMatrix<Real> rho;     // correlation matrix.	
+	RealVector S0;         // initial asset prices
+	RealVector sg;         // volatilities sg[j]=sigma_j
+	RealVector driftunit;  // drift sigma_j^2*dt/2 of Y_j over a single time step
+	UTRRealMatrix rho;     // correlation matrix.	
 	
 public:
 
@@ -156,7 +159,7 @@ public:
 	
     /** The vector of initial asset prices.
 	 */
-    vector<Real>& getS0() { return S0; }
+    RealVector& getS0() { return S0; }
 	
 	
 // CONSTRUCTOR
@@ -170,7 +173,7 @@ public:
 	 *  @param rho correlation of returns.
 	 */
 	BasketLattice
-	(int _n, int _T, Real _dt, vector<Real> _S0, vector<Real> _sg, UTRMatrix<Real>& _rho) : 
+	(int _n, int _T, Real _dt, RealVector _S0, RealVector _sg, UTRRealMatrix& _rho) : 
 	Lattice<BasketNode>(_T),
 	n(_n), T(_T), dt(_dt), a(sqrt(dt)), S0(_S0), sg(_sg), driftunit(_n), rho(_rho)
     {  
@@ -199,7 +202,7 @@ class BasketLattice2F : public BasketLattice<BasketNode2F> {
 	
 	
 	// approximate rank two root of the correlation matrix rho
-	Matrix<Real>& R;
+	RealMatrix& R;
 	
 public:
 
@@ -216,7 +219,7 @@ public:
 	 *  @param rho correlation of returns.
 	 */
 	BasketLattice2F
-	(int _n, int _T, Real _dt, vector<Real>& _S0, vector<Real>& _sg, UTRMatrix<Real>& _rho);
+	(int _n, int _T, Real _dt, RealVector& _S0, RealVector& _sg, UTRRealMatrix& _rho);
 	
 			
 	/** Sample lattice with n assets and T time steps of size dt=0.1.
@@ -274,7 +277,7 @@ private:
 class BasketLattice3F : public BasketLattice<BasketNode3F> {
 	
 	// approximate rank three root of the correlation matrix rho
-	Matrix<Real>& R;
+	RealMatrix& R;
 	
 public:
 
@@ -291,7 +294,7 @@ public:
 	 *  @param rho correlation of returns.
 	 */
 	BasketLattice3F
-	(int _n, int _T, Real _dt, vector<Real>& _S0, vector<Real>& _sg, UTRMatrix<Real>& _rho);
+	(int _n, int _T, Real _dt, RealVector& _S0, RealVector& _sg, UTRRealMatrix& _rho);
 	
 	
 	/** Sample lattice with n assets and T time steps of size dt=0.1.

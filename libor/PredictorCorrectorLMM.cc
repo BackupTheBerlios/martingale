@@ -35,7 +35,7 @@ using namespace Martingale;
  ******************************************************************************/ 
 
 // (X_p(T_t),...,X_{n-1}(T_t))\f$, 
-const vector<Real>& PredictorCorrectorLMM::XLvect(int t, int p)   
+const RealVector& PredictorCorrectorLMM::XLvect(int t, int p)   
 { 
 	XVec.setDimension(n-p);
 	XVec.setIndexBase(p);
@@ -63,8 +63,8 @@ const vector<Real>& PredictorCorrectorLMM::XLvect(int t, int p)
 		// set pointers to matrices for time step simulation
 		for(int t=0;t<n-1;t++){
 			
-			const UTRMatrix<Real> cvm_t=factorLoading->logLiborCovariationMatrix(t);
-			const UTRMatrix<Real> cvmr_t=factorLoading->logLiborCovariationMatrixRoot(t);
+			const UTRRealMatrix cvm_t=factorLoading->logLiborCovariationMatrix(t);
+			const UTRRealMatrix cvmr_t=factorLoading->logLiborCovariationMatrixRoot(t);
 			logLiborCovariationMatrices.setMatrix(t,cvm_t);
             logLiborCovariationMatrixRoots.setMatrix(t,cvmr_t);
 		}
@@ -111,8 +111,8 @@ const vector<Real>& PredictorCorrectorLMM::XLvect(int t, int p)
      {   
 		 /* The matrices needed for the time step T_t->T_{t+1}.
           */
-         const UTRMatrix<Real>& C=logLiborCovariationMatrices.getMatrix(t); 
-         const UTRMatrix<Real>& R=logLiborCovariationMatrixRoots.getMatrix(t); 
+         const UTRRealMatrix& C=logLiborCovariationMatrices.getMatrix(t); 
+         const UTRRealMatrix& R=logLiborCovariationMatrixRoots.getMatrix(t); 
                     
          int q=max(t+1,p);   
          // only Libors L_j, j>=q make the step. To check the index shifts 
@@ -174,9 +174,9 @@ const vector<Real>& PredictorCorrectorLMM::XLvect(int t, int p)
      Real PredictorCorrectorLMM::
 	 swaptionAggregateVolatility(int p, int q, int t) const 
      { 
-          const UTRMatrix<Real>& 
+          const UTRRealMatrix& 
 		  Q=factorLoading->logLiborCovariationMatrix(p,q,0,T[t]).utrRoot();
-		  vector<Real> x_pq(q-p,p);
+		  RealVector x_pq(q-p,p);
 		  for(int j=p;j<q;j++) x_pq[j]=(B0(j)-B0(j+1))/B_pq(p,q);
 		  x_pq*=Q.transpose();
 		  return x_pq.norm();
@@ -189,7 +189,7 @@ const vector<Real>& PredictorCorrectorLMM::XLvect(int t, int p)
     
     std::ostream& PredictorCorrectorLMM::printSelf(std::ostream& os) const 
     {
-		vector<Real> vols(n);
+		RealVector vols(n);
 		for(int i=0;i<n;i++) vols[i]=vol(i); 
 
 		os << "\nLibor markett model: predictor-corrector type" << endl
