@@ -41,6 +41,7 @@ spyqqqdia@yahoo.com
 #include "FastPredictorCorrectorLMM.h"
 #include "LognormalLMM.h"
 #include "DriftlessLMM.h"
+#include "LowFactorDriftlessLMM.h"
 
 MTGL_BEGIN_NAMESPACE(Martingale)
 
@@ -437,8 +438,7 @@ public:
 	{ 
 		LiborDerivative::setLMM(lmm); 
 		// we must now adjust delta_i
-		Real* deltas=lmm->getDeltas();
-		delta_i=deltas[i];
+		delta_i=(lmm->getDeltas())[i];
 	}
 	
 
@@ -469,7 +469,7 @@ public:
     {
 		LiborMarketModel* lmm=DriftlessLMM::sample(n,delta);
 		int i=n/3;
-		Real kappa=lmm->initialTermStructure()[i];
+		Real kappa=(lmm->getInitialLibors())[i];
 		return new Caplet(i,kappa,lmm);
 	}
 		
@@ -591,17 +591,17 @@ public:
 
 // CONSTRUCTOR
 
-    /** <p>The payer swaption \f$Swpn(T,[T_a,T_b],\kappa)\f$ with strike rate 
-     *  \f$\kappa\f$ exercisable at time \f$T_s\leq T_a\f$.</p>
+    /** <p>The payer swaption \f$Swpn(T,[T_p,T_q],\kappa)\f$ with strike rate 
+     *  \f$\kappa\f$ exercisable at time \f$T_t\leq T_p\f$.</p>
      *
-     * @param a,b period of swap \f$[T_a,T_b]\f$.
+     * @param p,q period of swap \f$[T_p,T_q]\f$.
      * @param strike strike rate.
-	 * @param s swaption exercises at time \f$T_s\leq T_a\f$.
+	 * @param t swaption exercises at time \f$T_t\leq T_p\f$.
 	 * @param lmm underlying Libor market model.
      */
-    Swaption(int a, int b, int s, Real strike, LiborMarketModel* lmm) :
-    LiborDerivative(lmm,s),                           // Libors needed until time T_s                  
-	p(a), q(b), t(s),                                  
+    Swaption(int _p, int _q, int _t, Real strike, LiborMarketModel* lmm) :
+    LiborDerivative(lmm,_t),                           // Libors needed until time T_s                  
+	p(_p), q(_q), t(_t),                                  
 	kappa(strike)
     {   
 		armControlVariate();

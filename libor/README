@@ -119,4 +119,32 @@ New: LiborCalibrator, reads and writes data.
 Check if the list are correctly freed (most likely not) or a destructor has to be written.
 
 
+7-11-03: MAJOR REWRITE.
+
+Intermediate backup, not compiled yet.
+
+Replaced Real* with RealArray1D throughout, 
+LiborFactorLoading: separated vol-functions and correlations out as separate classes
+so they can be combined arbitrarily to form more factorloadings.
+LiborFactorLoading becomes a concrete class, vol-surface and correlations are
+handed to the constructor as parameters.
+
+Files affected:
+
+Array.h; LiborMarketModel.h,cc; LiborFactorLoading.h,cc; 
+DriftlessLMM.h,cc; LowFactorDriftlessLMM.h,cc; PredictorCorrectorLMM.h,cc;
+FastPredictorCorrectorLMM.h,cc; Derivatives.h;
+
+NEW: 
+
+LiborCorrelation, VolatilitySurface: !! check if integral formulas transcribed correctly.
+Mistakes should show up as nonpositive definite log-Libor covariation matrices. 
+
+
+REMOVED: LognormalLMM and corresponding radical simplification of LiborFactorLoading.
+
+
+
+
+
 

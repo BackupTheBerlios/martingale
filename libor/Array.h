@@ -163,15 +163,17 @@ public:
 
 // ACCESSORS
 
-	/** <a href="index-base">Index base</a> in dimension j. 
+	/** <a href="index-base">Index base</a>. 
 	 */
     int getIndexBase() const { return b; }
 	
+	void setIndexBase(int base){ b=base; }
+		
     /** Number of array elements. */
-	int getSize() const { return n; }
+	int getDimension() const { return n; }
 	
 	/** Pointer to data array */
-	S* getData(){ return dptr; }
+	S* getData() const { return dptr; }
 
 	
 // CONSTRUCTOR
@@ -184,6 +186,19 @@ public:
 	{  
          dptr=new S[n];
 		 for(int i=0;i<n;i++) dptr[i]=0;
+	} 
+	
+	
+	/** @param n_ number of array elements.
+	 *  @param b_ <a href="index-base">index base</a>.
+	 */
+	Array1D(const Array1D& x) : 
+	b(x.getIndexBase()), 
+	n(x.getDimension()) 
+	{  
+         dptr=new S[n];
+		 S* xdptr=x.getData();
+		 for(int i=0;i<n;i++) dptr[i]=xdptr[i];
 	} 
 
 	
@@ -212,7 +227,7 @@ public:
    /** Copies the elements of b which must be of the same
     *  length as a (not checked).
     */
-   Array1D<S>& operator=(Array1D<S>& B)
+   Array1D<S>& operator=(const Array1D<S>& B)
    {
 	   S* dptrB=B.getData();
 	   for(int j=0;j<n;j++) dptr[j]=dptrB[j];
