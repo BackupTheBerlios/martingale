@@ -48,21 +48,27 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  *  time step. This makes the computation of a conditional expectation at time t
  *  \f$\pi_t=E_t(h)\f$
  *  at each node at time t a very simple procedure: applying the Double Expectation Theorem
- * \f[E_t(h)=E_t[E_{t+1}(h)]\f]
- * we obtain at each node nd at time t
- * \f[\pi_t(nd)=\sum\nolimits_{e}p(e)*\pi_{t+1}(nd(e))\f]
- * where the sum extends over all edges e originating from the node nd and p(e) and nd(e)
+ *  \f[E_t(h)=E_t[E_{t+1}(h)]\f]
+ *  and assuming that the values of the random variable h are known by time t=s we can 
+ *  compute \f$\pi_t\f$ by backward recursion starting from time t=s as follows:
+ *  \f[\pi_s=h,\quad\; \pi_t=E_t[\pi_{t+1}],\quad t<s.\f]
+ *  At each node N living at time t the conditional expectation \f$\pi_t=E_t[\pi_{t+1}]\f$
+ *  is simply the probability weighted average
+ * \f[\pi_t(N)=\sum\nolimits_{e}p(e)*\pi_{t+1}(N(e))\f]
+ * where the sum extends over all edges e originating from the node N and p(e) and N(e)
  * denote the transition probability along the edge e and the node at time t+1 which the 
- * edge e connects to. Here h could be a conditional expectation \f$h=E_s(k)\f$ of some
- * random variable k at a later time s. Thus the case of iterated conditional expectations
+ * edge e connects to. At time t the values of \f$\pi_{t+1}\f$ have already been computed
+ * at all nodes living at time t+1 and in particular at all the nodes N(e).
+ *
+ * <p>Here h could be a conditional expectation \f$h=E_u(k)\f$ of some
+ * random variable k at a later time u. Thus the case of iterated conditional expectations
  * is handled with equal ease and this is the main advantage of lattices over Monte Carlo
  * path simulation.
  *
  * <p>The Lattice consists of nodes of type Node. The class Node must 
  * have a member function getEdges() returning a std::list<Edge> of the edges in the node.
  * Since the type of node varies with the lattice we make it a template parameter.
- * The concrete Node subclasses which will derive from Node can then be defined as local
- * classes in the various lattices that use them.
+
  *
  * @param Node the type of nodes in this lattice.
  */

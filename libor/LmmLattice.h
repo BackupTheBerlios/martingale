@@ -35,25 +35,32 @@ MTGL_BEGIN_NAMESPACE(Martingale)
 
 
 /*! \file LmmLattice.h
- *  Lattices for the driftless Libor market model {@link DriftlessLMM}. 
+ *  Lattices for the driftless Libor market model {@link DriftlessLMM}.
+ *  See book, chapter 8.
  *  Two and three factor lattices are implemented. It is assumed that the
  *  volatilities \f$\sigma_j(t)\f$ of the forward transported Libors \f$U_j\f$
  *  (see book, 6.8) are <i>constant</i> and that all Libor accrual intervals 
- *  have equal length \f$\delta\f$.
+ *  have equal length \f$\delta\f$. Recall that the volatilities of the Libors
+ *  themselves are stochastic in this model. The lattice makes time steps of
+ *  equal size \f$\delta/nSteps\f$ where nSteps denotes the number of time steps 
+ *  in each Libor accrual interval.
  *
- * <p>Each {@link Node} stores the vector of accrual factors
- *  \f[H=(H_t,...,H_n)\f]
- *  as the most suitable way to store the state of the underlying Libor process since
+ * <p>Each {@link Node} stores the vector of accrual factors \f$H_j\f$ which are still
+ *  alive at the time at which this node lives. The \f$H_j\f$
+ *  as the most efficient way to store the state of the underlying Libor process since
  *  all other quantities can be recovered from these with minimal computational effort.
  *
  * <p><a name="lmm-lattice-3f">Three factor LMM lattice:</a>
- * <p>Nodes in a 3 factor lattice for the Libor market model {@link LmmLattice3F}
+ *  Nodes in a 3 factor lattice for the Libor market model {@link LmmLattice3F}
  *  compute the \f$H_j\f$ from the volatility parts \f$V_j\f$ of the forward transported
  *  Libors \f$U_j\f$ approximated as
  *  \f[V_j(s)\simeq\sigma_j\left[R_{j1}Z_1(s)+R_{j2}Z_2(s)+R_{j3}Z_3(s)\right],\f]
  *  where the matrix R is the approximate root of rank 3 of the correlation matrix 
- *  \f$\rho\f$ of the underlying driftless LMM: \f$\rho\simeq RR'\f$.
- *  See book, 8.1.2, for details and notation. 
+ *  \f$\rho\f$ of the underlying driftless LMM: \f$\rho\simeq RR'\f$. The rows of R
+ *  are scaled backe to unit norm to preserve the correlations \f$\rho_{jj}=1\f$.
+ *  This diminishes the quality of the approximation \f$\rho\simeq RR'\f$ but
+ *  preserves the volatilities \f$\sigma_j\f$ of the \f$V_j\f$. If we don't do this we 
+ *  lose volatility. See book, 8.1.2, for details and notation. 
  *
  * <p>The \f$Z_j(t)\f$ are independent standard Brownian motions which evolve from the state
  *  \f$Z_j(0)=0\f$ and then tick up or down in ticks of size \f$a=\sqrt{dt}\f$ where dt is the 
@@ -62,6 +69,22 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  *  \f[Z_1=ia,\quad Z_2=ja,\quad Z_3=ka.\f]
  *  Two factor lattices are completely similar but the implementation is kept separate for
  *  greater clarity.
+ *
+ * <p><b>Arbitrage</b>
+ * Recall that the \f$V_j\f$ are the volatility parts (unbounded variation parts) of the 
+ * logarithms \f$Y_j=log(U_j)\f$. The \f$Y_j\f$ are then recovered from the \f$U_j\f$ using
+ * the <i>continuous time</i> drifts of the \f$Y_j\f$. This does not preserve the martingale 
+ * property of the \f$U_j\f$ modelled in the lattice and consequently the lattice is not 
+ * arbitrage free. Our view here is that the lattice is an approximation of the arbitrage
+ * free continuous time dynamics.
+ *
+ * <p><b>Number of nodes.</b>
+ * Each node has four edges in the case of a two factor lattice and eight edges in the case of
+ * a three factor lattice. The total number of nodes allocated depends on the number of time steps
+ * in the lattice. We want to have a large number of nodes but not too large. The number of time 
+ * steps in the lattice can be controlled by choosing the number of time steps in each Libor accrual 
+ * interval. With 30 time steps a 2 factor lattice allocates about 10000 nodes while a three factor 
+ * lattice allocates 250000 nodes.
  */
 
 
@@ -75,8 +98,7 @@ MTGL_BEGIN_NAMESPACE(Martingale)
  
 
 /** <p>Lattice of the driftless Libor market model. This is a lattice with nodes 
- *  of type LmmNode, see {@link Node}. Time steps equal Libor accrual periods. 
- *  See book 6.8, 8.1.1 for the details and notation. 
+ *  of type LmmNode, see {@link Node}. See book 6.8, 8.1.1 for the details and notation. 
  *  Interface and partial implementation. 
  *  No decision is made on number of factors and state variables.
  *  For more details see the file reference for the file LmmLattice.h (click on
@@ -130,10 +152,7 @@ public:
 	
 // CONSTRUCTOR
 	
-	/** The lattice can only be built up to time \f$t=n-2\f$ at most.
-	 *  The last step must be handled differently since only one state variable
-	 *  remains to make this step. Will fix this later.
-	 *
+	/** 
 	 *  @param fl factor loading of the underlying LMM.
 	 *  @param s lattice is built for s time steps from time zero.
 	 *  @param steps number of equal sized time steps in each Libor accrual interval.
@@ -231,13 +250,10 @@ public:
 	
 // CONSTRUCTOR
 	
-	/** The lattice can only be built up to time \f$t=n-2\f$ at most.
-	 *  The last step must be handled differently since only one state variable
-	 *  remains to make this step. Will fix this later.
-	 *
+	/** 
 	 *  @param fl factor loading of the underlying LMM.
-	 *  @param t lattice is built up to time \f$T_t\f$.
-	 *  @param steps number of time seps in each accrual interval.
+	 *  @param t number of time steps in the lattice.
+	 *  @param steps number of time steps in each Libor accrual interval.
 	 */
 	ConstVolLmmLattice2F(ConstVolLiborFactorLoading* fl, int t, int steps=1);	
 	
@@ -246,7 +262,7 @@ public:
 // ERROR IN THE RANK 2 FATCORIZATION OF THE COVARIANCE MATRICES
 	
     /** Computes the relative errors in the trae norm of the approximate rank two 
-     *  factorization rho=RR' of the correlation matrix rho. See FastLibor.pdf 8.3.
+     *  factorization rho=RR' of the correlation matrix rho. See book, Appendix A.1.
      */
     void testFactorization();
 
@@ -316,13 +332,9 @@ public:
 	
 // CONSTRUCTOR
 	
-	/** The lattice can only be built up to time \f$t=n-2\f$ at most.
-	 *  The last step must be handled differently since only one state variable
-	 *  remains to make this step. Will fix this later.
-	 *
-	 *  @param fl factor loading of the underlying LMM.
-	 *  @param t lattice is built up to time \f$T_t\f$.
-	 *  @param steps number of time seps in each accrual interval.
+	/** @param fl factor loading of the underlying LMM.
+	 *  @param t number of time steps in the lattice.
+	 *  @param steps number of time seps in each Libor accrual interval.
 	 */
 	ConstVolLmmLattice3F(ConstVolLiborFactorLoading* fl, int t, int steps=1);	
 	
@@ -330,8 +342,9 @@ public:
 
 // ERROR IN THE RANK 2 FATCORIZATION OF THE COVARIANCE MATRICES
 	
-    /** Computes the relative errors in the trae norm of the approximate rank two 
-     *  factorization rho=RR' of the correlation matrix rho. See FastLibor.pdf 8.3.
+    /** Computes the relative errors in the trace norm of the approximate rank three 
+     *  factorization rho=RR' of the correlation matrix rho. See book, 8.1.2 and 
+	 *  Appendix B.3.
      */
     void testFactorization();
 

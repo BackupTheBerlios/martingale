@@ -93,3 +93,16 @@ Three factor lattice for the driftless LMM with constant U_j - volatilities
 implemented. Test: 2 time steps per Libor accrual interval work as well as three time steps.
 
 
+7-7-03:
+
+Files changed: Optimizers.h, Lattice.h, LmmLattice.h, Utils.h, Utils.cc, Array.h
+               BasketLattice.h, BasketLattice.cc;
+
+New: Optimizers.h, BasketLattice.h.
+
+Write html file about linking issues, eg. whatever is included from a header file
+is dragged everywhere the header file is included, thus better to move includes into the
+.cc files unless the header really needs the include. Likewise remark on problems with 
+implementations in headers (for example problems with forward declarations).
+
+

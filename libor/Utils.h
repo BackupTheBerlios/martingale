@@ -59,18 +59,10 @@ public:
     void start(){ before=clock()/CLOCKS_PER_SEC; }
 	void stop(){  after=clock()/CLOCKS_PER_SEC;  }
 	
-	void report(string message)
-	{
-	     int  totalSeconds=(int)(after-before),
-	          minutes=totalSeconds/60,
-	          seconds=totalSeconds%60;
-       	 if(minutes==0)
-	         std::cout<<"\n\n"<<message<<"\ntime: "<<seconds<<" seconds"<<endl;
-	     else
-	         std::cout<<"\n\n"<<message<<"\ntime: "<<minutes<<" minutes, "<<seconds<<" seconds"<<endl;
-	} // end report
+	/** Time to completion. */
+	void report(string message);	
 	
-}; // end Timing
+}; // end Timer
 
 
 /***************************************************************************************
@@ -98,7 +90,10 @@ public:
          os<<t;
          return os.str();
     }
+	
 }; // end Type_t
+
+
 
 typedef Type_t<int> Int_t;
 typedef Type_t<long> Long_t;
@@ -140,7 +135,6 @@ std::ostream& operator << (std::ostream& os, const LTRMatrix<S>& A)
 } // end operator <<
 
 
-
 /** print upper triangular matrix
  */
 template<class S>
@@ -168,7 +162,6 @@ std::ostream& operator << (std::ostream& os, const Matrix<S>& A)
 	}
     return os << endl << endl;
 } // end operator <<
-
 	
 
 
@@ -211,13 +204,7 @@ message("timing the first 1% of the loop.")
 
 /** Clears last string from console
  */
-void clear()
-{		
-	int m = message.length();
-	for(int i=0;i<m;i++){ cerr<<"\b"; }
-	for(int i=0;i<m;i++){ cerr<<" "; }
-	for(int i=0;i<m;i++){ cerr<<"\b"; }
-}
+void clear();
 	
 
 /** Reports current progress and projects time left from a loop
@@ -228,46 +215,7 @@ void clear()
  * @param n Current loop iteration.
  * @param N Total number of iterations in loop.
  */
-void consoleReport(int n, int N)
-{
-	if(n<N/100) return;
-	if(n==N/100) { 
-   
-            clocks_for_one_percent = clock() - clocks_at_start;
-            clear();
-    }
-	
-    // time to completion	
-	double  percent_left = 100.0*(N-n)/N;
-	long	secs_left    = (long)(percent_left*clocks_for_one_percent/CLOCKS_PER_SEC);
-	
-    if(secs_left<seconds_left-5){        //print a progress report 
-		
-		int
-	        hrs     = secs_left/3600,
-  	        mins    = (secs_left%3600)/60,
-	        secs    = secs_left%60;
-		// convert to string
-        Int_t Hrs(hrs), Mins(mins), Secs(secs);
-        
-	    string
-	        hours   = Hrs.toString(),
-	    	minutes = Mins.toString(),
-		    seconds = Secs.toString();
-	
-	    clear();
-	
-	    if(hrs>0) 
-		    message = hours + " hr, " + minutes + " min, " + seconds + " sec.";
-	    else if(mins>0)
-		    message = minutes + " min, " + seconds + " sec.";
-	    else 
-		    message = seconds +" sec.";
-	
-	    std::cerr << message;
-	    seconds_left=secs_left;
-	} // endif
-} // end consoleReport
+void consoleReport(int n, int N);
 
 
 }; //end LoopStatus

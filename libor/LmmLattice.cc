@@ -52,6 +52,16 @@ using namespace Martingale;
 		
 		// set constant vols
 		for(int j=1;j<n;j++) sg[j]=factorLoading->sigma(j,0.0);
+			
+		// scale the rows of R back to norm one 
+		// this preserves rho_{jj}=1 and volatilities
+		for(int i=1;i<n;i++){
+			
+			Real f=0.0;      // norm of row_i(R)
+			for(int j=0;j<2;j++) f+=R(i,j)*R(i,j);
+			f=sqrt(f);
+			R.scaleRow(i,1.0/f);
+		}
 		
 		buildLattice(m);       // Lattice::m = number of time steps t*nSteps 
 		testFactorization();
@@ -222,6 +232,16 @@ buildLattice(int m)
 		
 		// set constant vols
 		for(int j=1;j<n;j++) sg[j]=factorLoading->sigma(j,0.0);
+			
+		// scale the rows of R back to norm one 
+		// this preserves rho_{jj}=1 and volatilities
+		for(int i=1;i<n;i++){
+			
+			Real f=0.0;      // norm of row_i(R)
+			for(int j=0;j<3;j++) f+=R(i,j)*R(i,j);
+			f=sqrt(f);
+			R.scaleRow(i,1.0/f);
+		}
 		
 		buildLattice(m);       // Lattice::m = number of time steps t*nSteps 
 		testFactorization();
